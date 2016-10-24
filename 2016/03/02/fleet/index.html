@@ -4,21 +4,30 @@
   <meta charset="utf-8">
   
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
-  <title>Hello World | 他的国</title>
+  <title>Fleet 跨节点服务调度 | 他的国</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub.
-Quick">
+  <meta name="description" content="在 Systemd 的许多工具中，例如 systemctl 命令，都有一个 “–host”参数，它提供了一种可以跨主机操作另一个节点上服务的方法。然而，这种方式仍然具有比较大的局限性。
+
+节点间必须相互添加 SSH Key 信任，因为 Systemd 的远程操作是通过 SSH 连接进行的。
+操作时每次都必须指明目的节点的用户名和主机地址（IP 地址）。
+只能够远程控制已有的服务，但不能远程创建服务">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hello World">
-<meta property="og:url" content="http://dingmingk.github.io/2016/10/20/hello-world/index.html">
+<meta property="og:title" content="Fleet 跨节点服务调度">
+<meta property="og:url" content="http://dingmingk.github.io/2016/03/02/fleet/index.html">
 <meta property="og:site_name" content="他的国">
-<meta property="og:description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub.
-Quick">
-<meta property="og:updated_time" content="2016-10-21T08:39:58.000Z">
+<meta property="og:description" content="在 Systemd 的许多工具中，例如 systemctl 命令，都有一个 “–host”参数，它提供了一种可以跨主机操作另一个节点上服务的方法。然而，这种方式仍然具有比较大的局限性。
+
+节点间必须相互添加 SSH Key 信任，因为 Systemd 的远程操作是通过 SSH 连接进行的。
+操作时每次都必须指明目的节点的用户名和主机地址（IP 地址）。
+只能够远程控制已有的服务，但不能远程创建服务">
+<meta property="og:updated_time" content="2016-10-24T06:24:04.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hello World">
-<meta name="twitter:description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub.
-Quick">
+<meta name="twitter:title" content="Fleet 跨节点服务调度">
+<meta name="twitter:description" content="在 Systemd 的许多工具中，例如 systemctl 命令，都有一个 “–host”参数，它提供了一种可以跨主机操作另一个节点上服务的方法。然而，这种方式仍然具有比较大的局限性。
+
+节点间必须相互添加 SSH Key 信任，因为 Systemd 的远程操作是通过 SSH 连接进行的。
+操作时每次都必须指明目的节点的用户名和主机地址（IP 地址）。
+只能够远程控制已有的服务，但不能远程创建服务">
   
     <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
   
@@ -142,7 +151,7 @@ Quick">
 </nav>
 
       <div class="body-wrap">
-        <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
+        <article id="post-fleet" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <input type="hidden" class="isFancy" />
@@ -152,7 +161,7 @@ Quick">
         
   
     <h1 class="article-title" itemprop="name">
-      Hello World
+      Fleet 跨节点服务调度
     </h1>
   
 
@@ -160,27 +169,60 @@ Quick">
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="external">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"My New Post"</span></div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo server</div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo generate</div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo deploy</div></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
+        <p>在 Systemd 的许多工具中，例如 systemctl 命令，都有一个 “–host”参数，它提供了一种可以跨主机操作另一个节点上服务的方法。然而，这种方式仍然具有比较大的局限性。</p>
+<ul>
+<li>节点间必须相互添加 SSH Key 信任，因为 Systemd 的远程操作是通过 SSH 连接进行的。</li>
+<li>操作时每次都必须指明目的节点的用户名和主机地址（IP 地址）。</li>
+<li>只能够远程控制已有的服务，但不能远程创建服务。</li>
+<li>仅限简单的服务操作，对于同时牵连多个节点的情况无能为力。例如，将服务迁移到另一个节点上运行。</li>
+</ul>
+<p>为了更方便地在集群中部署和管理服务，CoreOS 基于 Systemd 的接口设计了服务调度工具 FLeet，它继承并扩展了 Unit 文件格式，使之更加适用于集群环境的服务配置。</p>
+<h2 id="Fleet的基本操作"><a href="#Fleet的基本操作" class="headerlink" title="Fleet的基本操作"></a>Fleet的基本操作</h2><p>Fleet 服务实际上是由运行在每一个节点上的后台服务进程 fleetd 组成的。此外，Fleet 还提供了一个用于交互控制的工具：fleetctl。 </p>
+<ul>
+<li>fleetctl list-machines 查看整个集群的基本信息</li>
+<li>fleetctl list-units 查看整个集群的所有服务</li>
+<li>fleetctl ssh ID    跳转到指定节点（需要添加公钥）</li>
+<li>fleetctl ssh ID CMD 跨节点执行命令</li>
+</ul>
+<h2 id="通过-Unit-文件运行跨节点调度的服务"><a href="#通过-Unit-文件运行跨节点调度的服务" class="headerlink" title="通过 Unit 文件运行跨节点调度的服务"></a>通过 Unit 文件运行跨节点调度的服务</h2><h4 id="Fleet-的-Unit-文件"><a href="#Fleet-的-Unit-文件" class="headerlink" title="Fleet 的 Unit 文件"></a>Fleet 的 Unit 文件</h4><p>在服务管理方面，Fleet 使用和 Systemd 相似的 Unit 文件进行配置。不同的地方在于，Fleet 额外支持一个 X-Fleet 配置段，用于指定服务可以在哪些节点上运行。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Hello World</div><div class="line">After=docker.service</div><div class="line">Requires=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartPre=-/usr/bin/docker kill busybox1</div><div class="line">ExecStartPre=-/usr/bin/docker rm busybox1</div><div class="line">ExecStartPre=/usr/bin/docker pull busybox</div><div class="line">ExecStart=/usr/bin/docker run --name busybox1 busybox /bin/sh -c &quot;while true; do echo Hello World; sleep 1; done&quot;</div><div class="line">ExecStop=/usr/bin/docker kill busybox1</div><div class="line"></div><div class="line">[X-Fleet]</div><div class="line">X-Conflicts=hello*.service</div></pre></td></tr></table></figure>
+<p>最后的 X-Fleet 配置段的 X-Conflicts 属性指定了这个 Hello 服务不能运行在“任意已经分配了任何名字以 hello 开头的服务”的节点上。</p>
+<h4 id="在集群上运行服务"><a href="#在集群上运行服务" class="headerlink" title="在集群上运行服务"></a>在集群上运行服务</h4><p>由于 Fleet 需要在集群层面上对服务进行管理，因此它的服务管理流程与 Systemd 略有不同。最明显的区别是，Fleet 没有指定 Unit 文件必须放置在哪些目录下 ，而是直接通过参数的方式告诉 fleetctl 命令。</p>
+<p><code>$ fleetctl start ${HOME}/hello.service</code></p>
+<h4 id="Fleet-的-X-Fleet-段"><a href="#Fleet-的-X-Fleet-段" class="headerlink" title="Fleet 的 X-Fleet 段"></a>Fleet 的 X-Fleet 段</h4><ul>
+<li>MachineID: 直接了当地告诉 Fleet 这个服务只能运行在特定节点上。注意，这里的值必须是完整的节点 ID，这个 ID 可以通过 “fleetctl list-machines -l”命令获得。</li>
+<li>MachineOf: 值是另一个“.service”文件，表示当前服务必须与指定的这个服务运行在同一个节点上。</li>
+<li>MachineMetadata: 值是一个节点的 Metadata 内容，例如“region=us-east-1”，这些 Metadata 是在启动节点时通过 Cloudinit 写进去的。这个参数可以使用多次，或者通过空格将多个值同时传进去。</li>
+<li>Conflicts: 值是一个 .service 文件名或用于匹配文件名的通配字符串，Conflicts 参数也可以使用多次，并且其值可以使用通配符，例如 apache* 表示所有以“apache”开头的服务。</li>
+<li>Global: 如果值为 true，则这个服务会被部署到集群中符合 MachineMetadata 限定条件的每一个节点上。注意，当 Global 值为 true 时，除了 MachineMetadata 以外的所有其它约束条件都会被忽略。</li>
+</ul>
+<h4 id="模版参数"><a href="#模版参数" class="headerlink" title="模版参数"></a>模版参数</h4><p>Fleet 的 Unit 模版文件与 Systemd 的模版文件基本一致，同样在文件名的末尾有一个特征式的@符号。</p>
+<p>虽然 Fleet 没有特定的 Unit 文件存放目录，但是只要在通过“fleetctl start”或“fleetctl submit”命令指定 Unit 文件路径时加上后缀参数，Fleet 同样会自动匹配去掉后缀参数的模版文件。例如 “fleetctl submit ${HOME}/apache@8080.service”，就会匹配到 ${HOME} 目录下面的 apache@.service 模版文件。</p>
+<p>几乎所有的 Unit 模版文件都会使用到“%i”参数，因为它代表的是运行具体服务时，写在@符号后面部分的内容，这个值对于区分各个服务实例具有十分重要的意义。</p>
+<h2 id="集群中的服务生命周期"><a href="#集群中的服务生命周期" class="headerlink" title="集群中的服务生命周期"></a>集群中的服务生命周期</h2><ul>
+<li>fleetctl submit ${PWD}/xxx.service   提交服务，将指定的 Unit 文件添加到 Fleet 的记录缓存中。</li>
+<li>fleetctl cat xxx.service   打印已经缓存了的 Unit 文件内容</li>
+<li>fleetctl load xxx.service   就绪</li>
+<li>fleetctl start xxx.service   启动服务,并设置自动启动</li>
+<li>fleetctl stop xxx.service    停止服务</li>
+<li>fleetctl status xxx.service   查看服务状态</li>
+<li>fleetctl journal xxx.service   查看服务日志</li>
+<li>fleetctl journal –lines 20 xx.service  最新20行日志</li>
+<li>fleetctl journal –follow xxx.service   跟随日志输出</li>
+</ul>
+<h2 id="服务热迁移"><a href="#服务热迁移" class="headerlink" title="服务热迁移"></a>服务热迁移</h2><p>除了自动选择部署的节点外，Fleet的另一个重要功能便是在节点出现故障时，自动将故障节点上运行的服务迁移到另一个健康节点上。</p>
 
       
     </div>
     <div class="article-info article-info-index">
       
-      <a href="/2016/10/20/hello-world/" class="archive-article-date">
-  	<time datetime="2016-10-20T08:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-10-20</time>
+      <a href="/2016/03/02/fleet/" class="archive-article-date">
+  	<time datetime="2016-03-01T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-02</time>
 </a>
       
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/test/">test</a></li></ul>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
 	</div>
 
       
@@ -193,11 +235,15 @@ Quick">
   
 <nav id="article-nav">
   
-  
-    <a href="/2016/03/02/fleet/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">Fleet 跨节点服务调度</div>
-      <i class="icon-circle-right"></i>
+    <a href="/2016/10/20/hello-world/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Hello World
+        
+      </div>
     </a>
+  
   
 </nav>
 
@@ -229,7 +275,7 @@ Quick">
 
 <div class="duoshuo">
 	<!-- 多说评论框 start -->
-	<div class="ds-thread" data-thread-key="hello-world" data-title="Hello World" data-url="http://dingmingk.github.io/2016/10/20/hello-world/"></div>
+	<div class="ds-thread" data-thread-key="fleet" data-title="Fleet 跨节点服务调度" data-url="http://dingmingk.github.io/2016/03/02/fleet/"></div>
 	<!-- 多说评论框 end -->
 	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
 	<script type="text/javascript">
