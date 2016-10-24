@@ -1,0 +1,2188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="他的国">
+<meta property="og:url" content="http://dingmingk.github.io/page/2/index.html">
+<meta property="og:site_name" content="他的国">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="他的国">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        
+  
+    <article id="post-k8s_object_files" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/24/k8s_object_files/">Kubernetes 关键对象定义详解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Pod定义文件详解"><a href="#Pod定义文件详解" class="headerlink" title="Pod定义文件详解"></a>Pod定义文件详解</h2><p>Pod 的定义模版（yaml 格式）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: string</div><div class="line">     image: string</div><div class="line">     imagePullPolicy: [Always | Never | IfNotPresent]</div><div class="line">     command: [string]</div><div class="line">     workingDir: string</div><div class="line">     volumeMounts:</div><div class="line">       - name: string</div><div class="line">        mountPath: string</div><div class="line">        readOnly: boolean</div><div class="line">     ports:</div><div class="line">       - name: string</div><div class="line">        containerPort: int</div><div class="line">        hostPost: int</div><div class="line">        protocol: string</div></pre></td></tr></table></figure>
+<p>对各属性的详细说明如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性名称</th>
+<th style="text-align:center">取值类型</th>
+<th style="text-align:center">是否必选</th>
+<th style="text-align:center">取值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">version</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">v1</td>
+</tr>
+<tr>
+<td style="text-align:left">kind</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">元数据</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod 名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.namespace</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">命名空间，在不指定系统时将使用名为 “defautl” 的命名空间</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.labels[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义标签属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.annotation[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义注解属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">详细描述</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod 中运行的容器的列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">容器名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].image</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">容器的镜像名，在 Node 上如果不存在该镜像，则 Kubelet 会先下载</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].imagePullPolicy</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">获取镜像的策略，可选值包括：Always、Never、IfNotPresent，默认值为 Always。Always：表示每次都下载镜像。IfNotPresent：表示如果本地有该镜像，就是用本地的镜像。Never：表示仅使用本地镜像。</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].command[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器的启动命令列表，如果不指定，则使用镜像打包时使用的 CMD 命令。</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].workingDir</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器的工作目录</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">可供容器使用的共享存储卷列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">引用 Pod 定义的共享存储卷的名称，需使用 volumes[] 部分定义的共享存储卷名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[].mountPath</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">存储卷在容器内 Mount 的绝对路径，应少于 512 个字符</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[].readOnly</td>
+<td style="text-align:center">boolean</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">是否为只读模式，默认为读写模式</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器需要暴露的端口号列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].containerPort</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器需要监听的端口号</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].hostPort</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器所在主机需要监听的端口号，默认与 containerPort 相同</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].protocol</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口协议，支持 TCP 和 UDP，默认为 TCP</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].env[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器运行前需要设置的环境变量列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].env[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">环境变量名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].env[].value</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">环境变量的值</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">资源限制条件</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources.limits</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">资源限制条件</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources.limits.cpu</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">CPU 限制条件，将用于 docker run –cpu-shares 参数</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources.limits.memory</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">内存限制条件，将用于 docker run –memory 参数</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">在该 Pod 上定义的共享存储卷列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">共享存储卷名称，需唯一，符合 RFC 1035 规范。容器定义部分 containers[].volumeMounts[].name 将引用该共享存储卷的名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].emptyDir</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">默认的存储卷类型，表示与 Pod 同生命周期的一个临时目录，其值为一个空对象：emptyDir:{}。该类型与 hostPath 类型互斥，应只定义一种</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].hostPath</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">使用 Pod 所在主机的目录，通过 volumes[].hostPath.path 指定。该类型与 emptyDir 类型互斥，应只定义一种</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].hostPath.path</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">Pod 所在主机的目录，将被用于容器中 mount 的目录。</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.dnsPolicy</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">DNS 策略，可选值包括：Default、ClusterFirst</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.restartPolicy</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">该 Pod 内容器的重启策略，可选值为 Always、OnFailure、Never，默认值为 Always。Always：容器一旦终止运行，无论容器是如何终止的，Kubelet 都将重启它。OnFailure：只有容器以非零退出码终止时，Kubelet 才会重启该容器。如果容器正常结束（退出码为0），则 Kubelet 将不会重启它。Never：容器终止后，Kubelet 将退出码报告给 Master，不再重启它</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.nodeSelector</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">指定需要调度到的 Node 的 Label，以 key=value 格式指定</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.imagePullSecrets</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">Pull 镜像时使用的 secret 名称，以 name=secretkey 格式定义</td>
+</tr>
+</tbody>
+</table>
+<h2 id="RC-定义文件详解"><a href="#RC-定义文件详解" class="headerlink" title="RC 定义文件详解"></a>RC 定义文件详解</h2><p>RC（ReplicationController）定义文件模版（yaml格式）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  replicas: number</div><div class="line">  selector: []</div><div class="line">  template: object</div></pre></td></tr></table></figure>
+<p>对各属性的说明如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性名称</th>
+<th style="text-align:center">取值类型</th>
+<th style="text-align:center">是否必选</th>
+<th style="text-align:center">取值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">version</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">v1</td>
+</tr>
+<tr>
+<td style="text-align:left">kind</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">ReplicationController</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata</td>
+<td style="text-align:center">object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">元数据</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">ReplicationController 名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.namespace</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">命名空间，不指定系统时将使用名为 “default” 的命名空间</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.labels[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义标签属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.annotaion[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义注解属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">详细描述</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.replicas</td>
+<td style="text-align:center">number</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod 副本数量，设置为 0 表示不创建 Pod</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.selector[]</td>
+<td style="text-align:center">Listt</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Label Selector 配置，将选择具有指定 Label 标签的 Pod 作为管理范围</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.template</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">容器的定义，与 Pod 的 spec 内容相同</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Service定义文件详解"><a href="#Service定义文件详解" class="headerlink" title="Service定义文件详解"></a>Service定义文件详解</h2><p>Service 的定义文件模版（yaml格式）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  selector: []</div><div class="line">  type: string</div><div class="line">  clusterIP: string</div><div class="line">  sessionAffinity: string</div><div class="line">  ports:</div><div class="line">    - name: string</div><div class="line">     port: int</div><div class="line">     targetPort: int</div><div class="line">     protocol: string</div><div class="line">  status:</div><div class="line">    loadBalancer:</div><div class="line">      ingress:</div><div class="line">        ip: string</div><div class="line">        hostname: string</div></pre></td></tr></table></figure>
+<p>对各属性的说明如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性名称</th>
+<th style="text-align:center">取值类型</th>
+<th style="text-align:center">是否必选</th>
+<th style="text-align:center">取值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">version</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">v1</td>
+</tr>
+<tr>
+<td style="text-align:left">kind</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Service</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">元数据</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Service 名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.namespace</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">命名空间，不指定系统时将使用名为“default”的命名空间</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.labels[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义标签属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.annotation[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义注解属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">详细描述</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.selector[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Label Selector 配置，将选择具有指定 Label 标签的 Pod 作为管理范围</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.type</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Service 的类型，指定 Service 的访问方式，默认为 ClusterIP。ClusterIP：虚拟的服务器 IP 地址，该地址用于 Kubernetes 集群内部的 Pod 访问，在 Node 上 kube-proxy 通过设置的 iptables 规则进行转发。NodePort：使用宿主机的端口，使能够访问各 Node 的外部客户端通过 Node 的 IP 地址和端口号就能访问服务。LoadBalancer：使用外接负载均衡器完成到服务的负载分发啊 ，需要在 spec.status.loadBalancer 字段指定外部负载均衡器的 IP 地址，并同时定义 nodePort 和 clusterIP</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.type.clusterIP</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">虚拟服务 IP 地址，当 type=ClusterIP 时，如果不指定，则系统将自动分配；当 type=LoadBalancer 时，则需要指定</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.sessionAffinity</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">是否支持 Session，可选值为 ClientIP，默认为空。ClientIP：表示将同一个客户端（根据客户端的IP地址决定）的访问请求都转发到同一个后端 Pod</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">Service 需要暴露的端口号列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].port</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">服务监听的端口号</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].targetPort</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">需要转发到后段 Pod 的端口号</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].protocol</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口协议，支持 TCP 和 UDP，默认为 TCP</td>
+</tr>
+<tr>
+<td style="text-align:left">status</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">当 spec.type=LoadBalancer 时，设置外部负载均衡器的地址</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer.ingress</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer.ingress.ip</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器的 IP 地址</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer.ingress.hostname</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器的主机名</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/24/k8s_object_files/" class="archive-article-date">
+  	<time datetime="2016-03-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-24</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-fleet" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/02/fleet/">Fleet 跨节点服务调度</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在 Systemd 的许多工具中，例如 systemctl 命令，都有一个 “–host”参数，它提供了一种可以跨主机操作另一个节点上服务的方法。然而，这种方式仍然具有比较大的局限性。</p>
+<ul>
+<li>节点间必须相互添加 SSH Key 信任，因为 Systemd 的远程操作是通过 SSH 连接进行的。</li>
+<li>操作时每次都必须指明目的节点的用户名和主机地址（IP 地址）。</li>
+<li>只能够远程控制已有的服务，但不能远程创建服务。</li>
+<li>仅限简单的服务操作，对于同时牵连多个节点的情况无能为力。例如，将服务迁移到另一个节点上运行。</li>
+</ul>
+<p>为了更方便地在集群中部署和管理服务，CoreOS 基于 Systemd 的接口设计了服务调度工具 FLeet，它继承并扩展了 Unit 文件格式，使之更加适用于集群环境的服务配置。</p>
+<h2 id="Fleet的基本操作"><a href="#Fleet的基本操作" class="headerlink" title="Fleet的基本操作"></a>Fleet的基本操作</h2><p>Fleet 服务实际上是由运行在每一个节点上的后台服务进程 fleetd 组成的。此外，Fleet 还提供了一个用于交互控制的工具：fleetctl。 </p>
+<ul>
+<li>fleetctl list-machines 查看整个集群的基本信息</li>
+<li>fleetctl list-units 查看整个集群的所有服务</li>
+<li>fleetctl ssh ID    跳转到指定节点（需要添加公钥）</li>
+<li>fleetctl ssh ID CMD 跨节点执行命令</li>
+</ul>
+<h2 id="通过-Unit-文件运行跨节点调度的服务"><a href="#通过-Unit-文件运行跨节点调度的服务" class="headerlink" title="通过 Unit 文件运行跨节点调度的服务"></a>通过 Unit 文件运行跨节点调度的服务</h2><h4 id="Fleet-的-Unit-文件"><a href="#Fleet-的-Unit-文件" class="headerlink" title="Fleet 的 Unit 文件"></a>Fleet 的 Unit 文件</h4><p>在服务管理方面，Fleet 使用和 Systemd 相似的 Unit 文件进行配置。不同的地方在于，Fleet 额外支持一个 X-Fleet 配置段，用于指定服务可以在哪些节点上运行。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Hello World</div><div class="line">After=docker.service</div><div class="line">Requires=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartPre=-/usr/bin/docker kill busybox1</div><div class="line">ExecStartPre=-/usr/bin/docker rm busybox1</div><div class="line">ExecStartPre=/usr/bin/docker pull busybox</div><div class="line">ExecStart=/usr/bin/docker run --name busybox1 busybox /bin/sh -c &quot;while true; do echo Hello World; sleep 1; done&quot;</div><div class="line">ExecStop=/usr/bin/docker kill busybox1</div><div class="line"></div><div class="line">[X-Fleet]</div><div class="line">X-Conflicts=hello*.service</div></pre></td></tr></table></figure>
+<p>最后的 X-Fleet 配置段的 X-Conflicts 属性指定了这个 Hello 服务不能运行在“任意已经分配了任何名字以 hello 开头的服务”的节点上。</p>
+<h4 id="在集群上运行服务"><a href="#在集群上运行服务" class="headerlink" title="在集群上运行服务"></a>在集群上运行服务</h4><p>由于 Fleet 需要在集群层面上对服务进行管理，因此它的服务管理流程与 Systemd 略有不同。最明显的区别是，Fleet 没有指定 Unit 文件必须放置在哪些目录下 ，而是直接通过参数的方式告诉 fleetctl 命令。</p>
+<p><code>$ fleetctl start ${HOME}/hello.service</code></p>
+<h4 id="Fleet-的-X-Fleet-段"><a href="#Fleet-的-X-Fleet-段" class="headerlink" title="Fleet 的 X-Fleet 段"></a>Fleet 的 X-Fleet 段</h4><ul>
+<li>MachineID: 直接了当地告诉 Fleet 这个服务只能运行在特定节点上。注意，这里的值必须是完整的节点 ID，这个 ID 可以通过 “fleetctl list-machines -l”命令获得。</li>
+<li>MachineOf: 值是另一个“.service”文件，表示当前服务必须与指定的这个服务运行在同一个节点上。</li>
+<li>MachineMetadata: 值是一个节点的 Metadata 内容，例如“region=us-east-1”，这些 Metadata 是在启动节点时通过 Cloudinit 写进去的。这个参数可以使用多次，或者通过空格将多个值同时传进去。</li>
+<li>Conflicts: 值是一个 .service 文件名或用于匹配文件名的通配字符串，Conflicts 参数也可以使用多次，并且其值可以使用通配符，例如 apache* 表示所有以“apache”开头的服务。</li>
+<li>Global: 如果值为 true，则这个服务会被部署到集群中符合 MachineMetadata 限定条件的每一个节点上。注意，当 Global 值为 true 时，除了 MachineMetadata 以外的所有其它约束条件都会被忽略。</li>
+</ul>
+<h4 id="模版参数"><a href="#模版参数" class="headerlink" title="模版参数"></a>模版参数</h4><p>Fleet 的 Unit 模版文件与 Systemd 的模版文件基本一致，同样在文件名的末尾有一个特征式的@符号。</p>
+<p>虽然 Fleet 没有特定的 Unit 文件存放目录，但是只要在通过“fleetctl start”或“fleetctl submit”命令指定 Unit 文件路径时加上后缀参数，Fleet 同样会自动匹配去掉后缀参数的模版文件。例如 “fleetctl submit ${HOME}/apache@8080.service”，就会匹配到 ${HOME} 目录下面的 apache@.service 模版文件。</p>
+<p>几乎所有的 Unit 模版文件都会使用到“%i”参数，因为它代表的是运行具体服务时，写在@符号后面部分的内容，这个值对于区分各个服务实例具有十分重要的意义。</p>
+<h2 id="集群中的服务生命周期"><a href="#集群中的服务生命周期" class="headerlink" title="集群中的服务生命周期"></a>集群中的服务生命周期</h2><ul>
+<li>fleetctl submit ${PWD}/xxx.service   提交服务，将指定的 Unit 文件添加到 Fleet 的记录缓存中。</li>
+<li>fleetctl cat xxx.service   打印已经缓存了的 Unit 文件内容</li>
+<li>fleetctl load xxx.service   就绪</li>
+<li>fleetctl start xxx.service   启动服务,并设置自动启动</li>
+<li>fleetctl stop xxx.service    停止服务</li>
+<li>fleetctl status xxx.service   查看服务状态</li>
+<li>fleetctl journal xxx.service   查看服务日志</li>
+<li>fleetctl journal –lines 20 xx.service  最新20行日志</li>
+<li>fleetctl journal –follow xxx.service   跟随日志输出</li>
+</ul>
+<h2 id="服务热迁移"><a href="#服务热迁移" class="headerlink" title="服务热迁移"></a>服务热迁移</h2><p>除了自动选择部署的节点外，Fleet的另一个重要功能便是在节点出现故障时，自动将故障节点上运行的服务迁移到另一个健康节点上。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/02/fleet/" class="archive-article-date">
+  	<time datetime="2016-03-01T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-02</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-systemd_part2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/systemd_part2/">Systemd 的系统资源管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>对服务的管理知识 Systemd 系统管理功能的冰山一角。在 Systemd 的生态圈中，Unit 文件统一了过去各种不同的系统资源配置格式，例如服务的启／停、定时任务、设备自动挂载、网络配置、设备配置、虚拟内存配置等。</p>
+<h2 id="Systemd-的-Unit-文件"><a href="#Systemd-的-Unit-文件" class="headerlink" title="Systemd 的 Unit 文件"></a>Systemd 的 Unit 文件</h2><p>Systemd 通过不同的文件后缀名来区分这些配置文件，下表列举了 Systemd 所支持的 12 中 Unit 文件类型。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">后缀名</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">.automount</td>
+<td style="text-align:center">用于控制自动挂载文件系统。即当指定的目录被访问时，立即会被自动挂载</td>
+</tr>
+<tr>
+<td style="text-align:left">.deviece</td>
+<td style="text-align:center">对应 /dev 目录下的设备，主要用于定义设备之间的依赖关系</td>
+</tr>
+<tr>
+<td style="text-align:left">.mount</td>
+<td style="text-align:center">定义系统结构层次中的一个挂载点，可以替代过去的 /etc/fstab 配置文件</td>
+</tr>
+<tr>
+<td style="text-align:left">.path</td>
+<td style="text-align:center">用于监控指定目录或文件的变化，并触发其它 Unit 运行</td>
+</tr>
+<tr>
+<td style="text-align:left">.scope</td>
+<td style="text-align:center">这种 Unit 文件不是用户创建的，而是 Systemd 运行时自己产生的，描述一些系统服务的分组信息</td>
+</tr>
+<tr>
+<td style="text-align:left">.service</td>
+<td style="text-align:center">封装守护进程的启动、停止、重启和重载操作，是最常见的一种 Unit 文件</td>
+</tr>
+<tr>
+<td style="text-align:left">.slice</td>
+<td style="text-align:center">用于表示一个 CGroup 的树，通常用户不会自己创建这样的 Unit 文件</td>
+</tr>
+<tr>
+<td style="text-align:left">.snapshot</td>
+<td style="text-align:center">用于表示一个由 systemctl snapshot 命令创建的 Systemd Units 运行状态快照</td>
+</tr>
+<tr>
+<td style="text-align:left">.socket</td>
+<td style="text-align:center">监控来自于系统或网络的数据消息，用于实现基于数据自动触发服务启动</td>
+</tr>
+<tr>
+<td style="text-align:left">.swap</td>
+<td style="text-align:center">定义一个用于做虚拟内存的交换分区</td>
+</tr>
+<tr>
+<td style="text-align:left">.target</td>
+<td style="text-align:center">用于对 Unit 进行逻辑分组，引导其它 Unit 的执行</td>
+</tr>
+<tr>
+<td style="text-align:left">.timer</td>
+<td style="text-align:center">用于配置在特定时间出发的任务，替代了 Crontab 的功能</td>
+</tr>
+</tbody>
+</table>
+<h4 id="Systemd-的-Unit-文件存放目录"><a href="#Systemd-的-Unit-文件存放目录" class="headerlink" title="Systemd 的 Unit 文件存放目录"></a>Systemd 的 Unit 文件存放目录</h4><table>
+<thead>
+<tr>
+<th style="text-align:left">路径</th>
+<th style="text-align:center">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">/etc/systemd/system</td>
+<td style="text-align:center">系统或用户提供的配置文件</td>
+</tr>
+<tr>
+<td style="text-align:left">/run/systemd/system</td>
+<td style="text-align:center">软件运行时生成的配置文件</td>
+</tr>
+<tr>
+<td style="text-align:left">/usr/lib64/systemd/system</td>
+<td style="text-align:center">系统或第三方软件安装时添加的配置文件</td>
+</tr>
+</tbody>
+</table>
+<p>CoreOS 系统提供的 Unit 文件大多放在 <code>/usr/lib64/systemd/system</code> 目录中，而<strong>/usr/lib64/systemd/system 这个目录在 CoreOS 中属于系统只堵分区</strong>。如果需要修改系统服务的管理配置，可以将这个目录中相应 Unit 文件复制到 <code>/etc/systemd/system</code> 中修改即可。</p>
+<h2 id="定时器"><a href="#定时器" class="headerlink" title="定时器"></a>定时器</h2><h4 id="定时器的-Unit-文件"><a href="#定时器的-Unit-文件" class="headerlink" title="定时器的 Unit 文件"></a>定时器的 Unit 文件</h4><p>定时器的 Unit 文件除了通用的 Unit 段和 Install 段以外，还有一个特别的 Timer 段，这个区段的属性主要定义了定时器的触发时机和触发的任务。</p>
+<ul>
+<li>OnActiveSec: 当“Timer 自己被启动后”的指定秒数时，触发定时器任务。</li>
+<li>OnBootSec: 当“主机开始启动后”的指定秒数时，触发定时器任务。</li>
+<li>OnstartupSec: 当“操作系统启动完成后”的指定秒数时，触发定时器任务。</li>
+<li>OnUnitActiveSec: 当“定时器中的指定服务被启动后”的指定秒数时，触发定时器任务。</li>
+<li>OnUnitInactiveSec: 当“定时器中的指定服务停止后”的指定秒数时，触发定时器任务。</li>
+</ul>
+<p><em>可以同时使用多个触发时机。</em></p>
+<p>以上这些属性的值都可以是一个数字（即秒数），或一个合法的字符串时间，可以用的单位如下表所示。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">单位</th>
+<th style="text-align:center">意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">usec,us</td>
+<td style="text-align:center">微秒</td>
+</tr>
+<tr>
+<td style="text-align:left">msec,ms</td>
+<td style="text-align:center">毫秒</td>
+</tr>
+<tr>
+<td style="text-align:left">seconds,second,sec,s</td>
+<td style="text-align:center">秒</td>
+</tr>
+<tr>
+<td style="text-align:left">minuters,minute,min,m</td>
+<td style="text-align:center">分钟</td>
+</tr>
+<tr>
+<td style="text-align:left">hours,hour,hr,h</td>
+<td style="text-align:center">小时</td>
+</tr>
+<tr>
+<td style="text-align:left">days,day,d</td>
+<td style="text-align:center">天</td>
+</tr>
+<tr>
+<td style="text-align:left">weeks,week,w</td>
+<td style="text-align:center">周</td>
+</tr>
+<tr>
+<td style="text-align:left">months,month</td>
+<td style="text-align:center">月</td>
+</tr>
+<tr>
+<td style="text-align:left">years,year,y</td>
+<td style="text-align:center">年</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p>OnCalendar: 使用日历时间，在特定日期触发。常用的日期表示格式为 yyyy-MM-dd-hh:mm:ss,例如 2015-07-23 11:12:13。</p>
+</li>
+<li><p>Unit: 这个参数的值是一个服务 Unit 文件的名称。当定时器事件触发时，就会执行这个服务指定的指令。如果没有配置这个属性，默认会将与这个定时器同名（但后缀名是.service）的服务 Unit 文件作为被指定的任务。</p>
+</li>
+<li><p>AccuracySec: 这个值设定了触发事件的精度，默认为 1min。在精度范围内到期的定时器会在一个随机时间里被触发，防止在某个整点时刻出现大量并发的定时器事件。</p>
+</li>
+<li>Persistent: 值为 true 或 false。默认为 false，当设为 true 时，定时器启动时会检查从上次定时器结束到当前时刻是否有漏掉的 OnCalendar 触发事件，如果有则立即触发一次指定的任务；当设为 false 时，会忽略在定时器停止期间错过的 OnCalendar 事件。 </li>
+<li>WakeSystem: 值为 true 或 false。默认为 false，当设为 true 时，如果定时器触发时系统处于挂起（Suspend）状态，则会自动唤醒系统并执行任务。当设为 false 时，会忽略在系统挂起期间的事件。</li>
+</ul>
+<h4 id="systemd-tmpfiles-clean-timer"><a href="#systemd-tmpfiles-clean-timer" class="headerlink" title="systemd-tmpfiles-clean.timer"></a>systemd-tmpfiles-clean.timer</h4><p>下面的 Unit 文件是 CoreOS 用于自动清理临时文件的定时器配置文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">description=Daily Cleanup of Temporary Directories</div><div class="line">Documentation=man:tmpfiles.d(5) man:systemd-tmpfiles(8)</div><div class="line"></div><div class="line">[Timer]</div><div class="line">OnBootSec=15min</div><div class="line">OnUnitActiceSec=1d</div></pre></td></tr></table></figure>
+<h4 id="启动定时器"><a href="#启动定时器" class="headerlink" title="启动定时器"></a>启动定时器</h4><p><code>$ sudo systemctl start xxx.timer</code> 启动定时器</p>
+<p><code>$ sudo systemctl enable xxx.timer</code> 注册为随系统启动</p>
+<p><code>systemctl stop</code> 和 <code>systemctl disable</code> 同理。</p>
+<h2 id="路径监控器"><a href="#路径监控器" class="headerlink" title="路径监控器"></a>路径监控器</h2><p>后缀名为“.path”的 Unit 文件是用来监控目录变化的。它的效果和定时器有些相似，也是在满足特定的条件时执行另一个作为指定任务的服务 Unit 文件。</p>
+<h4 id="路径监控器的-Unit-文件"><a href="#路径监控器的-Unit-文件" class="headerlink" title="路径监控器的 Unit 文件"></a>路径监控器的 Unit 文件</h4><p>路径监控器的 Unit 文件的特有配置段是 Path，用于配置监控的事件、目录和需要执行的任务。</p>
+<ul>
+<li>PathExists: 列在这个属性后面的路径如果存在（被创建），就是触发任务。</li>
+<li>PathExistsGlob: 功能和 PathExists 基本相同，但是这个属性后面的路径可以使用通配符。</li>
+<li>PathChanged: 列在这个属性后面的文件和目录如果被修改或更新了，就会触发任务。</li>
+<li>PathModified: 功能和 PathChanged 相似，不过前者只会在监听文件修改完成（文件句柄被释放）时触发任务，而这个属性后面的文件在每次修改被保存时都会触发任务。</li>
+<li>DirectoryNotEmpty: 列在这个属性后面的目录如果不是空的，就是触发任务。</li>
+</ul>
+<p>在同一个目录监控器中，可以同时使用多个监听条件，当任意一个触发时，都会执行指定的服务。</p>
+<ul>
+<li><p>Unit: 这个参数的值是一个服务 Unit 文件的名称。当路径监控器的事件被触发时，就会执行这个服务指定的命令。如果没有配置这个属性，默认会将与这个监控器同名（但后缀名是.service）的服务 Unit 文件作为被指定的任务。</p>
+</li>
+<li><p>MakeDirectory: 值为 true 或 false。默认为 false，当设为 true 时，如果被监控的路径不存在，则会自动将其创建为一个目录（PathExists 事件监控的目录除外）。当设为 false 时，没有这个行为。</p>
+</li>
+<li>DirectoryMode: 这个属性用于指定自动创建的目录具有怎样的权限，默认值是 0755。</li>
+</ul>
+<h4 id="motdgen-path"><a href="#motdgen-path" class="headerlink" title="motdgen.path"></a>motdgen.path</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Watch for update engine configuration changes</div><div class="line"></div><div class="line">[Path]</div><div class="line">PathChanged=/etc/coreos/update.conf</div></pre></td></tr></table></figure>
+<h2 id="数据监控器"><a href="#数据监控器" class="headerlink" title="数据监控器"></a>数据监控器</h2><p>后缀为“.socket”的 Unit 文件可以监控系统的指定 TCP／UDP 端口、系统消息队列、特殊设备、FIFO 管道或套接字文字的数据。</p>
+<p>当检测到有数据来时，就启动指定服务。这样做的好处是，当操作系统启动时，许多对外提供服务的应用并不需要随系统立即开启，知道有真实的用户请求访问其监听的端口时，才会按需启动，从而节约了系统的开机时间。</p>
+<h4 id="数据监控器的-Unit-文件"><a href="#数据监控器的-Unit-文件" class="headerlink" title="数据监控器的 Unit 文件"></a>数据监控器的 Unit 文件</h4><ul>
+<li>ListenStream: 监听指定的 TCP 端口或 UNIX 套接字。（IP:PORT）</li>
+<li>ListenDatagram: 监听指定的 UDP 端口。</li>
+<li>ListenSequentialPacket: 监听指定的 Unix 套接字文件。</li>
+<li>ListenFIFO: 监听指定的 FIFO（命名管道）文件。</li>
+<li>ListenMessageQueue: 监听指定的 POSIX 消息队列。</li>
+<li>ListenSpecial: 监听指定的字符设备文件或特殊设备文件。</li>
+</ul>
+<p>在同一个数据监控器中，可以同时使用多个监听数据来源，当任意一个有数据到来时，都会执行指定的服务。</p>
+<ul>
+<li><p>Service: 这个参数的值是一个服务 Unit 文件的名称。当监控到数据到达时，Systemd 就会启动这个服务并处理接收到的数据。如果没有配置这个属性，默认会将与这个监控器同名（但后缀名是.service）的服务 Unit 文件作为被指定的任务。</p>
+</li>
+<li><p>Accept: 值为 true 或 false。默认为 false，当设为 true 时，Systemd 会为每个连接请求创建一个新服务实例，通常只用于有连接的通信协议，列入监控 TCP 端口。当设为 false 时，Systemd会检查指定的服务是否已经在运行，如果没有运行，就会启动这个服务。</p>
+</li>
+<li>MaxConnections: 仅当“Accept=true”时有效，限制最大连接数，也就是最大的服务运行数量，超过这个数量的连接会被直接拒绝。</li>
+<li>KeepAlive: 值为 true 或 false，只对 TCP 连接有效。默认为 false，当设为 true 时，建立的连接会被设置为长连接。</li>
+<li>ExecStartPre 和 ExecStartPost: 在执行指定服务启动开始前和完成后需要执行的额外命令。</li>
+<li>ExecStopPre 和 ExecStopPost: 在执行指定服务即将结束时和完整结束后需要执行的额外命令。</li>
+<li>TimeoutSec: 指定 ExecStartPre、ExecStartPost、ExecStopPre 和 ExecStopPost 中每个命令的最长等待时间。</li>
+<li>ReceiveBuffer 和 SendBuffer: 数据接收和发送缓存的大小。</li>
+<li>RemoveOnStop: 值为 true 或 false，对系统消息队列、FIFO 管道或套接字文件有效。默认为 false，若设为 true，服务结束时会同时删除监控的文件。</li>
+</ul>
+<h4 id="sshd-socket"><a href="#sshd-socket" class="headerlink" title="sshd.socket"></a>sshd.socket</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=OpenSSH Server Socket</div><div class="line">Conflicts=sshd.service</div><div class="line"></div><div class="line">[Socket]</div><div class="line">ListenStream=22</div><div class="line">Accept=yes</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=sockets.target</div></pre></td></tr></table></figure>
+<h2 id="挂载文件系统"><a href="#挂载文件系统" class="headerlink" title="挂载文件系统"></a>挂载文件系统</h2><p>后缀名为“.mount”的 Unit 文件用于记录和处理挂载文件系统。</p>
+<h4 id="挂载点的-Unit-文件"><a href="#挂载点的-Unit-文件" class="headerlink" title="挂载点的 Unit 文件"></a>挂载点的 Unit 文件</h4><p>挂载点的 Unit 文件名必须以转义后的挂载目录命名。庄毅规则大致是将路径符号“／”替换为“－”，原本文件名中的“－”和其它非 ASCII 字符替换为“\x”开头的编号。</p>
+<p>可以将挂载点路径去掉开头的分隔符作为“systemd-escape”命令的参数，从而获得转义的 Unix 文件名。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ systemd-escape media/my-mount-point</div><div class="line">media-my\x2dmount\x2dpoint</div></pre></td></tr></table></figure>
+<ul>
+<li>What: 被挂载设备的绝对路径。</li>
+<li>Where: 挂载点目录的绝对路径，这个路径应该与该 Unit 文件名相对应。</li>
+<li>Type: 挂载文件系统的类型。</li>
+<li>Options: 挂载的参数，用逗号分隔。</li>
+<li>SloppyOptions: 值为 true 或 false。默认为 false，若设为 true，当遇到无法识别的挂载参数时，会出错退出；若设为 false，则忽略无法识别的挂载参数。</li>
+<li>DirectoryMode: 如果指定的挂载目录不存在时， Systemd 会将它自动创建出来。这个参数指定了目录的权限，默认为 0755。</li>
+<li>TimeoutSec: 挂载超时的秒数。如果到了这个时间挂载仍然没有完成，则会判定为失败。</li>
+</ul>
+<h4 id="usr-share-oem-mount"><a href="#usr-share-oem-mount" class="headerlink" title="usr-share-oem.mount"></a>usr-share-oem.mount</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">DefaultDependencies=no</div><div class="line">Wants=addon-run@usr-share-oem.service addon-config@usr-share-oem.service</div><div class="line">Conflicts=umount.target</div><div class="line">Before=local-fs.target umount.target ldconfig.service</div><div class="line">ConditionVirtualization=!container</div><div class="line">ConditionPathExists=!/usr/.noupdate</div><div class="line"></div><div class="line">[Mount]</div><div class="line">What=/dev/disk/by-label/OEM</div><div class="line">Where=/usr/share/oem</div><div class="line">Type=ext4</div></pre></td></tr></table></figure>
+<p>这个配置的效果等同于<code>mkdir -p /usr/share/oem; mount -t ext4 -o nodev,commit=600 /dev/disk/by-label/OEM /usr/share/oem</code>命令，但通过 Systemd 统一管理后，看起来更简洁了。</p>
+<h2 id="自动挂载文件系统"><a href="#自动挂载文件系统" class="headerlink" title="自动挂载文件系统"></a>自动挂载文件系统</h2><p>后缀名为“.automount”的 Unit 文件用于当用户访问某个目录时，自动将设定的文件系统挂载上去。在过去的 Linux 中，这个任务是由 autofs 服务完成的。</p>
+<h4 id="自动挂载点的-Unit-文件"><a href="#自动挂载点的-Unit-文件" class="headerlink" title="自动挂载点的 Unit 文件"></a>自动挂载点的 Unit 文件</h4><p>自动挂载点的配置相对简单，但它必须与一个同名的“.mount”挂载点 Unit 文件配合使用。且这类 Unit 文件的命名同样必须与挂载目录转移后的名称一致的约定。</p>
+<ul>
+<li>Where: 挂载点目录的绝对路径，这个路径应该与该 Unit 文件相对应。</li>
+<li>DirectoryMode: 如果指定的挂载目录不存在时，Systemd 会将它自动创建出来。这个参数指定了目录的权限，默认是 0755。</li>
+<li>TimeoutIdleSec: 这个配置可以指定一个超时时间。当挂载的目录在这段时间内都没有使用时，Systemd酒会尝试自动卸载它。将这个值设为0，则会禁用这个功能。默认这个功能是禁止的。</li>
+</ul>
+<h4 id="etc-systemd-system-usr-share-oem-automount"><a href="#etc-systemd-system-usr-share-oem-automount" class="headerlink" title="/etc/systemd/system/usr-share-oem.automount"></a>/etc/systemd/system/usr-share-oem.automount</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Descrition=Test automount</div><div class="line"></div><div class="line">[Automount]</div><div class="line">Where=/usr/share/oem</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<h2 id="交换分区（虚拟内存）"><a href="#交换分区（虚拟内存）" class="headerlink" title="交换分区（虚拟内存）"></a>交换分区（虚拟内存）</h2><p>除了普通的挂载点，过去的 /etc/fstab 配置文件还有一项功能是交换分区的挂载。这部分功能在 Systemd 中是用专门的 Unit 文件完成的，它的后缀名为“.swap”。</p>
+<p>作为一种特殊的挂载点，这类 Unit 文件的命名也必须遵守与挂载目录转义后名称一直的约定。</p>
+<h4 id="交换分区的-Unit-文件"><a href="#交换分区的-Unit-文件" class="headerlink" title="交换分区的 Unit 文件"></a>交换分区的 Unit 文件</h4><ul>
+<li>What: 用于做交换分区的设备或文件的绝对路径。</li>
+<li>Priority: 当有多个交换分区时，这个值回决定使用每个分区的优先级。</li>
+<li>Options: 挂载交换分区的参数，这些参数会在实际挂载和卸载交换分区时，传递给 swapon 和 swapoff 命令。</li>
+<li>TimeoutSec: 挂载交换分区的超时时间。如果在指定的时间内 swapon 命令仍然没有完成，则会被认为挂载失败。将这个值设为 0，则会禁用这个功能。默认这个功能是禁止的。</li>
+</ul>
+<h4 id="etc-systemd-system-swapfile-swap"><a href="#etc-systemd-system-swapfile-swap" class="headerlink" title="/etc/systemd/system/swapfile.swap"></a>/etc/systemd/system/swapfile.swap</h4><p>先创建一个大小为 2GB 的空白文件 swapfile。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ sudo dd if=/dev/zero of=/swapfile bs=2048 count=1MB</div><div class="line">$ sudo chmod 0600 /swapfile</div><div class="line">$ sudo mkswap /swapfile</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Test swap file</div><div class="line"></div><div class="line">[Swap]</div><div class="line">What=/swapfile</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/systemd_part2/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Systemd/">Linux, Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
+<p>集群节点配置 DNS 记录或 hosts。</p>
+<p><strong>TODO</strong> </p>
+<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
+<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
+<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
+<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
+<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
+<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
+<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
+<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">命令</th>
+<th style="text-align:center">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">systemctl</td>
+<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
+</tr>
+<tr>
+<td style="text-align:left">bootctl</td>
+<td style="text-align:center">用于查看和管理系统启动分区</td>
+</tr>
+<tr>
+<td style="text-align:left">hostnamectl</td>
+<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
+</tr>
+<tr>
+<td style="text-align:left">journalctl</td>
+<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
+</tr>
+<tr>
+<td style="text-align:left">localectl</td>
+<td style="text-align:center">用于查看和管理系统的地区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">loginctl</td>
+<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
+</tr>
+<tr>
+<td style="text-align:left">machinectl</td>
+<td style="text-align:center">用于操作 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">timedatectl</td>
+<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-analyze</td>
+<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-ask-password</td>
+<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cat</td>
+<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgls</td>
+<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgtop</td>
+<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-escape</td>
+<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-hwdb</td>
+<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-delta</td>
+<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-detect-virt</td>
+<td style="text-align:center">显示主机的虚拟化类型</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-inhibit</td>
+<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-machine-id-setup</td>
+<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-notify</td>
+<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-nspawn</td>
+<td style="text-align:center">用于创建 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-path</td>
+<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-run</td>
+<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-stdio-bridge</td>
+<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tmpfiles</td>
+<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tty-ask-password-agent</td>
+<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
+</tr>
+</tbody>
+</table>
+<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
+<p>hostnamectl        显示主机名</p>
+<p>hostnamectl set-hostname xxx        设置主机名</p>
+<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
+</blockquote>
+<p><em>timedatectl 和 localectl 作用类似</em>。</p>
+<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
+<p>systemctl poweroff | halt        关机</p>
+<p>systemctl reboot        重启</p>
+<p>systemctl suspend        待机</p>
+<p>systemctl hibernate        休眠</p>
+</blockquote>
+<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
+<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
+<p>systemd-analyze blame | head      按启动耗时长短排序</p>
+<p>systemd-analyze plot        生成详细 SVG 图</p>
+<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
+<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
+<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
+<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
+</blockquote>
+<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
+<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
+<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
+<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
+<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
+<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Systemd/">Linux, Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-cgroup_part2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/02/29/cgroup_part2/">使用 Cgroup</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Cgconfig服务"><a href="#Cgconfig服务" class="headerlink" title="Cgconfig服务"></a>Cgconfig服务</h2><p>要使用 cgroup，首先要确认系统中已安装 <code>libcgroup</code>软件包。（RedHat系）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install libcgroup</div></pre></td></tr></table></figure>
+<h4 id="cgconfig-conf文件"><a href="#cgconfig-conf文件" class="headerlink" title="cgconfig.conf文件"></a>cgconfig.conf文件</h4><p>cgconfig.conf 文件包含两个主要类型的条目 ——— mount 和 group。挂载条目生成并挂载层级并将其作为虚拟文件系统，同时将子系统附加到那些层级中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"># cat /etc/cgconfig.conf</div><div class="line"></div><div class="line">mount &#123;</div><div class="line">        cpuset  = /cgroup/cpuset;</div><div class="line">        cpu     = /cgroup/cpu;</div><div class="line">        cpuacct = /cgroup/cpuacct;</div><div class="line">        memory  = /cgroup/memory;</div><div class="line">        devices = /cgroup/devices;</div><div class="line">        freezer = /cgroup/freezer;</div><div class="line">        net_cls = /cgroup/net_cls;</div><div class="line">        blkio   = /cgroup/blkio;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>挂载子系统的备选方法是使用 shell 命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># mkdir /cgroup/cpu</div><div class="line"># mount -t cgroup -o cpu cpu /cgroup/cpu</div></pre></td></tr></table></figure>
+<p>组群条目使用一下语法设定子系统参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">group &lt;name&gt;</div><div class="line">	[&lt;permissions&gt;]</div><div class="line">	&lt;controller&gt; &#123;</div><div class="line">		&lt;param name&gt; = &lt;param value&gt;;</div><div class="line">		...</div><div class="line">	&#125;</div><div class="line">	...</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h4 id="e-g-为-sql-守护进程创建-cgroup，可为-sqladmin-组群中的用户在-cgroup-中添加任务，并让-root-用户修改子系统参数："><a href="#e-g-为-sql-守护进程创建-cgroup，可为-sqladmin-组群中的用户在-cgroup-中添加任务，并让-root-用户修改子系统参数：" class="headerlink" title="e.g. 为 sql 守护进程创建 cgroup，可为 sqladmin 组群中的用户在 cgroup 中添加任务，并让 root 用户修改子系统参数："></a>e.g. 为 sql 守护进程创建 cgroup，可为 sqladmin 组群中的用户在 cgroup 中添加任务，并让 root 用户修改子系统参数：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">group daemons/sql &#123;</div><div class="line">	perm &#123;</div><div class="line">		task &#123;</div><div class="line">			uid = root;</div><div class="line">			gid = sqladmin;</div><div class="line">		&#125; admin &#123;</div><div class="line">			uid = root;</div><div class="line">			gid =root;</div><div class="line">		&#125;</div><div class="line">	&#125; cpu &#123;</div><div class="line">		cpu.shares = 100;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>以上配置对等的 shell 命令为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"># mkdir -p /cgroup/cpu/daemons/sql</div><div class="line"># chown root:root /cgroup/cpu/daemons/sql/*</div><div class="line"># chown root:sqladmin /cgfroup/cpu/daemons/sql/tasks</div><div class="line"># echo 100 &gt; /cgroup/cpu/daemons/sql/cpu.shares</div></pre></td></tr></table></figure>
+<h2 id="在现有层级中附加或删除子系统"><a href="#在现有层级中附加或删除子系统" class="headerlink" title="在现有层级中附加或删除子系统"></a>在现有层级中附加或删除子系统</h2><p>要在现有层级中添加子系统，从现有层级中取消层级或者将其移动到不同的层级中，请作为 root 编辑 /etc/cgconfig.conf 文件的 mount 部分，当 cgconfig 下次重启时，它会根据您指定的层级识别那些子系统。</p>
+<p>使用 mount 命令挂载时加上 remount 参数，并列出新的子系统列表即可。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mount -t cgroup -o remount,cpu,cpuset,... cpu_and_mem</div></pre></td></tr></table></figure>
+<h2 id="卸载层级"><a href="#卸载层级" class="headerlink" title="卸载层级"></a>卸载层级</h2><p>直接使用 umount 即可卸载层级。不过需要注意的是：如果该层级目前为空（即它只包含 root cgroup），则在卸载它时会取消激活该层级。如果该层级包含任意其他 cgroup，该层级在内核中仍保持活跃，即使不再挂载它也是如此。</p>
+<p>要删除层级，请确定您在卸载该层级前删除所有子 cgroup，或者使用 cgclear命令，它可在层级非空时也可取消激活层级。</p>
+<h2 id="cgroup操作"><a href="#cgroup操作" class="headerlink" title="cgroup操作"></a>cgroup操作</h2><h4 id="cgcreate"><a href="#cgcreate" class="headerlink" title="cgcreate"></a>cgcreate</h4><blockquote>
+<p>语法： cgcreate -t uid:gid -a uid:gid -g subsystems:path</p>
+</blockquote>
+<ul>
+<li>-t（可选）：指定用户（使用用户 ID，uid）和组群（使用组群 ID，gid）以便让这个 cgroup 拥有 tasks 伪文件。这个用户可在该 cgroup 中添加任务。</li>
+<li>-a（可选）：指定用户（使用用户ID，uid）和组群（使用组群ID，gid）以便这个 cgroup 拥有 tasks 外的所有伪文件。这个用户可修改这个 cgroup 中的任务对系统资源的访问。</li>
+<li>-g：指定在其中创建 cgroup 的层级，格式为与那些层级关联的用逗号分开的 subsystems 列表。如果这个列表中的子系统在不同的层级中，则要在每个层级中都创建该组群。层级列表后是一个冒号，然后是与该层级有关的子组群 path。不要在该 path 中包含层级挂载点。</li>
+</ul>
+<p><em>e.g.</em> 在 cpu_and_mem 层级中一同挂载 cpu 和 memory 子系统的系统，并将 net_cls 控制器挂载到名为 net 的另一个层级中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># cgcreate -g cpu,net_cls:/test-subgroup</div></pre></td></tr></table></figure>
+<p><em>备用方法</em>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mkdir /cgroup/hierarchy/name/child_name</div></pre></td></tr></table></figure>
+<h4 id="cgdelete"><a href="#cgdelete" class="headerlink" title="cgdelete"></a>cgdelete</h4><p>使用 cgdelete 删除 cgroup，其语法与 cgcreate 类似。</p>
+<blockquote>
+<p>cgdelete subsystems:path</p>
+<p>-r 递归删除所有子组群</p>
+</blockquote>
+<p><em>e.g.</em> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># cgdelete cpu,net_cls:/test-subgroup</div></pre></td></tr></table></figure>
+<h4 id="cgset"><a href="#cgset" class="headerlink" title="cgset"></a>cgset</h4><p>在可修改相关的 cgroup 的用户账户中 运行 cgset 命令设置子系统参数。</p>
+<blockquote>
+<p>cgset -r parameter=value path_to_cgroup</p>
+<p>parameter： 是要设定的参数，该参数与给定 cgroup 的目录中的文件对应。</p>
+<p>value： 是为参数设定的值</p>
+<p>path_to_cgroup： 是到相对该层级 root 的 cgroup 路径。</p>
+<p>–copy-from path_to_source_cgroup path_to_target_cgroup： 将一个 cgroup 中的参数复制到另一个现有 cgroup 中。</p>
+</blockquote>
+<p><em>备用方法</em></p>
+<p>要直接在 cgroup 中设置参数，可使用 echo 命令将值插入相关子系统伪文件中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># echo 0-1 &gt; /cgroup/cpuset/group1/cpuset.cpus</div></pre></td></tr></table></figure>
+<h2 id="cgclassify"><a href="#cgclassify" class="headerlink" title="cgclassify"></a>cgclassify</h2><blockquote>
+<p>cgclassify -g subsystems:path_to_cgroup pidlist</p>
+<p>subsystems： 是用逗号分开的子系统列表，或者 ＊ 启动与所有可用子系统关联的层级中的进程。</p>
+<p>path_to_cgroup： 是到其层级中的 cgroup 的路径。</p>
+<p>pidlist： 是用空格分开的进程识别符（PID）列表。 </p>
+</blockquote>
+<p><em>e.g.</em> 将 PID 为 1701 和 1138 的进程移动到 cgorup 中的 group1/：<code># cgclassify -g cpu,memory:group1 1701 1138</code></p>
+<p><em>备用方法</em></p>
+<p><code># echo 1701 &gt; /cgroup/lab1/group/tasks</code></p>
+<h2 id="cgred"><a href="#cgred" class="headerlink" title="cgred"></a>cgred</h2><p>Cgred 是一个守护进程，它可根据在 <code>/etc/cgrules.conf</code> 中设定的参数将任务移动到 cgroup 中，条目可以使用以下两种格式之一：</p>
+<ul>
+<li>user hierarchies control_group</li>
+<li>user:command hierarchies control_group</li>
+</ul>
+<p><em>e.g.</em> </p>
+<p><code>maria        devices        /usergroup/staff</code></p>
+<p>这个条目指定任何属于名为 maria 用户的进程根据在 /usergroup/staff cgroup 中指定的参数访问设备子系统。</p>
+<p><code>maria:ftp    devices    /usergroup/staff/ftp</code></p>
+<p>该条目现在指定核实名为 maria 的用户使用 ftp 命令 ，自动将该进程移动到包含 devices 子系统的层级中的 /usergroup/staff/ftp cgroup 中。</p>
+<h4 id="etc-cgrules-conf"><a href="#etc-cgrules-conf" class="headerlink" title="/etc/cgrules.conf"></a>/etc/cgrules.conf</h4><blockquote>
+<p>@：当在 user 使用前缀时，代表是一个组群而不是一个单独用户。例如： @admins 是 admins 组群中的所有用户。</p>
+<p>*： 代表“所有”。</p>
+<p>%： 代表与以上行中项目相同的项目。</p>
+</blockquote>
+<h2 id="cgexec"><a href="#cgexec" class="headerlink" title="cgexec"></a>cgexec</h2><blockquote>
+<p>cgexec -g subsystems:path_to_cgroup command arguments</p>
+<p>subsystems：是用逗号分开的子系统列表或者 * 启动与所有可用子系统关联的层级的进程。</p>
+<p>path_to_cgroup：是到与该层级相关的 cgroup 的路径。</p>
+<p>commond：是要运行的命令。</p>
+<p>arguments：是该命令所有参数。</p>
+<p>–sticky：将所有子进程放在同一 cgroup 中。</p>
+</blockquote>
+<p><em>备用方法</em></p>
+<p><code># echo $$ &gt; /cgroup/lab1/group1/tasks</code></p>
+<p>请注意：**退出用户后，现有 shell 中仍在 group1 cgroup 中。因此更好的方法应为：</p>
+<p><code># sh -c &quot;echo \$$ &gt; /cgroup/lab1/group1/tasks &amp;&amp; USER</code></p>
+<h4 id="在控制组群中启动服务"><a href="#在控制组群中启动服务" class="headerlink" title="在控制组群中启动服务"></a>在控制组群中启动服务</h4><p>您可在某个 cgroup 中启动某些服务。在 cgroup 中启动的服务必须：</p>
+<ul>
+<li>使用 /etc/sysconfig/servicename 文件</li>
+<li>使用 /etc/init.d/functions 的 daemon()功能启动该服务</li>
+</ul>
+<p>要在某个 cgroup 中启动合格服务，请在 /etc/sysconfig 中编辑其文件，使该文件包含如下条目：<strong>CGROUP_DAEMON=”subsystem:control_group”</strong></p>
+<p><em>e.g.</em> <code>CGROUP_DAEMON=&quot;cpuset:daemons/sql&quot;</code></p>
+<h2 id="获得有关控制组群的信息"><a href="#获得有关控制组群的信息" class="headerlink" title="获得有关控制组群的信息"></a>获得有关控制组群的信息</h2><h4 id="查找某个进程"><a href="#查找某个进程" class="headerlink" title="查找某个进程"></a>查找某个进程</h4><p><code>$ ps -O cgroup</code></p>
+<p><code>$ cat /proc/PID/cgroup</code></p>
+<h4 id="查找子系统"><a href="#查找子系统" class="headerlink" title="查找子系统"></a>查找子系统</h4><p><code>$ cat /proc/cgroups</code></p>
+<p><code>$ lssubsys -m subsystems</code></p>
+<h4 id="查找层级"><a href="#查找层级" class="headerlink" title="查找层级"></a>查找层级</h4><p><code>$ tree /cgroup/</code></p>
+<h4 id="查找控制组群"><a href="#查找控制组群" class="headerlink" title="查找控制组群"></a>查找控制组群</h4><p><code>$ lscgroup</code></p>
+<p><code>$ lscgroup cpuset:adminusers</code></p>
+<h4 id="显示控制组群的参数"><a href="#显示控制组群的参数" class="headerlink" title="显示控制组群的参数"></a>显示控制组群的参数</h4><p><code>$ cgget -r parameter list_of_cgroups</code></p>
+<p>其中 parameter 是包含子系统值的伪文件，list_of_cgroups 是用空格分开的 cgorup 列表。</p>
+<h2 id="cgclear"><a href="#cgclear" class="headerlink" title="cgclear"></a>cgclear</h2><p><strong>cgclear 命令将破坏所有层级中的所有 cgroup。如果没有在配置文件中保存这些层级，将无法再次构建它们。</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/29/cgroup_part2/" class="archive-article-date">
+  	<time datetime="2016-02-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-29</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cgroup/">Cgroup</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-systemd_part1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/02/27/systemd_part1/">Systemd 的服务管理模型</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Systemd 是 CoreOS 采用的服务进程和系统资源管理工具。它最初的设计目标主要是克服传统 Linux 主流启动程序 SysV-init 的固有设计缺陷，提高系统的启动速度。 Systemd 的设计思路借鉴了 Mac OSX 系统的启动程序 Launchd，相比其他的 SysV-init 替代方案，例如 Ubuntu 的 Upstart，Systemd 的设计更加前卫。</p>
+<p>事实上，Systemd 是一系列系统工具的集合，其作用也远远不仅是启动操作系统，它还接管了后台服务启动、结束、状态查询，以及日志归档、设备管理、电源管理、定时任务等许多指责，并支持通过特定事件（如插入特定 USB 设备）和特定端口数据触发的 On-demand 任务。在 CoreOS 的世界里，几乎所有与应用程序打交道的工作，都会交由 Systemd 进行管理，包括运行在容器中的服务。</p>
+<h2 id="Systemd的设计理念"><a href="#Systemd的设计理念" class="headerlink" title="Systemd的设计理念"></a>Systemd的设计理念</h2><ul>
+<li>尽可能启动更少的进程</li>
+<li>尽可能将更多的进程并行启动</li>
+<li>采用 CGroup 跟踪和管理进程的生命周期</li>
+<li>统一管理服务日志</li>
+</ul>
+<h2 id="Systemd的服务管理"><a href="#Systemd的服务管理" class="headerlink" title="Systemd的服务管理"></a>Systemd的服务管理</h2><h4 id="Unit"><a href="#Unit" class="headerlink" title="Unit"></a>Unit</h4><p>Unit 是 Systemd 管理服务的基本单元，可以认为每个服务就是一个 Unit，并使用一个 Unit 文件定义。在 Unit 文件中需要包含相应服务的描述、属性以及需要运行的命令。</p>
+<p>在 CoreOS 中运行服务的命令通常是一系列的容器操作，而将具体的服务进程封装在容器中。</p>
+<h4 id="Target"><a href="#Target" class="headerlink" title="Target"></a>Target</h4><p>Target 是 Systemd 中用于指定服务启动组的方式，相当于 SysV-init 中的“运行级别”。每次系统启动时都会运行与当前系统具有相同级别 Target 关联的所有服务，如果服务不需要跟随系统自动启动，则完全可以忽略这个 Target 的内容。</p>
+<p>通常来说，大多数 Linux 用户平时使用的都是“多用户模式”这个级别，对应的 Target 值为 “multi-user.target”，它有一个等效的可用值是“default.target”。</p>
+<h2 id="Hello-Systemd"><a href="#Hello-Systemd" class="headerlink" title="Hello Systemd"></a>Hello Systemd</h2><p>在 CoreOS 中，用户的自定义服务配置文件通常放在 <code>/etc/systemd/system</code>目录中。进入这个目录，新建一个名为“hello.service”的文件，内容如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">[Unit］</div><div class="line">Description=Hello Systemd</div><div class="line">After=docker.service</div><div class="line">Requires=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartPre=-/usr/bin/docker kill busybox1</div><div class="line">ExecStartPre=-/usr/bin/docker rm busybox1</div><div class="line">ExecStartPre=/usr/bin/docker pull busybox</div><div class="line">ExecStart=/usr/bin/docker run --name busybox1 busybox /bin/sh -c &quot;while true; do echo Hello Systemd; sleep 1; done&quot;</div><div class="line">ExecStop=/usr/bin/docker stop busybox1</div><div class="line">ExecStopPost=/usr/bin/docker rm busybox1</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>这里需要注意两个地方：</p>
+<ol>
+<li>ExecStart 属性只能包含一条主要命令，而在这个属性的前后可以分别使用 ExecStartPre 和 ExecStartPost 指定更多的辅助命令；ExecStop同理。</li>
+<li>有些辅助命令会加上一个减号（-），表示忽略这些命令的出错。</li>
+</ol>
+<h2 id="日志管理"><a href="#日志管理" class="headerlink" title="日志管理"></a>日志管理</h2><p>Systemd 通过其标准日志服务 Journald 将其管理的所有后台进程打印到 std:out（即控制台）的输出重定向到了日志文件。</p>
+<p>日志文件是二进制格式的，必须使用 Journald 提供的配套程序 journalctl 来查看。 </p>
+<h4 id="Journalctl"><a href="#Journalctl" class="headerlink" title="Journalctl"></a>Journalctl</h4><p>Journalctl 的使用非常简单，默认不带任何参数时会输出系统和所有后台进程的混合日志，可以通过一些参数选择性地过滤所需的内容。</p>
+<ul>
+<li>–dmesg：内核输出的日志</li>
+<li>–system：各类系统服务的控制台输出</li>
+<li>–unit xxx.service：用户指定的服务日志</li>
+</ul>
+<p>高级用法：</p>
+<ul>
+<li>–follow：实时跟踪日志输出</li>
+<li>–since和–unit：指定显示的日志时间区间（e.g. –since “2015-07-20 12:00:00” –until “2015-07-20 12:30:00”）,–since=today可以直接打印当天输出的日志。</li>
+<li>–reverse：反向输出日志</li>
+<li>–lines：查看最新的N行日志（e.g. –lines n）</li>
+<li>–output：改变输出日志的格式（e.g. –output json-pretty）</li>
+</ul>
+<p>另外，除了使用 –unit 参数指定 Unit 名称外，还可以指定程序名称和指定进程 PID。</p>
+<ul>
+<li>$ journalctl /usr/lib/systemd/systemd </li>
+<li>$ journalctl _PID=1</li>
+</ul>
+<h4 id="日志大小限制"><a href="#日志大小限制" class="headerlink" title="日志大小限制"></a>日志大小限制</h4><p>默认日志最大限制为所在文件系统容量的 10％。即：如果<code>/var/log/journal</code>存储在 50GB 的根分区中，那么日志最多存储 5GB 数据。</p>
+<p>可以通过修改 <code>/etc/systemd/journald.conf</code>中的 <code>SystemMaxUse</code>来指定该最大限制。比如<code>SystemMaxUse=50M</code>。</p>
+<h2 id="服务的生命周期"><a href="#服务的生命周期" class="headerlink" title="服务的生命周期"></a>服务的生命周期</h2><ol>
+<li>当一个新的 Unit 文件被放入 <code>/etc/systemd/system/</code>或<code>/usr/lib/systemd/system/</code>目录中时，它是不会被 Systemd 识别到的；（$ systemctl list-unit-files）</li>
+<li>systemctl start|enable 激活；($ systemctl list-units <unit>)</unit></li>
+<li>使用 systemctl start 命令可以启动指定的服务，启动时会一次执行定义在 Unit 文件中的 ExecStartPre、ExecStart、ExecStartPost命令</li>
+<li>使用 ststmectl stop 命令可以结束指定的服务，结束时会依次执行定义在 Unit 文件中的 ExecStopPre、ExecStop、ExecStopPost命令；</li>
+<li>systemctl restart 命令相当于先结束指定的服务，然后立即重新启动它；</li>
+<li>systemctl kill命令会立即杀死服务，而不会执行 Unit 中指定的结束命令；</li>
+<li>systemctl enable xxx.service 设置开机启动；</li>
+<li>systmectl disable xxx.service 取消开机启动；</li>
+<li>systemctl daemon-reload 重新加载 Unit 文件；</li>
+<li>systemctl reset-failed 移除已经被标记为丢失的 Unit 文件。</li>
+</ol>
+<h2 id="服务的Unit文件"><a href="#服务的Unit文件" class="headerlink" title="服务的Unit文件"></a>服务的Unit文件</h2><p>服务的 Unit 文件可以分为三个配置区段，其中 Unit 段和 Install 段是所有 Unit 文件通用的，用于配置服务（或其他系统资源）的描述、依赖和随系统启动方式，而 Service 段则是服务类型的 Unit 文件（后缀为.service）特有的，用于定义服务的具体管理和操作方法。</p>
+<h4 id="配置区段的常用参数"><a href="#配置区段的常用参数" class="headerlink" title="配置区段的常用参数"></a>配置区段的常用参数</h4><ul>
+<li>Unit <ul>
+<li>Description: 一段描述这个 Unit 文件的文字。</li>
+<li>Documentation: 指定服务的文档，可以是一个或多个文档的路径。</li>
+<li>Requires: 依赖的其他 Unit 列表，依赖服务启动失败会导致这个服务被终止。</li>
+<li>Wants: 与 Requires 相似，但不考虑依赖服务是否启动成功。</li>
+<li>After: 与 Requires 相似，但是在列出的服务都启动完成后才会启动当前服务。</li>
+<li>Before: 与 After 相反。</li>
+<li>BindsTo: 与 Requires 相似，但是关联性更强。</li>
+<li>Part Of: 这是一个 BindTo 作用的子集，仅在列出的任何模块失败或重启时，终止或重启当前服务，而不会随列出的模块的启动而启动。</li>
+<li>OnFailure: 当这个模块启动失败时，就会自动启动列出的每个模块。</li>
+<li>Conflicts: 与这个模块有冲突的模块，如果列出的模块中有已经在运行的，这个服务就不能启动；反之亦然。</li>
+</ul>
+</li>
+<li>Install <ul>
+<li>WantedBy: 和前面的 Wants 相似，只是后面列出的不是服务所依赖的模块，而是依赖当前服务的模块。</li>
+<li>RequiredBy: 和前面的 Requires 相似，只是后面列出的不是服务所依赖的模块，而是依赖当前服务的模块。</li>
+<li>Also: 当这个服务被 enable/disable 时，将自动 enable/disable 后面列出的每个模块。</li>
+</ul>
+</li>
+<li>Service<ul>
+<li>Type: 服务的类型，常用的有 simple 和 forking。</li>
+<li>RemainAfterExix: 值为 true 或 false（也可以写为 yes 或 no），默认为 false。当配置值为 true 时，Systemd 只会负责启动服务进程，之后即便服务进程退出了，Systemd也仍然会认为这个服务还在运行中。这个配置主要是提供给一些并非常驻内存，而是启动注册后立即退出，燃火等待消息按需启动的特许类型服务使用的。</li>
+<li>ExecStart: 这个参数是疾呼每个”.service”文件都会有的，指定服务启动的主要命令，在每个配置文件中只能使用一次。</li>
+<li>ExecStartPre: 指定在启动执行 ExecStart 命令前的准备工作，在同一个配置文件中可以有多个。</li>
+<li>ExecStartPost: 指定在启动执行 ExecStart 命令后的首位工作，在同一个配置文件中可以有多个。</li>
+<li>TimeoutStartSec: 启动服务时的超时时间。Docker 第一次运行时可能会需要从网络上下载服务的镜像文件，因此造成比较严重的延时，建议将值指定为 0，从而关闭检测。</li>
+<li>ExecStop: 停止服务所需要执行的主要命令，在每个配置文件中只能有一个。</li>
+<li>ExecStopPost: 指定在 ExecStop 命令执行后的收尾工作，在同一个配置文件中可以有多个。</li>
+<li>TimeoutStopSec: 停止服务时的超时时间。</li>
+<li>Restart: 这个值用语指定在什么情况下需要重启服务进程。常用的值有 no、on-success、on-failure、on-abnormal、on-abort 和 always。默认值为 no。如下表格表示分别在哪些情况下，服务会被重新启动。</li>
+<li>RestartSec: 如果服务需要被重启，这个参数的值为服务被重启前的等待秒数。</li>
+<li>ExecReload: 重新加载服务所需执行的主要命令。</li>
+<li>Environment: 为服务添加环境变量。</li>
+<li>EnviromentFile: 指定加载一个包含服务所需的环境变量列表的文件，文件中的每一行都是一个环境变量的定义。</li>
+<li>Nice: 服务的进程优先级，值越小优先级越高，默认为0。其中-20 为最高优先级，19为最低优先级。</li>
+<li>WorkingDirectory: 指定服务的工作目录。</li>
+<li>RootDirectory: 指定服务进程的根目录。如果配置了这个参数，服务将无法访问指定目录以外的任何文件。</li>
+<li>User: 指定运行服务的用户，会影响服务对本地文件系统的访问权限。</li>
+<li>Group: 指定运行服务的用户组，会影响服务对本地文件系统的访问权限。</li>
+<li>MountFlags: 之歌值其实是服务的 Mount Namespace 的配置，会影响服务进程上下文中挂载点的信息，即服务是否会继承主机上已有的挂载点，以及如果服务运行时执行了挂载或卸载设备的操作，是否会真实地在主机上产生效果。可选值是 shared、slava 或 private。</li>
+<li>LimitCPU／LimitSTACK／LimitNOFILE／LimitNPROC 等，限制特定服务可用的系统资源量。</li>
+</ul>
+</li>
+</ul>
+<h4 id="Systemd-中用于兼容-SysV-init-运行级别的目标-Unit-文件"><a href="#Systemd-中用于兼容-SysV-init-运行级别的目标-Unit-文件" class="headerlink" title="Systemd 中用于兼容 SysV-init 运行级别的目标 Unit 文件"></a>Systemd 中用于兼容 SysV-init 运行级别的目标 Unit 文件</h4><table>
+<thead>
+<tr>
+<th style="text-align:left">SysV-init 运行级别</th>
+<th style="text-align:center">Systemd 运行目标</th>
+<th style="text-align:center">注释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">0</td>
+<td style="text-align:center">runlevel0.target, poweroff.target</td>
+<td style="text-align:center">关闭系统</td>
+</tr>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:center">runlevel1.target, rescue.target</td>
+<td style="text-align:center">单用户模式</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:center">runlevel2.target, multi-user.target</td>
+<td style="text-align:center">用于定义／域特定运行级别。默认等同于级别 3</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:center">runlevel3.target, multi-user.target</td>
+<td style="text-align:center">多用户，无图形界面，用户可以通过终端或网络登录</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:center">runlevel4.target, multi-user.target</td>
+<td style="text-align:center">用于定义／域特定运行级别。默认等同于级别 3</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:center">runlevel5.target, graphical.target</td>
+<td style="text-align:center">多用户，图形界面，通常为所有运行级别 3 的服务并启动图形界面服务</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:center">runlevel6.target, reboot.target</td>
+<td style="text-align:center">重启</td>
+</tr>
+<tr>
+<td style="text-align:left">emergency</td>
+<td style="text-align:center">emergency.target</td>
+<td style="text-align:center">急救模式（Emergency shell）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="Service-段的-Restart-属性"><a href="#Service-段的-Restart-属性" class="headerlink" title="Service 段的 Restart 属性"></a>Service 段的 Restart 属性</h4><table>
+<thead>
+<tr>
+<th style="text-align:left">服务退出原因</th>
+<th style="text-align:center">no</th>
+<th style="text-align:center">always</th>
+<th style="text-align:center">on-failure</th>
+<th style="text-align:center">on-abnormal</th>
+<th style="text-align:center">on-abort</th>
+<th style="text-align:center">on-success</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">正常退出</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+</tr>
+<tr>
+<td style="text-align:left">异常退出</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:left">启动／停止超时</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:left">被异常杀死</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Unit-文件占位符"><a href="#Unit-文件占位符" class="headerlink" title="Unit 文件占位符"></a>Unit 文件占位符</h2><p>在 Unit 文件中，有时会需要使用到一些与运行环境有关的信息，例如节点 ID、运行服务的用户等。这些信息可以使用占位符来表示，然后在实际运行时被动态地替换为实际的值。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">占位符</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">%n</td>
+<td style="text-align:center">完整的 Unit 文件名，包括 .service  后缀名</td>
+</tr>
+<tr>
+<td style="text-align:left">%p</td>
+<td style="text-align:center">Unit 模版文件名中在 @ 符号之前的部分，不包括 @ 符号</td>
+</tr>
+<tr>
+<td style="text-align:left">%i</td>
+<td style="text-align:center">Unit 模版文件名中在 @ 符号之后的部分，不包括 @ 符号和 .service 后缀名</td>
+</tr>
+<tr>
+<td style="text-align:left">%t</td>
+<td style="text-align:center">存放系统运行时文件的目录，通常都是 “/run”</td>
+</tr>
+<tr>
+<td style="text-align:left">%u</td>
+<td style="text-align:center">运行服务的用户们，如果 Unit 文件中没有指定，则默认为 root</td>
+</tr>
+<tr>
+<td style="text-align:left">%U</td>
+<td style="text-align:center">运行服务的用户 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">%h</td>
+<td style="text-align:center">运行服务的用户 Home 目录，即 ${HOME} 环境变量的值</td>
+</tr>
+<tr>
+<td style="text-align:left">%s</td>
+<td style="text-align:center">运行服务的用户默认 Shell 类型，即 ${SHELL} 环境变量</td>
+</tr>
+<tr>
+<td style="text-align:left">%m</td>
+<td style="text-align:center">实际运行的节点的 Machine ID，对于运行位置敏感的服务比较有用</td>
+</tr>
+<tr>
+<td style="text-align:left">%b</td>
+<td style="text-align:center">Boot ID，这是一个随机数值，每个节点各不相同，并且每次节点重启时都会改变</td>
+</tr>
+<tr>
+<td style="text-align:left">%H</td>
+<td style="text-align:center">实际运行节点的主机名</td>
+</tr>
+<tr>
+<td style="text-align:left">%v</td>
+<td style="text-align:center">内核版本，即 “uname -r”命令输出的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">%%</td>
+<td style="text-align:center">在 Unit 模版文件中表示一个普通的百分号</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Unit-模版"><a href="#Unit-模版" class="headerlink" title="Unit 模版"></a>Unit 模版</h2><p>在现实中国年，往往有一些应用需要被复制多份运行，Systemd 定义了一种特殊的服务 Unit 文件，称之为 “Unit 模版”。</p>
+<p>Unit 模版文件的写法与普通的服务 Unit 文件几本相同，不过 Unit 模版的文件名是以 @ 符号结尾的。通过模版启动服务实例时，需要在其文件名的 @ 字符后面添加一个参数字符串。</p>
+<h4 id="apache-service"><a href="#apache-service" class="headerlink" title="apache@.service"></a>apache@.service</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=My Advanced Service Template</div><div class="line">After=etcd.service docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartpre=-/usr/bin/docker kill apache%i</div><div class="line">ExecStartPre=-/usr/bin/docker rm apache%i</div><div class="line">ExecStart=/usr/bin/docker run --name apache%i -p %i:80 coreos/apache /usr/sbin/apache2ctl -D FOREGROUND</div><div class="line">ExecStartPost=/usr/bin/etcdctl set /domains/example.com/%H:%i running</div><div class="line">ExecStop=/usr/bin/docker stop apache1</div><div class="line">ExecStopPost=/usr/bin/docker rm apache1</div><div class="line">ExecStopPost=/usr/bin/etcdctl rm /domains/example.com/%H:%i</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>模版服务的启动也与普通的托管于 Systemd 的服务大致相同。</p>
+<p><code>$ sudo systemctl start apache@8080.service</code></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/27/systemd_part1/" class="archive-article-date">
+  	<time datetime="2016-02-26T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-27</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Systemd/">Linux, Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-cgroup_part1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/02/25/cgroup_part1/">Cgroup 简介</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>Cgroup</code>是<code>control group</code>的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process group）所使用的物理资源（如：cpu，memory，IO等等）。</p>
+<p>使用 cgroup，系统管理员可耕具体地控制对系统资源的分配、优先顺序、拒绝、管理和监控。可更好地根据任务和拥护分配硬件资源，提高总体效率。</p>
+<p>Cgroup 最初由google的工程师提出，后来被整合进Linux内核。Cgroup 也是LXC（Linux container）为实现虚拟化所使用的资源管理工具。最初的 Docker 版本其实就是在LXC上集成一些工具集，后来才重新设计自己的虚拟化层，发布了<code>libcontainer</code>。</p>
+<h2 id="如何管理cgroup"><a href="#如何管理cgroup" class="headerlink" title="如何管理cgroup"></a>如何管理cgroup</h2><p>Cgroup 是分层管理的，类似进程，且子 cgroup 会继承其上级 cgroup 的一些属性。但这两个模式也有不同。</p>
+<h4 id="Linux-进程模式"><a href="#Linux-进程模式" class="headerlink" title="Linux 进程模式"></a>Linux 进程模式</h4><p>Linux 系统中的所有进程都是通用父进程 <code>init</code> 的子进程 ，该进程在引导时由内核执行并启动其它进程（这些进程会按顺序启动其子进程）。因为所有进程都归结到一个父进程，所以 Linux 进程模式是一个单一层级结构，或者树结构。</p>
+<p>另外，init 之外的每个 Linux 进程都会继承其父进程的环境（比如 PATH 变量）和某些属性（比如打开文件描述符）。</p>
+<h4 id="Cgroup-模式"><a href="#Cgroup-模式" class="headerlink" title="Cgroup 模式"></a>Cgroup 模式</h4><p>Cgroup 与进程在以下方面类似：</p>
+<ul>
+<li>它们是分级的</li>
+<li>子 cgroup 会集成其 cgroup 的某些属性</li>
+</ul>
+<p>根本的不同是在某个系统中可同时存在不同的分级 cgroup。如果 Linux 进程模式是进程的单一树模式，那么 cgroup 模式是一个或者更多任务的独立、未连接树（例如：进程）。</p>
+<p>需要多个独立 cgroup 分级，因为每个分级都会附加到一个或者多个子系统中。</p>
+<h4 id="子系统"><a href="#子系统" class="headerlink" title="子系统"></a>子系统</h4><p>以 RedHat6 为例，系统提供9个 cgroup 子系统，根据名称和功能列出如下。</p>
+<ul>
+<li>blkio: 这个子系统为块设备设定输入／输出限制，比如物理设备（磁盘，固态硬盘，USB等等）。</li>
+<li>cpu: 这个子系统使用调度程序提供对 CPU 的 cgroup 任务访问。</li>
+<li>cpuacct: 这个子系统自动生成 cgroup 中任务所使用的 CPU 报告。 </li>
+<li>cpuset: 这个子系统为 cgroup 中的任务分配独立 CPU（在多核系统）和内存节点。</li>
+<li>devices: 这个子系统可允许或者拒绝 cgroup 中的任务访问设备。</li>
+<li>freezer: 这个子系统挂起或者恢复 cgroup 中的任务。</li>
+<li>memory: 这个子系统设定 cgroup 中任务使用的内存限制，并自动生成由那些任务使用的内存资源报告。</li>
+<li>net_cls: 这个子系统使用等级识别符（classid）标记网络数据包，可允许 Linux 流量控制程序（tc）识别从具体 cgroup 中生成的数据包。</li>
+<li>ns: 命名空间子系统。</li>
+</ul>
+<h2 id="子系统、层级、控制组群和任务的关系"><a href="#子系统、层级、控制组群和任务的关系" class="headerlink" title="子系统、层级、控制组群和任务的关系"></a>子系统、层级、控制组群和任务的关系</h2><blockquote>
+<p>在 cgroup 术语中系统进程称为任务。</p>
+</blockquote>
+<h4 id="Rule-1"><a href="#Rule-1" class="headerlink" title="Rule 1"></a>Rule 1</h4><p><strong>任何单一子系统（比如 cpu）最多可附加到一个层级中。</strong></p>
+<p><em>结果是，cpu 子系统永远无法附加到两个不同的层级。</em></p>
+<h4 id="Rule-2"><a href="#Rule-2" class="headerlink" title="Rule 2"></a>Rule 2</h4><p><strong>单一层级可附加一个或者多个子系统</strong></p>
+<p><em>结果是，cpu 和 memory 子系统（或者任意数目的子系统）都可附加到单一层级中，只要每个子系统不再附加到另一个层级即可。</em></p>
+<h4 id="Rule-3"><a href="#Rule-3" class="headerlink" title="Rule 3"></a>Rule 3</h4><p>每次在系统中创建新层级时，该系统中的所有任务都是那个层级的默认 cgroup（我们称之为 root cgroup）的初始成员。任何创建的单一层级，该系统中的每个任务都可以是那个层级中唯一一个 cgroup 的成员。单一任务可以是在多个 cgroup 中，只要每个 cgroup 都在不同的层级中即可。只要某个任务成为同一层级中第二个 cgroup 成员，就会将其从那个层级的第一个 cgroup 中删除。</p>
+<p><strong>一个任务永远不会同时位于同一层级的不同 cgroup 中。</strong></p>
+<p><em>结果是，如果 cpu 和 memory 子系统都附加到名为 cpu_and_mem的层级中，且 net_cls 子系统是附加到名为 net 的层级中，那么运行的 httpd 进程可以是 cpu_and_mem 中任意 cgroup 的成员，同时也是 net 中任意 cgroup 的成员。</em></p>
+<p>httpd 进程所在 cpu_and_mem 中的 cgroup 可将其 CPU 时间限制为分配给其它进程时间的一半，并将其内存用量限制为最多 1024MB。另外，net中的 cgroup 还可将其传输速率限制为 30MB／s。</p>
+<p><strong>首次创建层级时，该系统中的每个任务都至少是一个 cgroup 的成员，即 root cgroup。因此每当使用 cgroup 时，每个系统任务总是至少在一个 cgroup 中。</strong></p>
+<h4 id="Rule-4"><a href="#Rule-4" class="headerlink" title="Rule 4"></a>Rule 4</h4><p><strong>系统中的任意进程（任务）都将自己分支创建子进程（任务）。该子任务自动成为其父进程所在 cgroup 的成员。</strong>然后可根据需要将该子任务移动到不同的 cgroup 中，但开始时它总是继承其父任务的 cgroup（进程术语中称其为“环境”）。</p>
+<p><em>cpu_and_mem 层级中名为 halt_cpu_1gb_max 的 cgroup 成员的任务，以及 net 层级中 cgroup trans_rate_30 的成员。当 httpd 进程将其自身分为几个分支时，其子进程会自动成为 half_cpu_1gb_max cgroup 和 trans_rate_30 cgroup 的成员。它会完全继承其父任务所属的同一 cgroup。</em></p>
+<p>此后，父任务和子任务就彼此完全独立：更改某个任务所属 cgroup 不会影响到另一个。同样更改父任务的 cgroup 也不会以任何方式影响其子任务。<strong>总之：所有子任务总是可继承其父任务的同一 cgroup 的成员关系，但之后可更改或者删除那些成员关系。</strong></p>
+<h2 id="资源管理实施"><a href="#资源管理实施" class="headerlink" title="资源管理实施"></a>资源管理实施</h2><ul>
+<li>因为某个任务可属于任一层级中的单一 cgroup，所以只有一个方法可让单一子系统限制或者影响任务。这是合理的：是一个功能，而不是限制。</li>
+<li>可以将几个子系统分组在一起以便它们可影响单一层级中的所有任务。因为该层级中的 cgroup 有不同的参数设定，因此会对那些任务产生不同的影响。</li>
+<li>有时可能需要重构层级。例如：从附加了几个子系统的层级中删除一个子系统，并将其附加到不同的层级中。</li>
+<li>反正，如果从不同层级中分离子系统的需求降低，则可以删除层级并将其子系统附加到现有层级中。</li>
+<li>这个设计允许简单的 cgroup 使用，比如为单一层级中的具体任务设定几个参数 ，单一层级可以是只附加了 cpu 和 memory 子系统的层级。</li>
+<li>这个设计还允许高精度配置：系统中的每个任务（进程）都可以是每个层级的成员，每个层级都有单一附加的子系统。这样的配置可让系统管理员绝对控制每个单一任务的所有参数。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/25/cgroup_part1/" class="archive-article-date">
+  	<time datetime="2016-02-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-25</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cgroup/">Cgroup</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-curl_sendmail" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/02/18/curl_sendmail/">Curl 发送邮件</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>关于curl，大家都知道它可用来访问web页面，下载文件等等。其实它的功能远不止这么点，它支持众多协议，其中就包括发送邮件的SMTP协议。</p>
+<h2 id="确认curl是否支持SMTP"><a href="#确认curl是否支持SMTP" class="headerlink" title="确认curl是否支持SMTP"></a>确认curl是否支持SMTP</h2><p>首先确认你的curl是否支持smtp。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># curl-config --protocols |grep SMTP</div></pre></td></tr></table></figure>
+<p>如果不支持smtp协议，那么重新安装curl。</p>
+<h2 id="安装高版本curl"><a href="#安装高版本curl" class="headerlink" title="安装高版本curl"></a>安装高版本curl</h2><p>使用yum安装的curl一般不支持smtp协议，接下来我们使用源码包来安装。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"># cd /usr/local/src</div><div class="line"># wget https://github.com/bagder/curl/archivemaster.zip</div><div class="line"># unzip master.zip</div><div class="line"># cd curl-master</div><div class="line"># ./buildconf</div><div class="line"># ./configure </div><div class="line"># make &amp;&amp; make install</div></pre></td></tr></table></figure>
+<p>安装好后再次确认是否支持smtp。</p>
+<h2 id="使用curl发送邮件"><a href="#使用curl发送邮件" class="headerlink" title="使用curl发送邮件"></a>使用curl发送邮件</h2><h4 id="编写邮件内容"><a href="#编写邮件内容" class="headerlink" title="编写邮件内容"></a>编写邮件内容</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># cat mail.txt</div><div class="line">From:from@xxx.com</div><div class="line">To:to@xxx.com</div><div class="line">Subject: curl发送邮件标题</div><div class="line"></div><div class="line">邮件内容。。。</div></pre></td></tr></table></figure>
+<h4 id="发送邮件"><a href="#发送邮件" class="headerlink" title="发送邮件"></a>发送邮件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># /usr/local/bin/curl -s --url &quot;smtp://smtp.xxx.com --mail-from &quot;from@xxx.com&quot; --mail-rcpt &quot;to@xxx.com&quot; --upload-file mail.txt --user &quot;from@xxx.com:PASSWORD&quot;</div></pre></td></tr></table></figure>
+<h4 id="参数说明"><a href="#参数说明" class="headerlink" title="参数说明"></a>参数说明</h4><blockquote>
+<p>–url:            smtp地址</p>
+<p>–mail-from:    发件人邮箱</p>
+<p>–mail-rcpt:    收件人邮箱</p>
+<p>–upload-file:    信件内容，包含发件人、收件人、标题、内容</p>
+<p>–user:            账号密码，中间用冒号分割</p>
+</blockquote>
+<h4 id="curl更多协议"><a href="#curl更多协议" class="headerlink" title="curl更多协议"></a>curl更多协议</h4><p>curl支持众多协议，详细内容可使用如下命令查看。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># /usr/local/bin/curl-config --protocols</div></pre></td></tr></table></figure>
+<h2 id="zabbix-curl发邮件脚本"><a href="#zabbix-curl发邮件脚本" class="headerlink" title="zabbix curl发邮件脚本"></a>zabbix curl发邮件脚本</h2><p>我们通常使用<code>sendEmail</code>来发送告警，下面分享一个zabbix使用curl发送告警邮件的脚本。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">#!/bin/bash</div><div class="line"># -------------------------------------------------------------------------------</div><div class="line"># FileName:    zabbix_curl_sendmail.sh</div><div class="line"># Revision:    1.0</div><div class="line"># Date:        2016/02/18</div><div class="line"># Author:      dingmingk</div><div class="line"># Email:       dingmingk@gmail.com</div><div class="line"># Website:     www.dingmingk.com</div><div class="line"># Description: use curl send email</div><div class="line"># Notes:       ~</div><div class="line"># -------------------------------------------------------------------------------</div><div class="line"># Copyright:   2015 (c) dingmingk</div><div class="line"># License:     GPL</div><div class="line"> </div><div class="line">MAIL_FROM=&apos;from@xxx.com&apos;</div><div class="line">MAIL_TO=$1</div><div class="line">MAIL_SUBJECT=$2</div><div class="line">MAIL_CONTENT=$3</div><div class="line">MAIL_CONTENT_FILE=&quot;/tmp/`/bin/date +%s`.txt&quot;</div><div class="line">MAIL_SMTP=&apos;smtp://smtp.xxx.com&apos;</div><div class="line">MAIL_USER=&apos;from@xxx.com&apos;</div><div class="line">MAIL_PASSWORD=&apos;PASSWORD&apos;</div><div class="line"> </div><div class="line"># create mail content file</div><div class="line">echo &quot;From:$&#123;MAIL_FROM&#125;</div><div class="line">To:$1</div><div class="line">Subject: $MAIL_SUBJECT</div><div class="line"> </div><div class="line">$MAIL_CONTENT &quot;&gt; $&#123;MAIL_CONTENT_FILE&#125;</div><div class="line"> </div><div class="line"># send mail</div><div class="line">/usr/local/bin/curl -s --url &quot;$&#123;MAIL_SMTP&#125;&quot; --mail-from &quot;$&#123;MAIL_FROM&#125;&quot; --mail-rcpt $&#123;MAIL_TO&#125; --upload-file $&#123;MAIL_CONTENT_FILE&#125; --user &quot;$&#123;MAIL_USER&#125;:$&#123;MAIL_PASSWORD&#125;&quot; </div><div class="line"> </div><div class="line"># delete mail content file</div><div class="line">rm $&#123;MAIL_CONTENT_FILE&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/18/curl_sendmail/" class="archive-article-date">
+  	<time datetime="2016-02-17T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-18</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Curl-Mail/">Linux, Curl, Mail</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-git_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/24/git_part3/">Git 和声</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="冲突解决"><a href="#冲突解决" class="headerlink" title="冲突解决"></a>冲突解决</h2><p>只要有合并就可能会有冲突。</p>
+<h3 id="自动合并"><a href="#自动合并" class="headerlink" title="自动合并"></a>自动合并</h3><h4 id="修改不同的文件"><a href="#修改不同的文件" class="headerlink" title="修改不同的文件"></a>修改不同的文件</h4><p>有时候我们在push代码到远程仓库时，会遇到一些小麻烦。</p>
+<p><img src="/assets/blogImg/git_part3_1.png" alt="git_part3_1.png"></p>
+<p>图为出现非快进式推送时的日志。</p>
+<p>这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。</p>
+<p><img src="/assets/blogImg/git_part3_2.png" alt="git_part3_2.png"></p>
+<blockquote>
+<p><strong>非快进式推送（nor-fast-forwardupdates）</strong> 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其他用户在当前用户版本库上次commit和本次commit之间向远程版本库执行了推送所致。</p>
+</blockquote>
+<p><strong>解决方法</strong></p>
+<ul>
+<li>先执行pull，再继续push，即合并后推送。这才是多成员协同工作推荐的方式。</li>
+<li>使用 <code>git push origin master --force</code>强制推送。这种方式存在覆盖掉其他人提交的危险，不推荐使用。</li>
+</ul>
+<h4 id="修改相同文件的不同区域"><a href="#修改相同文件的不同区域" class="headerlink" title="修改相同文件的不同区域"></a>修改相同文件的不同区域</h4><p>解决方法基本如上。但是如果追溯一下文件每一行的来源，可以看到分别是 dingmingk 和 root 用户更改的第一和最后的一行。</p>
+<p><img src="/assets/blogImg/git_part3_3.png" alt="git_part3_3.png"></p>
+<h4 id="同时更改文件名和文件内容"><a href="#同时更改文件名和文件内容" class="headerlink" title="同时更改文件名和文件内容"></a>同时更改文件名和文件内容</h4><p>解决方法如上。最新版本的文件名和内容都为修改后。</p>
+<h3 id="冲突解决-1"><a href="#冲突解决-1" class="headerlink" title="冲突解决"></a>冲突解决</h3><p>如果两个用户修改了同一文件的同一区域，则在合并的时候会遇到冲突而导致合并过程中端。这是因为 Git 并不能越俎代庖地替用户做出决定，而是把决定权交给用户。在这种情况下，Git 标识出合并冲突，等待用户对冲突做出抉择。</p>
+<p><img src="/assets/blogImg/git_part3_4.png" alt="git_part3_4.png"></p>
+<p>如图所示，特殊标识 &lt;&lt;&lt;&lt;&lt;&lt;&lt;（七个小于号）和 =======（七个等号）之间的内容是当前分支所更改的内容。特殊标识 =======（七个等号）和 &gt;&gt;&gt;&gt;&gt;&gt;&gt;（七个大于号）之间的内容是所合并的版本更改内容。</p>
+<p>冲突解决的实质就是通过编辑操作，将冲突标识符所标识的冲突内容替换为合适的内容，并去掉冲突标识符。编辑完后再重新提交即可。</p>
+<h2 id="里程碑"><a href="#里程碑" class="headerlink" title="里程碑"></a>里程碑</h2><p>里程碑即 Tag，是人为对提交进行的命名。相比于 Git 默认的提交ID，使用一个直观的表意的字符串会方便得多。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">git tag				&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -a			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -m &lt;msg&gt;	&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -s			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -u &lt;key-id&gt; &lt;tagname&gt; [&lt;commit&gt;]</div></pre></td></tr></table></figure>
+<ul>
+<li>第一种是创建轻量级里程碑。</li>
+<li>第二种和第三种想同，都是创建带说明的里程碑。其中第三种直接通过 -m 参数提供里程碑创建说明。</li>
+<li>第四种和第五种相同，都是创建带 GNUPG 签名的里程碑。其中第五种用 -u 参数选择指定的私钥进行签名。</li>
+<li>创建里程碑需要输入里程碑的名字（<tagname>）和一个可选的提交ID（<commit>）。如果没有提供提交ID，则基于头指针 HEAD 创建里程碑。</commit></tagname></li>
+</ul>
+<h3 id="轻量级里程碑"><a href="#轻量级里程碑" class="headerlink" title="轻量级里程碑"></a>轻量级里程碑</h3><h3 id="带说明的里程碑"><a href="#带说明的里程碑" class="headerlink" title="带说明的里程碑"></a>带说明的里程碑</h3><h3 id="带签名的里程碑"><a href="#带签名的里程碑" class="headerlink" title="带签名的里程碑"></a>带签名的里程碑</h3><h3 id="删除里程碑"><a href="#删除里程碑" class="headerlink" title="删除里程碑"></a>删除里程碑</h3><h3 id="里程碑命名规范"><a href="#里程碑命名规范" class="headerlink" title="里程碑命名规范"></a>里程碑命名规范</h3><h2 id="Git-分支"><a href="#Git-分支" class="headerlink" title="Git 分支"></a>Git 分支</h2><h3 id="分支命令"><a href="#分支命令" class="headerlink" title="分支命令"></a>分支命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">git branch</div><div class="line">git branch &lt;branchname&gt;</div><div class="line">git branch &lt;branchname&gt; &lt;start-point&gt;</div><div class="line">git branch -d &lt;branchname&gt;</div><div class="line">git branch -D &lt;branchname&gt;</div><div class="line">git branch -m &lt;oldbranch&gt; &lt;branchname&gt;</div><div class="line">git branch -M &lt;oldbranch&gt; &lt;newbranch&gt;</div></pre></td></tr></table></figure>
+<ul>
+<li>第一种用于显示本地分支列表。当前分支在输出中会显示为特别的颜色，并用星号“*”标识出来。</li>
+<li>第二种和第三种用于创建分支。用法2基于当前头指针（HEAD）指向的提价创建分支，新分支的分支名 <branchname>。第三种基于提交 <start-point> 创建新分支，新分支的分支名为 <branchname>。</branchname></start-point></branchname></li>
+<li>第四种和第五种用户删除分支。第四种在删除分支 <branchname> 时会检查所要删除的分支是否已经合并到其它分支种，否则拒绝删除。第五种会强制删除分支。</branchname></li>
+<li>第六种和第七种用于重命名分支。如果版本库中已经存在名为 <newbranch> 的分支，第六种会拒绝执行重命名，而第七种会强制执行。</newbranch></li>
+</ul>
+<h3 id="分支变基"><a href="#分支变基" class="headerlink" title="分支变基"></a>分支变基</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ git checkout develop</div><div class="line">$ git rebase master</div></pre></td></tr></table></figure>
+<p>这两条命令会把你的 develop 分支里的每个提交（commit）取消掉，并且把它们临时保存为补丁（这些patch放到 .git/rebase 目录中），然后把 develop 分支更新为最新的 master 分支，最后把保存的这些补丁应用到 develop 分支上。</p>
+<h2 id="远程版本库"><a href="#远程版本库" class="headerlink" title="远程版本库"></a>远程版本库</h2><h2 id="代码回滚"><a href="#代码回滚" class="headerlink" title="代码回滚"></a>代码回滚</h2><h3 id="本地代码库回滚"><a href="#本地代码库回滚" class="headerlink" title="本地代码库回滚"></a>本地代码库回滚</h3><p>git reset 命令回滚有三种方式：</p>
+<ul>
+<li>mixed: 默认方式。它回退到某个版本，只保留源码，回退commit和index信息。</li>
+<li>soft: 只回退commit信息，不会恢复index file一级。</li>
+<li>hard: 彻底回退到某个版本，本地的源码也会变为上一个版本的内容。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">* $ git reset --[hard|soft|mixed] &lt;commit&gt;	回滚所有内容到某个提交</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^		回滚所有内容到上一个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^^ xxx	回滚xxx这个文件到上两个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD~3	回滚所有内容到第三个版本</div><div class="line">* $ git reset --[hard|soft|mixed] origin/master	回滚到和远程一样</div></pre></td></tr></table></figure>
+<h3 id="远程代码库回滚"><a href="#远程代码库回滚" class="headerlink" title="远程代码库回滚"></a>远程代码库回滚</h3><p>远程代码库回滚比本地回滚要复杂一些，建议操作前先备份分支。</p>
+<p>操作步骤：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">1. $ git checkout &lt;branch&gt;			切换到分支</div><div class="line">2. $ git pull							拉取最新代码</div><div class="line">3. $ git branch &lt;branch&gt; &lt;branch_backup&gt;	备份分支</div><div class="line">4. $ git reset --hard &lt;commit&gt;	回滚本地代码库</div><div class="line">5. $ git push origin :&lt;branch&gt;	删除远程分支</div><div class="line">6. $ git push origin &lt;branch&gt;		将本地分支推送到远程</div><div class="line">7. $ git push origin :&lt;branch_backup&gt;	删除远程备份分支</div></pre></td></tr></table></figure>
+<h3 id="反转提交"><a href="#反转提交" class="headerlink" title="反转提交"></a>反转提交</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">* $ git revert &lt;commit&gt;				用一次新的反转提交来消除一个历史提交所做的任何修改</div><div class="line">$ git revert -m 1 &lt;commit&gt;			“-m 1”参数表示某次历史提交的父提交</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/24/git_part3/" class="archive-article-date">
+  	<time datetime="2015-12-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-24</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/">Git</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <nav id="page-nav">
+      <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
+    </nav>
+  
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: true,
+		isPost: false,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

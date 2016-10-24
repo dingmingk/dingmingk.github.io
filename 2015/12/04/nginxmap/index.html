@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Nginx map 使用方法 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="map指令是ngx_http_map_module模块提供的，默认情况下nginx有加载这个模块，除非手动--without-http_map_module。
+ngx_http_map_module模块可以创建变量，这些变量的值与另外的变量值相关联。允许分类或者同时映射多个值到多个不同值并储存到一个变量中，map指令用来创建变量，但是仅在变量被接受的时候执行视图映射操作，对于处理没有引用变量的请求">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Nginx map 使用方法">
+<meta property="og:url" content="http://dingmingk.github.io/2015/12/04/nginxmap/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="map指令是ngx_http_map_module模块提供的，默认情况下nginx有加载这个模块，除非手动--without-http_map_module。
+ngx_http_map_module模块可以创建变量，这些变量的值与另外的变量值相关联。允许分类或者同时映射多个值到多个不同值并储存到一个变量中，map指令用来创建变量，但是仅在变量被接受的时候执行视图映射操作，对于处理没有引用变量的请求">
+<meta property="og:updated_time" content="2016-10-24T07:12:24.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Nginx map 使用方法">
+<meta name="twitter:description" content="map指令是ngx_http_map_module模块提供的，默认情况下nginx有加载这个模块，除非手动--without-http_map_module。
+ngx_http_map_module模块可以创建变量，这些变量的值与另外的变量值相关联。允许分类或者同时映射多个值到多个不同值并储存到一个变量中，map指令用来创建变量，但是仅在变量被接受的时候执行视图映射操作，对于处理没有引用变量的请求">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-nginxmap" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Nginx map 使用方法
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>map</code>指令是<code>ngx_http_map_module</code>模块提供的，默认情况下nginx有加载这个模块，除非手动<code>--without-http_map_module</code>。</p>
+<p><code>ngx_http_map_module</code>模块可以创建变量，这些变量的值与另外的变量值相关联。允许分类或者同时映射多个值到多个不同值并储存到一个变量中，map指令用来创建变量，但是仅在变量被接受的时候执行视图映射操作，对于处理没有引用变量的请求时，这个模块并没有性能上的缺失。</p>
+<blockquote>
+<p>语法: map $var1 $var2 {…}</p>
+<p>默认值: -</p>
+<p>配置段: http</p>
+</blockquote>
+<p>map为一个变量设置的映射表。映射表由两列组成，匹配模式和对应的值。</p>
+<p>在map块里的参数指定了源变量值和结果值的对应关系。</p>
+<p>匹配模式可以是一个简单的字符串或者正则表达式，使用正则表达式要用(‘~’)。</p>
+<p>一个正则表达式如果以“~”开头，表示这个正则表达式对大小写敏感。以“~*”开头，表示这个正则表达式对大小写不敏感。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">map $http_user_agent $agent &#123;</div><div class="line">		default &quot;&quot;;</div><div class="line">		~curl curl;</div><div class="line">		~*apachebench&quot; ab;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>正则表达式里可以包含命名捕获和位置捕获，这些变量可以跟结果变量一起被其它指令使用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">map $uri $value &#123;</div><div class="line">		/dingmingk_com						/index.php;</div><div class="line">		~^/dingmingk_com/(?&lt;suffix&gt;.*)$	/boy/;</div><div class="line">		~/fz(/.*)								/index.php?;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>不能在map块里面引用命名捕获或位置捕获变量</strong><br><code>~^/dingmingk_com/(.*) /boy/$1;</code> 这样会报错`nginx:[emerg] unknown variable。</p>
+<p>如果源变量值包含特殊字符如’~’，则要以’\’来转义。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">map $http_referer $value &#123;</div><div class="line">	Mozilla	111;</div><div class="line">	\~Mozilla	222;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果变量可以是一个字符串也可以是另外一个变量。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">map $num $limit &#123;</div><div class="line">	1 $binary_remote_addr;</div><div class="line">	0 &quot;&quot;;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>map指令有三个参数:</p>
+<ul>
+<li>default: 没有匹配结果将使用的默认值。如果没有设置default，将会用一个空的字符串作为默认的结果。</li>
+<li>hostnames: 允许用前缀或者后缀掩码指定域名作为源变量值，这个参数必须写在映射列表的最前面。</li>
+<li>include: 包含一个或多个含有映射值的文件。</li>
+</ul>
+<p>如果匹配到多个特定的变量，如掩码和正则同时匹配，那么会按照下面的顺序进行选择：</p>
+<ol>
+<li>没有掩码的字符串</li>
+<li>最长的带前缀的字符串，如“*.example.com”</li>
+<li>最长的带后缀的字符串，如“mail.*”</li>
+<li>按顺序第一个先匹配的正则表达式（在配置文件中体现的顺序）</li>
+<li>默认值</li>
+</ol>
+<blockquote>
+<p>语法: <code>map_hash_bucket_size size;</code></p>
+<p>默认值: 32,64,128</p>
+<p>配置段: http</p>
+</blockquote>
+<p>指定一个映射表中的变量在哈希表中的最大值，这个值取决于处理器的缓存。</p>
+<blockquote>
+<p>语法: <code>map_hash_max_size size;</code></p>
+<p>默认值: 2048</p>
+<p>配置段: http</p>
+</blockquote>
+<p>设置映射表对应的哈希表的最大值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  map $http_user_agent $agent &#123;</div><div class="line">  		~curl curl;</div><div class="line">  		~*chrome chrome;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  		listen			80;</div><div class="line">  		server_name	test.dingmingk.com;</div><div class="line">  		</div><div class="line">  		location /hello &#123;</div><div class="line">  				default_type text/plain;</div><div class="line">  				echo http_user_agent: $http_user_agent;</div><div class="line">  				echo agent: agent:$agent;</div><div class="line">  		&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  map $uri $match &#123;</div><div class="line">  			~^/hello/(.*) http://www.dingmingk.com/;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen 			80;</div><div class="line">  			server_name 		test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type text/plain;</div><div class="line">  					echo uri: $uri;</div><div class="line">  					echo match: $match;</div><div class="line">  					echo capture: $1;</div><div class="line">  					echo new: $match$1;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/04/nginxmap/" class="archive-article-date">
+  	<time datetime="2015-12-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-04</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2015/12/09/nginxAuth/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Nginx 简单用户认证
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/12/03/nginxLimit/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Nginx 用户请求限制</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="nginxmap" data-title="Nginx map 使用方法" data-url="http://dingmingk.github.io/2015/12/04/nginxmap/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

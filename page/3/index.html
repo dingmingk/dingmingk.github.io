@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="他的国">
+<meta property="og:url" content="http://dingmingk.github.io/page/3/index.html">
+<meta property="og:site_name" content="他的国">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="他的国">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        
+  
+    <article id="post-saltUser" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/11/saltUser/">SaltStack 用户管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>SaltStack</code>拥有非常多的模块，功能很强大。其中<code>salt.states.user</code>这个模块可以帮助我们更方便管理服务器用户权限。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">root:</div><div class="line">  user.present:</div><div class="line">    - shell: /bin/bash</div><div class="line">    - passwd: &apos;xxxxxxxxxxxxxxxxxxx&apos;</div><div class="line">    - uid: 0</div><div class="line">    - gid: 0</div><div class="line">    - require:</div><div class="line">      - group: root</div><div class="line">  group.present:</div><div class="line">    - gid: 0</div><div class="line">    </div><div class="line">admin:</div><div class="line">  user.absent</div><div class="line">  </div><div class="line">/root/.ssh/authorized_keys:</div><div class="line">  file.managed:</div><div class="line">    - source: salt://files/.ssh/root_authorized_keys</div><div class="line">    - user: root</div><div class="line">    - group: root</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ openssl passwd -1 -salt &apos;root&apos;</div><div class="line">Password:</div></pre></td></tr></table></figure>
+<p>输入密码后会生成一串md5值，替换上面配置文件中的xxx。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ salt &apos;target&apos; state.sls user.sls</div></pre></td></tr></table></figure>
+<p>推送到客户端生效。</p>
+<p>另外Salt有专门的模块来管理SSH证书，这里先用文件管理的土办法。<em>TODO</em></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/11/saltUser/" class="archive-article-date">
+  	<time datetime="2015-12-10T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-11</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SaltStack/">SaltStack</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-nginxAuth" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/09/nginxAuth/">Nginx 简单用户认证</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>有时候我们会有一些Web系统，默认不带登录认证功能，除了限制访问IP之外，还需要添加一个登录认证，Nginx自带的 <code>ngx_http_auth_basic_module</code>模块可以帮我们实现一个简单的用户登录验证功能。</p>
+<blockquote>
+<p>语法: auth_basic string | off;</p>
+<p>默认值: off</p>
+<p>配置段: http, server, location, limit_except</p>
+</blockquote>
+<p>默认不开启认证，如果后面跟上字符，这些字符会在弹窗中显示。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ echo -n &apos;dingmingk:&apos; &gt;&gt; conf/site_pass</div><div class="line">$ openssl passwd passwd123 &gt;&gt; conf/site_pass</div></pre></td></tr></table></figure>
+<p>生成一个用户名为dingmingk密码为passwd123的用户认证。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">server &#123;</div><div class="line">		server_name www.dingmingk.com</div><div class="line">		</div><div class="line">		index index.html index.php;</div><div class="line">		root /data/www.dingmingk.com;</div><div class="line">		</div><div class="line">		location / &#123;</div><div class="line">				auth_basic &quot;Please input your Username&amp;Password.&quot;;</div><div class="line">				auth_basic_user_file conf/site_pass;</div><div class="line">		&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>Safari浏览器打开如下：<br><img src="/assets/blogImg/nginxAuth1.png" alt="nginxAuth1"><br>认证错误界面：<br><img src="/assets/blogImg/nginxAuth2.png" alt="nginxAuth2"></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/09/nginxAuth/" class="archive-article-date">
+  	<time datetime="2015-12-08T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-09</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-nginxmap" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/04/nginxmap/">Nginx map 使用方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>map</code>指令是<code>ngx_http_map_module</code>模块提供的，默认情况下nginx有加载这个模块，除非手动<code>--without-http_map_module</code>。</p>
+<p><code>ngx_http_map_module</code>模块可以创建变量，这些变量的值与另外的变量值相关联。允许分类或者同时映射多个值到多个不同值并储存到一个变量中，map指令用来创建变量，但是仅在变量被接受的时候执行视图映射操作，对于处理没有引用变量的请求时，这个模块并没有性能上的缺失。</p>
+<blockquote>
+<p>语法: map $var1 $var2 {…}</p>
+<p>默认值: -</p>
+<p>配置段: http</p>
+</blockquote>
+<p>map为一个变量设置的映射表。映射表由两列组成，匹配模式和对应的值。</p>
+<p>在map块里的参数指定了源变量值和结果值的对应关系。</p>
+<p>匹配模式可以是一个简单的字符串或者正则表达式，使用正则表达式要用(‘~’)。</p>
+<p>一个正则表达式如果以“~”开头，表示这个正则表达式对大小写敏感。以“~*”开头，表示这个正则表达式对大小写不敏感。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">map $http_user_agent $agent &#123;</div><div class="line">		default &quot;&quot;;</div><div class="line">		~curl curl;</div><div class="line">		~*apachebench&quot; ab;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>正则表达式里可以包含命名捕获和位置捕获，这些变量可以跟结果变量一起被其它指令使用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">map $uri $value &#123;</div><div class="line">		/dingmingk_com						/index.php;</div><div class="line">		~^/dingmingk_com/(?&lt;suffix&gt;.*)$	/boy/;</div><div class="line">		~/fz(/.*)								/index.php?;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>不能在map块里面引用命名捕获或位置捕获变量</strong><br><code>~^/dingmingk_com/(.*) /boy/$1;</code> 这样会报错`nginx:[emerg] unknown variable。</p>
+<p>如果源变量值包含特殊字符如’~’，则要以’\’来转义。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">map $http_referer $value &#123;</div><div class="line">	Mozilla	111;</div><div class="line">	\~Mozilla	222;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果变量可以是一个字符串也可以是另外一个变量。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">map $num $limit &#123;</div><div class="line">	1 $binary_remote_addr;</div><div class="line">	0 &quot;&quot;;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>map指令有三个参数:</p>
+<ul>
+<li>default: 没有匹配结果将使用的默认值。如果没有设置default，将会用一个空的字符串作为默认的结果。</li>
+<li>hostnames: 允许用前缀或者后缀掩码指定域名作为源变量值，这个参数必须写在映射列表的最前面。</li>
+<li>include: 包含一个或多个含有映射值的文件。</li>
+</ul>
+<p>如果匹配到多个特定的变量，如掩码和正则同时匹配，那么会按照下面的顺序进行选择：</p>
+<ol>
+<li>没有掩码的字符串</li>
+<li>最长的带前缀的字符串，如“*.example.com”</li>
+<li>最长的带后缀的字符串，如“mail.*”</li>
+<li>按顺序第一个先匹配的正则表达式（在配置文件中体现的顺序）</li>
+<li>默认值</li>
+</ol>
+<blockquote>
+<p>语法: <code>map_hash_bucket_size size;</code></p>
+<p>默认值: 32,64,128</p>
+<p>配置段: http</p>
+</blockquote>
+<p>指定一个映射表中的变量在哈希表中的最大值，这个值取决于处理器的缓存。</p>
+<blockquote>
+<p>语法: <code>map_hash_max_size size;</code></p>
+<p>默认值: 2048</p>
+<p>配置段: http</p>
+</blockquote>
+<p>设置映射表对应的哈希表的最大值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  map $http_user_agent $agent &#123;</div><div class="line">  		~curl curl;</div><div class="line">  		~*chrome chrome;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  		listen			80;</div><div class="line">  		server_name	test.dingmingk.com;</div><div class="line">  		</div><div class="line">  		location /hello &#123;</div><div class="line">  				default_type text/plain;</div><div class="line">  				echo http_user_agent: $http_user_agent;</div><div class="line">  				echo agent: agent:$agent;</div><div class="line">  		&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  map $uri $match &#123;</div><div class="line">  			~^/hello/(.*) http://www.dingmingk.com/;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen 			80;</div><div class="line">  			server_name 		test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type text/plain;</div><div class="line">  					echo uri: $uri;</div><div class="line">  					echo match: $match;</div><div class="line">  					echo capture: $1;</div><div class="line">  					echo new: $match$1;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/04/nginxmap/" class="archive-article-date">
+  	<time datetime="2015-12-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-04</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-nginxLimit" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/03/nginxLimit/">Nginx 用户请求限制</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>我们经常会遇到服务器流量异常、负载过大等这些恶意的攻击访问。资源浪费还是其次，造成正常用户无法访问那就不好了。</p>
+<p>Nginx有<code>ngx_http_limit_conn_module</code>和<code>ngx_http_limit_req_module</code>两个模块可以在一定程度上缓解这个问题。接下来就分别介绍这两个模块配置用法以及如何添加白名单。</p>
+<h2 id="ngx-http-limit-conn-module"><a href="#ngx-http-limit-conn-module" class="headerlink" title="ngx_http_limit_conn_module"></a>ngx_http_limit_conn_module</h2><p>该模块可以根据定义的键来限制每个键值的连接数，并不是同一个IP来源的所有连接数都会被该模块计数，只有那些正在被处理的请求（这些请求的头信息已被完全读入）所在的连接才会被计数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  limit_conn_zone $binary_remote_addr zone=limit:10m;</div><div class="line">  limit_conn_log_level info;</div><div class="line"> </div><div class="line">  server &#123;</div><div class="line">    location  ^~ /download/ &#123;  </div><div class="line">      limit_conn limit 4;</div><div class="line">      limit_rate 200k;</div><div class="line">      alias /data/blog.dingmingk.com/download/;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<blockquote>
+<p>语法: <code>limit_conn_zone</code> $variable zone=name:size;</p>
+<p>默认值: none</p>
+<p>配置段: http</p>
+</blockquote>
+<p>该指令描述会话状态存储区域。键的状态中保存了当前连接数，键的值可以是特定变量的任何非空值（空值将不会被考虑）。<code>$variable</code>定义键，<code>zone＝NAME</code>定义区域名称，后面的<code>limit_conn</code>会用到的。<code>size</code>定义各个键共享内存空间大小。如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">limit_conn_zone $binary_remote_addr zone=addr:10m;</div></pre></td></tr></table></figure>
+<p>客户端的IP地址作为键。</p>
+<p>注意，这里使用的是<code>$binary_remote_addr</code>变量，而不是<code>$remote_addr</code>变量。</p>
+<ul>
+<li><code>$remote_addr</code> 变量长度为7字节到15字节，而存储状态在32位平台中占用32字节或64字节，在64位平台中占用64字节。</li>
+<li><code>$binary_remote_addr</code> 变量的长度是固定的4字节，存储状态在32位平台中占用32字节或64字节，在64位平台中占用64字节。</li>
+</ul>
+<p>1M共享空间可以保存3.2万个32位的状态，1.6万个64位的状态。如果共享内存空间被耗尽，服务器将会对后续所有的请求返回 503(Service Temporarily Unavailable)错误。</p>
+<p><code>limit_zone</code> 指令和 <code>limit_conn_zone</code> 指令同等意思，已经被弃用，就不再说明了。</p>
+<blockquote>
+<p>语法: <code>limit_conn_log_level info|notice|warn|erro</code></p>
+<p>默认值: error</p>
+<p>配置段: http,server,location</p>
+</blockquote>
+<p>当达到最大限制连接数后，记录日志的等级。</p>
+<blockquote>
+<p>语法: <code>limit_conn zone_name number</code></p>
+<p>默认值: none</p>
+<p>配置段: http,server,location</p>
+</blockquote>
+<p>指定每个给定键值的最大同时连接数，当超过这个数字时被返回 503(Service Temporarily Unavailable)错误。</p>
+<p>当多个 <code>limit_conn</code> 被配置时，所有的连接数限制都会生效。比如下面的配置不仅会限制单一IP来源的连接数，同时也会限制单一虚拟服务器的总连接数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">limit_conn_zone $binary_remote_addr zone=perip:10m;</div><div class="line">limit_conn_zone $server_name zone=perserver:10m;</div><div class="line">server &#123;</div><div class="line">    limit_conn perip 10;</div><div class="line">    limit_conn perserver 100;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>limit_conn指令可以继承</strong></p>
+<blockquote>
+<p>语法: <code>limit_conn_status</code> code;</p>
+<p>默认值: 503</p>
+<p>配置段: http,server,location</p>
+</blockquote>
+<p>该指令在1.3.15版本引入，指定当超过限制时，返回的状态码。</p>
+<blockquote>
+<p>语法: <code>limit_rate</code> rate</p>
+<p>默认值: 0</p>
+<p>配置段: http,server,location,if in location</p>
+</blockquote>
+<p>对每个连接的速率限制。参数rate的单位是字节/秒，设置为0将关闭限速。按连接限速而不是按IP限制，因此如果某个客户端同时开启了两个连接，那么该客户端的整体速率是这条指令设置值的2倍。</p>
+<h2 id="ngx-http-limit-req-module"><a href="#ngx-http-limit-req-module" class="headerlink" title="ngx_http_limit_req_module"></a>ngx_http_limit_req_module</h2><p><code>ngx_http_limit_req_module</code>模块和<code>ngx_http_limit_conn_module</code>模块基本类似，该模块可以通过定义的键值来限制请求处理的频率。特别的，可以限制来自单个IP地址的请求处理频率。限制的方法如同漏斗，每秒固定处理请求数，推迟过多请求。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  limit_req_zone $binary_remote_addr zone=dingmingk_com:10m rate=1r/s;</div><div class="line"> </div><div class="line">  server &#123;</div><div class="line">    location  ^~ /download/ &#123;  </div><div class="line">    limit_req zone=ttlsa_com burst=5;</div><div class="line">    alias /data/blog.dingmingk.com/download/;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<blockquote>
+<p>语法: <code>limit_req_zone $variable zone=name:size rate=rate</code>;</p>
+<p>默认值: none</p>
+<p>配置段: http</p>
+</blockquote>
+<p>设置一块共享内存限制域用来保存键值的状态参数，特别是保存当前超出请求的数量。键的值就是指定的变量（空值不会被计算）。</p>
+<p>客户端的IP地址作为键。</p>
+<blockquote>
+<p>语法: <code>limit_req zone=name [burst=number] [nodelay];</code></p>
+<p>默认值: -</p>
+<p>配置段: http,server,location</p>
+</blockquote>
+<p>设置对应的共享内存限制域和允许被处理的最大请求数阈值。如果请求的频率超过了限制域配置的值，请求处理会被延迟，所以所有的请求都是以定义的频率被处理的。超过频率限制的请求会被延迟，直到被延迟的请求数超过了定义的阈值，这时这个请求会被终止，并返回503(Service Temporarily Unavailable)错误。</p>
+<h2 id="白名单"><a href="#白名单" class="headerlink" title="白名单"></a>白名单</h2><p>有些时候，我们不希望对某些IP进行限制，比如公司IP、反代服务器等，这就需要配置白名单。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $whiteiplist &#123;</div><div class="line">  default 1;</div><div class="line">  127.0.0.1 0;</div><div class="line">  10.0.0.0/8 0;</div><div class="line">  120.26.73.0 0;</div><div class="line">  &#125;</div><div class="line"> </div><div class="line">  map $whiteiplist  $limit &#123;</div><div class="line">  1 $binary_remote_addr;</div><div class="line">  0 &quot;&quot;;</div><div class="line">  &#125;</div><div class="line"> </div><div class="line">  limit_conn_zone $limit zone=limit:10m;</div><div class="line"> </div><div class="line">  server &#123;</div><div class="line">         listen       8080;</div><div class="line">         server_name  blog.dingmingk.com;</div><div class="line"> </div><div class="line">         location ^~ /dingmingk.com/ &#123;</div><div class="line">                limit_conn limit 4;</div><div class="line">                limit_rate 200k;</div><div class="line">                alias /data/blog.dingmingk.com/download/;</div><div class="line">    		&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>技术要点</strong></p>
+<ul>
+<li><a href="http://blog.dingmingk.com/blog/nginxgeo.html" target="_blank" rel="external">geo</a>指令定义一个白名单<code>$whiteiplist</code>，默认值为1，所有都受限制。如果客户端IP与白名单列出的IP相匹配，则<code>$whiteiplist</code>的值为0也就不受限制。</li>
+<li><a href="http://blog.dingmingk.com/blog/nginxmap.html" target="_blank" rel="external">map</a>指令是将<code>$whiteiplist</code>值为1的，也就是受限制的IP，映射为客户端IP。将<code>$whiteiplist</code>值为0的，也就是白名单IP，映射为空的字符串。</li>
+<li><code>limit_conn_zone</code>和<code>limit_req_zone</code>指令对于键为空值的将会被忽略，从而实现对于列出来的IP不做限制。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/03/nginxLimit/" class="archive-article-date">
+  	<time datetime="2015-12-02T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-03</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-jenkins" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/02/jenkins/">使用 Jenkins 自动化部署 Java Web 程序</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Jenkins 是一个开源软件，旨在提供一个开放易用的软件平台，是软件的持续集成变成可能。</p>
+<h2 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h2><p>Jenkins 是基于 Java 开发的一种持续集成工具，用于监控持续重复的工作，功能包括：</p>
+<ol>
+<li>持续的软件版本发布／测试项目；</li>
+<li>监控外部调用执行的工作。</li>
+</ol>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>Jenkins 安装比较简单，可以参考官方文档。</p>
+<p>以<code>CentOS</code>为例:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ sudo wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo</div><div class="line"></div><div class="line">$ sudo rpm --import http://pkg.jenkins-ci.org/redhat/jenkins-ci.org.key</div><div class="line"></div><div class="line">$ yum install jenkins</div></pre></td></tr></table></figure>
+<h2 id="Jenkins-基础配置"><a href="#Jenkins-基础配置" class="headerlink" title="Jenkins 基础配置"></a>Jenkins 基础配置</h2><p>在开始自动化任务之前需要配置一些系统的基础项，比如安装必要的插件，配置相应服务器的证书等。</p>
+<h3 id="安装-Jenkins-插件"><a href="#安装-Jenkins-插件" class="headerlink" title="安装 Jenkins 插件"></a>安装 Jenkins 插件</h3><p>进入 <code>系统管理 － 插件管理</code> 可以看到 <code>可更新 ｜ 可选插件 ｜ 已安装</code>这几项，<code>可选插件</code>中可以选择安装我们需要的插件。</p>
+<p><img src="/assets/blogImg/jenkins1.png" alt="jenkins1"></p>
+<p>推荐几个插件：</p>
+<ul>
+<li>GitLab Plugin</li>
+<li>GIT plugin</li>
+<li>Gradle plugin</li>
+<li>Publish Over SSH</li>
+<li>SSH Credentials Plugin</li>
+<li>…</li>
+</ul>
+<h3 id="Jenkins-系统配置"><a href="#Jenkins-系统配置" class="headerlink" title="Jenkins 系统配置"></a>Jenkins 系统配置</h3><p>Jenkins 并不能单独完成一套完整的自动化构建流程，它需要搭配其它工具，如 <code>Git/SVN, Gradle／Maven, SSH/FTP...</code>等等。</p>
+<p>进入<code>系统管理 － 系统设置</code>，我会一一讲解各个参数。</p>
+<h4 id="JDK"><a href="#JDK" class="headerlink" title="JDK"></a>JDK</h4><p>在安装 Jenkins 之前，应该已经先安装 JDK 了，我们只需要将相应的路径填入即可。（这里也可以通过 Jenkins 自动安装，不推荐。）</p>
+<p><img src="/assets/blogImg/jenkins_jdk.png" alt="jenkins_jdk"></p>
+<h4 id="Git"><a href="#Git" class="headerlink" title="Git"></a>Git</h4><p>我用的代码管理工具是 GitLab，Jenkins 服务器上需要安装好 Git 客户端，一般 Linux 服务器默认都已安装好，把路径填入即可。</p>
+<p><img src="/assets/blogImg/jenkins_git.png" alt="jenkins_git"></p>
+<h4 id="Gradle"><a href="#Gradle" class="headerlink" title="Gradle"></a>Gradle</h4><p>我们公司项目管理用 Gradle， 相应的 Jenkins 服务器需要安装好 Gradle， 并把路径填入。</p>
+<p><img src="/assets/blogImg/jenkins_gradle.png" alt="jenkins_gradle"></p>
+<h4 id="Publish-over-SSH"><a href="#Publish-over-SSH" class="headerlink" title="Publish over SSH"></a>Publish over SSH</h4><p>Jenkins 有多种代码部署方式，我选择的是 SSH，记得配置证书。</p>
+<p><img src="/assets/blogImg/jenkins_ssh.png" alt="jenkins_ssh"></p>
+<p>这里可以配置多台需要推送的服务器信息。</p>
+<p><img src="/assets/blogImg/jenkins_server.png" alt="jenkins_server"></p>
+<h4 id="Tip"><a href="#Tip" class="headerlink" title="Tip"></a>Tip</h4><p>这里无论是 Jenkins 从 GitLab 上拉取代码，还是推送应用到服务器上，都推荐使用 SSH，并且配置证书。</p>
+<p>可以在 GitLab 不同的项目 <code>Settings － Deploy Keys</code>里授权给相应的 Jenkins 项目。</p>
+<p>同样，只给相应的应用服务器部署 Jenkins 服务器的 SSH 公钥。</p>
+<h4 id="其它配置"><a href="#其它配置" class="headerlink" title="其它配置"></a>其它配置</h4><p>由于我这里使用的是 Git、Gradle、SSH 等功能，配置 SVN、Maven、FTP 基本类似，安装好相应的程序配置好目录即可。</p>
+<p>详细的配置和说明可参考官网文档。</p>
+<h2 id="Jenkins-任务"><a href="#Jenkins-任务" class="headerlink" title="Jenkins 任务"></a>Jenkins 任务</h2><p>完成以上一系列基本配置之后就可以开始创建 Jenkins 任务了。</p>
+<p><code>首页 － 新建</code></p>
+<p>输入任务名称。</p>
+<p>这里可以选择几种创建方式，如果你不了解而且是第一次的用户建议选择｀构建一个自由风格的软件项目｀。</p>
+<p><img src="/assets/blogImg/jenkins_job1.png" alt="jenkins_job1"></p>
+<p>一次基本的构建过程包括以下五个步骤：</p>
+<ol>
+<li>源码管理</li>
+<li>构建触发器</li>
+<li>构建环境</li>
+<li>构建</li>
+<li>构建后操作</li>
+</ol>
+<h3 id="源码管理"><a href="#源码管理" class="headerlink" title="源码管理"></a>源码管理</h3><p>以 Git 为例，需要配置三个主要参数：</p>
+<ul>
+<li>Repositories 仓库地址</li>
+<li>Credentials 用户授权</li>
+<li>Branched to build 构建分支</li>
+</ul>
+<p><img src="/assets/blogImg/jenkins_job_git.png" alt="jenkins_job_git"></p>
+<h3 id="构建触发器"><a href="#构建触发器" class="headerlink" title="构建触发器"></a>构建触发器</h3><p>触发器可以设置一些触发构建的条件，如钩子、定时任务等…如下图所示每15分钟检测一次远端仓库是否有更新。</p>
+<p><img src="/assets/blogImg/jenkins_job_hook.png" alt="jenkins_job_hook"></p>
+<h3 id="构建环境"><a href="#构建环境" class="headerlink" title="构建环境"></a>构建环境</h3><ul>
+<li>Send files or execute commands over SSH before the build starts</li>
+<li>Send files or execute commands over SSH after the build runs    </li>
+</ul>
+<h3 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h3><p>这里是主要编译打包代码环节，可选多种方式,这里介绍使用 shell 和 gradle 两种。</p>
+<p>Gradle比较简单，项目根目录写好 <code>build.gradle</code>文件，这里直接配置gradle参数 <code>clean build</code>即可。</p>
+<p><img src="/assets/blogImg/jenkins_job_build1.png" alt="jenkins_job_build1"></p>
+<p>如果项目不支持 Gradle 或其它管理工具，需要写一些简单的脚本来编译打包。</p>
+<p><img src="/assets/blogImg/jenkins_job_build2.png" alt="jenkins_job_build2"></p>
+<h3 id="构建后操作"><a href="#构建后操作" class="headerlink" title="构建后操作"></a>构建后操作</h3><p>构建好后需要推送到远端应用服务器，有时还需要执行一些命令来重启相应的应用或执行一系列操作。</p>
+<p><img src="/assets/blogImg/jenkins_job_push.png" alt="jenkins_job_push"></p>
+<p>顺便附上我部署 tomcat 应用以及重启的脚本。<a href="https://github.com/dingmingk/shell/blob/master/jenkins_deploy.sh" target="_blank" rel="external">jenkins_deploy.sh</a></p>
+<h2 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h2><p>Jenkins 的功能远不止这些，它可以结合很多组件构建一个完整的系统。</p>
+<p><em>TODO</em></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/02/jenkins/" class="archive-article-date">
+  	<time datetime="2015-12-01T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-02</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Jenkins-Java/">Jenkins, Java</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-macode" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/11/06/macode/">高效 Mac 运维环境配置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="为什么要用-Mac"><a href="#为什么要用-Mac" class="headerlink" title="为什么要用 Mac"></a>为什么要用 Mac</h1><p>作为一名运维工程师，远程登录服务器是每天工作一大头，一个高效便捷的工作环境将大大提升工作效率节省时间。今天向大家介绍的就是Mac下的 <code>iTerm + Zsh + Tmux</code> ，这一套环境将我们的注意力高度集中在键盘上，减少手指在键盘与触摸板中移动的频率和时间，更佳专注于文本编辑，长久使用还能形成肌肉记忆。</p>
+<p><em>为什么要 Mac 呢?</em></p>
+<p>先说下三大平台对比：</p>
+<ul>
+<li>Windows: 原生不支持SSH（未来PowerShell将支持），客户端有 XShell, SecureCRT, Putty…等，基本功能满足但功能有限；</li>
+<li>Linux: 原生支持 SSH，桌面 Terminal 功能有限，无法在同一窗口打开多个标签页，本地和服务端同时使用 Tmux 时会出现快捷键冲突等；</li>
+<li>OSX: 原生支持SSH，iTerm功能丰富，个人认为最好用的客户端。还有 Mac 的最大优势就是 GUI 和命令行的完美结合！</li>
+</ul>
+<blockquote>
+<p>人生苦短，我用 Mac。</p>
+</blockquote>
+<h2 id="iTerm"><a href="#iTerm" class="headerlink" title="iTerm"></a>iTerm</h2><h3 id="让命令行也能丰富多彩"><a href="#让命令行也能丰富多彩" class="headerlink" title="让命令行也能丰富多彩"></a>让命令行也能丰富多彩</h3><p>iTerm 是一款完全免费，在 GPLv2 下发布的，转为 Mac OSX 用户打造的命令行应用。我们可以打开它的 <a href="www.iterm2.com">官方网站</a> 看一看，简单下载安装之后就可以开始 iTerm 之旅了。</p>
+<h4 id="主题配色"><a href="#主题配色" class="headerlink" title="主题配色"></a>主题配色</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Perferences - Profiles - Colors</div></pre></td></tr></table></figure>
+<p>进入配色方案面板后，在右下角下拉框中有几种配色方案供我们选择，比如黑色风格、白色风格、深蓝风格…等等。</p>
+<p><img src="/assets/blogImg/iTerm2-1.png" alt="iTerm2-1"></p>
+<h4 id="选择文本"><a href="#选择文本" class="headerlink" title="选择文本"></a>选择文本</h4><p>iTerm 提供一种脱离触摸板也可以选择文本的机制，叫做 <code>搜索 + Tab</code> ，不要小看这个细微的功能，它能让你保持专注。</p>
+<p>我们在使用命令行的时候，经常会要去选择命令行中的文本复制粘贴。就比如说 ping 命令， 我们用 ping 命令来获取一个域名解析后的 IP。</p>
+<p>相信大家都有过这样的体验：ping 命令得到 IP 后，我们想要把它复制下来，我们只能通过在触摸板上三指滑动精确选中这段 IP（或在 IP 中间单指快速轻点两次）。频繁的在键盘和触摸板之间切换，很会影响我们的注意力。</p>
+<p>iTerm 提供一个好的办法，我们只需 <code>Cmd + F</code> 调出搜索框，然后输入这段 IP 的前缀，然后按下 <code>Tab</code> 键补全，iTerm就自动帮我们把这段 IP 选中，并且自动复制到剪贴板中了。</p>
+<p><img src="/assets/blogImg/iTerm2-2.png" alt="iTerm2-2"></p>
+<h4 id="一键调出命令行"><a href="#一键调出命令行" class="headerlink" title="一键调出命令行"></a>一键调出命令行</h4><p>我们有时会临时需要用命令行执行某一个操作，然后就不需要了。虽然可能 iTerm 时常都在运行，但单屏状态下经常切换桌面也会让人觉得眼花缭乱。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Perferences - Keys - Hotkey</div></pre></td></tr></table></figure>
+<p>将 Hotkey 选项下的复选框选中，并且设置一个快捷键，比如我这里设置的是 <code>Cmd + \</code> ，toggle 下拉框中选择 <code>Hotkey window</code> 。</p>
+<p>稍后在我们临时需要使用命令行的时候，只需按下刚才定义的快捷键，神奇的事情就发生了！</p>
+<p><img src="/assets/blogImg/iTerm2-3.png" alt="iTerm2-3"></p>
+<h4 id="行标记"><a href="#行标记" class="headerlink" title="行标记"></a>行标记</h4><p>这个功能简单来说就是，我们在某一行按下<code>Cmd + Shift + M</code>将这行标记。随后在需要的时候，可以按下 <code>Cmd + Shift + J</code> 立即跳回这行。</p>
+<h4 id="正则表达式搜索"><a href="#正则表达式搜索" class="headerlink" title="正则表达式搜索"></a>正则表达式搜索</h4><p>这个就不用多说了吧，你可以任性地搜索，专为极客们准备。只需在调出搜索界面的时候，将 <code>Regular Expression</code> 选项钩上，就可以使用正则表达式进行搜索了。</p>
+<p><img src="/assets/blogImg/iTerm2-4.png" alt="iTerm2-4"></p>
+<h4 id="剪贴板历史记录"><a href="#剪贴板历史记录" class="headerlink" title="剪贴板历史记录"></a>剪贴板历史记录</h4><p>这也是个很方便的特性。iTerm 能够将我们在使用命令行过程中所有的复制粘贴操作保存下来，当我们按下 <code>Cmd + Shift + H</code> 就可以列出这些记录。</p>
+<p><img src="/assets/blogImg/iTerm2-5.png" alt="iTerm2-5"></p>
+<h4 id="快照返回"><a href="#快照返回" class="headerlink" title="快照返回"></a>快照返回</h4><p>iTerm 的快照返回功能就是当你按下 <code>Cmd + Option + B</code> 时，会在界面上显示一个时间轴，可以通过键盘的左右箭头控制时间轴，同时 iTerm 上的命令行界面也随着变化成你选中的时间点的内容。</p>
+<p>这个功能对于重新执行命令，没有 bash 下直接执行 <code>history</code> 或 <code>Ctrl + r</code> 方便；但用它查看内容输出比用 Tmux 回滚方便一些。</p>
+<h4 id="iTerm-小结"><a href="#iTerm-小结" class="headerlink" title="iTerm 小结"></a>iTerm 小结</h4><p>以上是关于使用 iTerm 一些小的技巧，熟练掌握这些就能一定程度提高我们的工作效率。可能刚开始你并不能记住这些功能，但当你正在做某个低效的动作时，想起曾经看过相应的解决办法，回过头来掌握这个方法，这样印象就比较深刻了。也可以自己发掘一些高效的功能，让你的工作越来越得心应手！</p>
+<h2 id="Zsh"><a href="#Zsh" class="headerlink" title="Zsh"></a>Zsh</h2><p>目前常用的 Linux 发行版和 OSX 系统默认的 SHell 都是 bash，但是 OSX 预装了 Zsh，所以我们可以直接运行以下命令来设置当前用户使用 zsh。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ chsh -s /bin/zsh</div></pre></td></tr></table></figure>
+<p>Linux 用户可以使用相应的包管理工具安装 Zsh。</p>
+<p>Windows 用户…去洗洗睡吧。</p>
+<h4 id="安装-Oh-My-Zsh"><a href="#安装-Oh-My-Zsh" class="headerlink" title="安装 Oh My Zsh"></a>安装 Oh My Zsh</h4><p>Zsh 虽然很强大，但是由于配置过于复杂，所以少有人使用。我们可以直接使用老外开发的 <code>Oh My Zsh</code>这个项目来帮助我们快速上手配置 Zsh。</p>
+<p><strong>自动安装</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | sh</div></pre></td></tr></table></figure>
+<p><strong>手动安装</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ git clone git://github.com/robbyrussell/oh-my-zsh.git ~/.oh-my-zsh</div><div class="line">$ cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc</div></pre></td></tr></table></figure>
+<p>安装完成后打开一个新的终端窗口，就可以见到如下彩色提示。</p>
+<p><img src="/assets/blogImg/Zsh-1.png" alt="Zsh-1"></p>
+<h4 id="配置-Oh-My-Zsh"><a href="#配置-Oh-My-Zsh" class="headerlink" title="配置 Oh My Zsh"></a>配置 Oh My Zsh</h4><p><em>TODO</em></p>
+<h2 id="Tmux"><a href="#Tmux" class="headerlink" title="Tmux"></a>Tmux</h2><p>Tmux是一个优秀的终端复用软件，类似GNU Screen。通过一个终端登录并运行tmux后，在其中可以开启多个控制台而无需开启多个终端，且tmux在后台运行，每次登录tmux即可继续上次工作进度。</p>
+<h4 id="安装-Tmux"><a href="#安装-Tmux" class="headerlink" title="安装 Tmux"></a>安装 Tmux</h4><p>各平台下相应的包管理工具可直接安装，或登录<a href="tmux.github.io">tmux.github.io</a>下载。</p>
+<h4 id="配置-Tmux"><a href="#配置-Tmux" class="headerlink" title="配置 Tmux"></a>配置 Tmux</h4><p>tmux默认配置在用户目录下.tmux.conf,可参考如下我的配置。</p>
+<p><a href="https://github.com/dingmingk/config/blob/master/tmux.conf" target="_blank" rel="external">我的tmux配置</a></p>
+<h4 id="使用-Tmux"><a href="#使用-Tmux" class="headerlink" title="使用 Tmux"></a>使用 Tmux</h4><p><strong>创建session</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">tmux new -s test</div></pre></td></tr></table></figure>
+<p><strong>查看session</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">tmux ls</div></pre></td></tr></table></figure>
+<p><strong>登录session</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">tmux a -t test</div></pre></td></tr></table></figure>
+<p><strong>挂起session</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Ctrl-q + d</div></pre></td></tr></table></figure>
+<p><em>如果使用了我上面链接的配置</em></p>
+<p><strong>创建window</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Ctrl-q + c</div></pre></td></tr></table></figure>
+<p><strong>选择window</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Ctrl-q + n/p</div></pre></td></tr></table></figure>
+<p><strong>分割pane</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Ctrl-q + |</div></pre></td></tr></table></figure>
+<p><strong>横向分隔pane</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Ctrl-q + -</div></pre></td></tr></table></figure>
+<p><strong>选择pane</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Ctrl-q + h/j/k/l</div></pre></td></tr></table></figure>
+<p>更多功能可自行挖掘。<br><em>TODO</em></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/11/06/macode/" class="archive-article-date">
+  	<time datetime="2015-11-05T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-11-06</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Mac-iTerm-Tmux-Zsh/">Mac, iTerm, Tmux, Zsh</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-shnp" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/10/28/shnp/">生活在上海和南平之间</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前两天回南平办事，顺便见了一些同学朋友。发现很多人都在南平买房买车安居了，再看看自己依然在外漂泊，不免唏嘘。</p>
+<ul>
+<li>上海是一个规则化比较高的城市，回到南平则是人情关系的世界,不适合我这样的人生存；</li>
+<li>南平市区一些比较好的小区如山水华庭、江南第一城、正荣，房价现在5k左右，再好点的如延府豪庭也不过1.3w；上海房产均价3.5w，现在住的这老公房因为小区对面有个小学价格在5w以上，更多就上不封顶了；</li>
+<li>在南平很大一部分人月薪在2、3k左右，4、5k的已经算高了吧。而在上海搞两年IT的基本都20k以上；</li>
+<li>其实要说压力问题，在上海通过几年努力，也能混到个中产阶级。并且，将会有持续的竞争力。但若在南平，估计安闲蹉跎若干年后，情况依然没有改变；</li>
+<li>纸厂生活区很多人一个月生活费500不到，而万万一个月都不只花500(洗澡一次100，猫粮一袋320，罐头一个10、每周两个，还有其他玩具xxx)，我们家每个月开销1w～1.5w,在上海生活很滋润;</li>
+<li>大城市的人都很普通，大家早出晚归的上下班，偶尔聚聚等，很少勾心或攀比。小城市的人很骚包，经常有人拉你去豪吃唱K洗浴什么的，装有钱装屌。所以小城市的父母们总说，你看谁家谁家怎么啦，等等等…无时无刻的攀比心理，让人很难接受；</li>
+<li>其他的如网购、医疗、交通什么的就不多说了。</li>
+</ul>
+<blockquote>
+<p>你回到了家乡，买一套100平50～60w的房，买两辆代步小车，日子过得也很温馨。你的孩子出生之后，享受到的物质水平也许不比任何一个大城市的孩子要差。</p>
+<p>可是，不可避免的，你孩子所接触到的世界和眼界和大城市的孩子在出生的时候就有了差别。大城市的多元性可以让孩子更加了解这个世界的五彩缤纷。</p>
+<p>同样，在一个大城市里，你所能接触到的朋友的社会形态也能影响你自己。</p>
+</blockquote>
+<p><strong> 我吃了那么多的苦，在上海打拼的艰辛，一路走来，多不容易! </strong></p>
+<p><strong> 靠自己的知识，有一份工作，事业处于上升期，接触最优秀的人，和相爱的人安居乐业，何乐不为! </strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/10/28/shnp/" class="archive-article-date">
+  	<time datetime="2015-10-27T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-10-28</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Life-Shanghai-Nanping/">Life, Shanghai, Nanping</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-nginxDefaultHost" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/10/22/nginxDefaultHost/">Nginx 禁止 IP 及未绑定域名访问</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Nginx禁止IP及未绑定域名访问"><a href="#Nginx禁止IP及未绑定域名访问" class="headerlink" title="Nginx禁止IP及未绑定域名访问"></a>Nginx禁止IP及未绑定域名访问</h1><p>今天不小心在某搜索引擎搜到自己的网站，但显示的域名却完全不认识，DNS解析出来的IP也是别人的。为了避免别人把未备案的域名解析到我的服务器IP而导致被断网，就需要在nginx上禁止未绑定域名和IP访问服务器目录。</p>
+<p><strong>添加一个vHost</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">server &#123;</div><div class="line">    listen       80 default;</div><div class="line">    rewrite ^(.*) http://xxx.dingmingk.com permanent;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果别人通过未知域名或直接使用IP访问的时候，就会被301跳转到已绑定的网站，这样既避免了不必要的麻烦，又顺便把这些流量收集起来。当然也可以直接返回500或其他异常信息。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/10/22/nginxDefaultHost/" class="archive-article-date">
+  	<time datetime="2015-10-21T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-10-22</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-ss" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/10/14/ss/">使用 ss 命令代替 netstat</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>ss是Socket Statistics的缩写。</p>
+</blockquote>
+<p>顾名思义， ss命令可以用来获取socket统计信息，它可以显示和netstat类似的内容。但ss的优势在于它能够显示更多更详细的有关TCP和连接状态的信息，而且比netstat更快速更高效。</p>
+<h4 id="为什么要告别netstat"><a href="#为什么要告别netstat" class="headerlink" title="为什么要告别netstat"></a>为什么要告别netstat</h4><p>当服务器的socket连接数非常大时，无论使用<code>netstat</code>还是<code>cat /proc/net/tcp</code>，执行速度都很慢。</p>
+<p><strong>天下武功唯快不破</strong>。ss的秘诀在于，它利用到了TCP协议栈中tcp_diag。</p>
+<p><em>tcp_diag</em>是一个用于分析统计的模块，可以获得linux内核中第一手信息，这就确保了ss的快捷高效。当然，如果你的系统中没有tcp_diag，ss也可以正常运行，只是效率会变得很慢（仍然比netstat快）。</p>
+<h4 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h4><p><em>TODO</em></p>
+<p>自己手头暂时没有适合测试的机器，网上有人测试过数据如下：</p>
+<p>(当服务器维持3w个socket链接时)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">netstat -at | wc  耗时 15.60 秒</div><div class="line">ss -atr     | wc  耗时  5.40 秒（未利用tcp_diag）</div><div class="line">ss -atr     | wc  耗时  0.47 秒（利用tcp_diag）</div></pre></td></tr></table></figure>
+<h4 id="安装ss"><a href="#安装ss" class="headerlink" title="安装ss"></a>安装ss</h4><p>几乎所有的linux系统都会默认包含netstat命令，但并非所有系统都会默认包含ss命令。</p>
+<p>netstat命令是net-tools工具集中的一员：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$rpm -q netstat-tools</div><div class="line">net-tools-1.60-110.el6_2.x86_64</div></pre></td></tr></table></figure>
+<p>而ss命令是iproute工具集中的一员：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$rpm -q /usr/sbin/ss</div><div class="line">iproute-2.6.32-45.el6.x86_64</div><div class="line">$rpm -q iproute</div><div class="line">iproute-2.6.32-45.el6.x86_64</div></pre></td></tr></table></figure>
+<p>如果你无法使用ss命令，那么可能是缺少了iproute，需要安装一下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">yum install iproute iproute-doc</div></pre></td></tr></table></figure>
+<h4 id="ss常见用法"><a href="#ss常见用法" class="headerlink" title="ss常见用法"></a>ss常见用法</h4><p><strong>当前服务器的网络连接统计</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ ss -s</div><div class="line">Total: 78 (kernel 85)</div><div class="line">TCP:   5 (estab 2, closed 0, orphaned 0, synrecv 0, timewait 0/0), ports 5</div><div class="line"></div><div class="line">Transport Total     IP        IPv6</div><div class="line">*         85        -         -</div><div class="line">RAW       0         0         0</div><div class="line">UDP       4         4         0</div><div class="line">TCP       5         5         0</div><div class="line">INET      9         9         0</div><div class="line">FRAG      0         0         0</div></pre></td></tr></table></figure>
+<p><strong>查看所有打开的网络接口以及对应的程序名称</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ ss -pl</div><div class="line">State       Recv-Q Send-Q                                 Local Address:Port                                     Peer Address:Port</div><div class="line">LISTEN      0      128                                                *:http                                                *:*</div><div class="line">users:((&quot;nginx&quot;,2591,6),(&quot;nginx&quot;,15272,6))</div><div class="line">LISTEN      0      10                                         127.0.0.1:15770                                               *:*</div><div class="line">users:((&quot;aegis_quartz&quot;,16616,8))</div><div class="line">LISTEN      0      128                                                *:22                                               *:*</div><div class="line">users:((&quot;sshd&quot;,24244,3))</div><div class="line">``` </div><div class="line">**查看所有socket连接**</div></pre></td></tr></table></figure>
+<p>$ ss -a<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">* 如果只想查看TCP sockets， 那么使用 `-ta` 选项</div><div class="line">* 如果只想查看UDP sockets， 那么使用 `-ua` 选项</div><div class="line">* 如果只想查看RAW sockets， 那么使用 `-wa` 选项</div><div class="line">* 如果只想查看UNIX sockets， 那么使用 `-xa` 选项</div><div class="line"></div><div class="line">#### 附录</div><div class="line">#####ss命令参数列表</div></pre></td></tr></table></figure></p>
+<pre><code>-h, --help
+       Show summary of options.
+
+-V, --version
+       Output version information.
+
+-n, --numeric
+       Do now try to resolve service names.
+
+-r, --resolve
+       Try to resolve numeric address/ports.
+
+-a, --all
+       Display all sockets.
+
+-l, --listening
+       Display listening sockets.
+
+-o, --options
+       Show timer information.
+
+-e, --extended
+       Show detailed socket information
+
+-m, --memory
+       Show socket memory usage.
+
+-p, --processes
+       Show process using socket.
+
+-i, --info
+       Show internal TCP information.
+
+-s, --summary
+       Print  summary  statistics. This option does not parse socket lists obtaining summary from various sources.
+       It is useful when amount of sockets is so huge that parsing /proc/net/tcp is painful.
+
+-4, --ipv4
+       Display only IP version 4 sockets (alias for -f inet).
+
+-6, --ipv6
+       Display only IP version 6 sockets (alias for -f inet6).
+
+-0, --packet
+       Display PACKET sockets.
+
+-t, --tcp
+       Display only TCP sockets.
+</code></pre><p>```</p>
+<h5 id="iproute-amp-net-tools"><a href="#iproute-amp-net-tools" class="headerlink" title="iproute &amp; net-tools"></a>iproute &amp; net-tools</h5><p>从某种意义上来说，iproute工具集几乎可以替代掉net-tools工具集。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">用途</th>
+<th style="text-align:center">net-tools</th>
+<th style="text-align:center">iproute2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">地址和链路配置</td>
+<td style="text-align:center">ifconfig</td>
+<td style="text-align:center">ip addr, ip link</td>
+</tr>
+<tr>
+<td style="text-align:left">路由表</td>
+<td style="text-align:center">route</td>
+<td style="text-align:center">ip route</td>
+</tr>
+<tr>
+<td style="text-align:left">邻居</td>
+<td style="text-align:center">arp</td>
+<td style="text-align:center">ip neigh</td>
+</tr>
+<tr>
+<td style="text-align:left">VLAN</td>
+<td style="text-align:center">vconfig</td>
+<td style="text-align:center">ip link</td>
+</tr>
+<tr>
+<td style="text-align:left">隧道</td>
+<td style="text-align:center">iptunnel</td>
+<td style="text-align:center">ip tunnel</td>
+</tr>
+<tr>
+<td style="text-align:left">组播</td>
+<td style="text-align:center">ipmaddr</td>
+<td style="text-align:center">ip maddr</td>
+</tr>
+<tr>
+<td style="text-align:left">统计</td>
+<td style="text-align:center">netstat</td>
+<td style="text-align:center">ss</td>
+</tr>
+</tbody>
+</table>
+<p><img src="/assets/blogImg/netstat2iproute.png" alt="netstat2iproute"></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/10/14/ss/" class="archive-article-date">
+  	<time datetime="2015-10-13T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-10-14</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-pain" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/10/13/pain/">痛苦与救赎</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><img src="/assets/blogImg/pain.jpg" alt="pain"></p>
+<blockquote>
+<p>人的一切痛苦，本质上都是对自己无能的愤怒。</p>
+</blockquote>
+<p>比看不清前方更让人绝望的是，明明它就在那伸手就能抓到的地方，却好像永远也够不着。</p>
+<p>从今天起好好维护这个博客，希望能把平时的生活和学习记录下来。</p>
+<p>进步， <strong>Fighting</strong>!</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/10/13/pain/" class="archive-article-date">
+  	<time datetime="2015-10-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-10-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Life/">Life</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <nav id="page-nav">
+      <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    </nav>
+  
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: true,
+		isPost: false,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

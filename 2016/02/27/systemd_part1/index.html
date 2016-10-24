@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Systemd 的服务管理模型 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Systemd 是 CoreOS 采用的服务进程和系统资源管理工具。它最初的设计目标主要是克服传统 Linux 主流启动程序 SysV-init 的固有设计缺陷，提高系统的启动速度。 Systemd 的设计思路借鉴了 Mac OSX 系统的启动程序 Launchd，相比其他的 SysV-init 替代方案，例如 Ubuntu 的 Upstart，Systemd 的设计更加前卫。
+事实上，Syste">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Systemd 的服务管理模型">
+<meta property="og:url" content="http://dingmingk.github.io/2016/02/27/systemd_part1/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="Systemd 是 CoreOS 采用的服务进程和系统资源管理工具。它最初的设计目标主要是克服传统 Linux 主流启动程序 SysV-init 的固有设计缺陷，提高系统的启动速度。 Systemd 的设计思路借鉴了 Mac OSX 系统的启动程序 Launchd，相比其他的 SysV-init 替代方案，例如 Ubuntu 的 Upstart，Systemd 的设计更加前卫。
+事实上，Syste">
+<meta property="og:updated_time" content="2016-10-24T07:21:42.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Systemd 的服务管理模型">
+<meta name="twitter:description" content="Systemd 是 CoreOS 采用的服务进程和系统资源管理工具。它最初的设计目标主要是克服传统 Linux 主流启动程序 SysV-init 的固有设计缺陷，提高系统的启动速度。 Systemd 的设计思路借鉴了 Mac OSX 系统的启动程序 Launchd，相比其他的 SysV-init 替代方案，例如 Ubuntu 的 Upstart，Systemd 的设计更加前卫。
+事实上，Syste">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-systemd_part1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Systemd 的服务管理模型
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Systemd 是 CoreOS 采用的服务进程和系统资源管理工具。它最初的设计目标主要是克服传统 Linux 主流启动程序 SysV-init 的固有设计缺陷，提高系统的启动速度。 Systemd 的设计思路借鉴了 Mac OSX 系统的启动程序 Launchd，相比其他的 SysV-init 替代方案，例如 Ubuntu 的 Upstart，Systemd 的设计更加前卫。</p>
+<p>事实上，Systemd 是一系列系统工具的集合，其作用也远远不仅是启动操作系统，它还接管了后台服务启动、结束、状态查询，以及日志归档、设备管理、电源管理、定时任务等许多指责，并支持通过特定事件（如插入特定 USB 设备）和特定端口数据触发的 On-demand 任务。在 CoreOS 的世界里，几乎所有与应用程序打交道的工作，都会交由 Systemd 进行管理，包括运行在容器中的服务。</p>
+<h2 id="Systemd的设计理念"><a href="#Systemd的设计理念" class="headerlink" title="Systemd的设计理念"></a>Systemd的设计理念</h2><ul>
+<li>尽可能启动更少的进程</li>
+<li>尽可能将更多的进程并行启动</li>
+<li>采用 CGroup 跟踪和管理进程的生命周期</li>
+<li>统一管理服务日志</li>
+</ul>
+<h2 id="Systemd的服务管理"><a href="#Systemd的服务管理" class="headerlink" title="Systemd的服务管理"></a>Systemd的服务管理</h2><h4 id="Unit"><a href="#Unit" class="headerlink" title="Unit"></a>Unit</h4><p>Unit 是 Systemd 管理服务的基本单元，可以认为每个服务就是一个 Unit，并使用一个 Unit 文件定义。在 Unit 文件中需要包含相应服务的描述、属性以及需要运行的命令。</p>
+<p>在 CoreOS 中运行服务的命令通常是一系列的容器操作，而将具体的服务进程封装在容器中。</p>
+<h4 id="Target"><a href="#Target" class="headerlink" title="Target"></a>Target</h4><p>Target 是 Systemd 中用于指定服务启动组的方式，相当于 SysV-init 中的“运行级别”。每次系统启动时都会运行与当前系统具有相同级别 Target 关联的所有服务，如果服务不需要跟随系统自动启动，则完全可以忽略这个 Target 的内容。</p>
+<p>通常来说，大多数 Linux 用户平时使用的都是“多用户模式”这个级别，对应的 Target 值为 “multi-user.target”，它有一个等效的可用值是“default.target”。</p>
+<h2 id="Hello-Systemd"><a href="#Hello-Systemd" class="headerlink" title="Hello Systemd"></a>Hello Systemd</h2><p>在 CoreOS 中，用户的自定义服务配置文件通常放在 <code>/etc/systemd/system</code>目录中。进入这个目录，新建一个名为“hello.service”的文件，内容如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">[Unit］</div><div class="line">Description=Hello Systemd</div><div class="line">After=docker.service</div><div class="line">Requires=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartPre=-/usr/bin/docker kill busybox1</div><div class="line">ExecStartPre=-/usr/bin/docker rm busybox1</div><div class="line">ExecStartPre=/usr/bin/docker pull busybox</div><div class="line">ExecStart=/usr/bin/docker run --name busybox1 busybox /bin/sh -c &quot;while true; do echo Hello Systemd; sleep 1; done&quot;</div><div class="line">ExecStop=/usr/bin/docker stop busybox1</div><div class="line">ExecStopPost=/usr/bin/docker rm busybox1</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>这里需要注意两个地方：</p>
+<ol>
+<li>ExecStart 属性只能包含一条主要命令，而在这个属性的前后可以分别使用 ExecStartPre 和 ExecStartPost 指定更多的辅助命令；ExecStop同理。</li>
+<li>有些辅助命令会加上一个减号（-），表示忽略这些命令的出错。</li>
+</ol>
+<h2 id="日志管理"><a href="#日志管理" class="headerlink" title="日志管理"></a>日志管理</h2><p>Systemd 通过其标准日志服务 Journald 将其管理的所有后台进程打印到 std:out（即控制台）的输出重定向到了日志文件。</p>
+<p>日志文件是二进制格式的，必须使用 Journald 提供的配套程序 journalctl 来查看。 </p>
+<h4 id="Journalctl"><a href="#Journalctl" class="headerlink" title="Journalctl"></a>Journalctl</h4><p>Journalctl 的使用非常简单，默认不带任何参数时会输出系统和所有后台进程的混合日志，可以通过一些参数选择性地过滤所需的内容。</p>
+<ul>
+<li>–dmesg：内核输出的日志</li>
+<li>–system：各类系统服务的控制台输出</li>
+<li>–unit xxx.service：用户指定的服务日志</li>
+</ul>
+<p>高级用法：</p>
+<ul>
+<li>–follow：实时跟踪日志输出</li>
+<li>–since和–unit：指定显示的日志时间区间（e.g. –since “2015-07-20 12:00:00” –until “2015-07-20 12:30:00”）,–since=today可以直接打印当天输出的日志。</li>
+<li>–reverse：反向输出日志</li>
+<li>–lines：查看最新的N行日志（e.g. –lines n）</li>
+<li>–output：改变输出日志的格式（e.g. –output json-pretty）</li>
+</ul>
+<p>另外，除了使用 –unit 参数指定 Unit 名称外，还可以指定程序名称和指定进程 PID。</p>
+<ul>
+<li>$ journalctl /usr/lib/systemd/systemd </li>
+<li>$ journalctl _PID=1</li>
+</ul>
+<h4 id="日志大小限制"><a href="#日志大小限制" class="headerlink" title="日志大小限制"></a>日志大小限制</h4><p>默认日志最大限制为所在文件系统容量的 10％。即：如果<code>/var/log/journal</code>存储在 50GB 的根分区中，那么日志最多存储 5GB 数据。</p>
+<p>可以通过修改 <code>/etc/systemd/journald.conf</code>中的 <code>SystemMaxUse</code>来指定该最大限制。比如<code>SystemMaxUse=50M</code>。</p>
+<h2 id="服务的生命周期"><a href="#服务的生命周期" class="headerlink" title="服务的生命周期"></a>服务的生命周期</h2><ol>
+<li>当一个新的 Unit 文件被放入 <code>/etc/systemd/system/</code>或<code>/usr/lib/systemd/system/</code>目录中时，它是不会被 Systemd 识别到的；（$ systemctl list-unit-files）</li>
+<li>systemctl start|enable 激活；($ systemctl list-units <unit>)</unit></li>
+<li>使用 systemctl start 命令可以启动指定的服务，启动时会一次执行定义在 Unit 文件中的 ExecStartPre、ExecStart、ExecStartPost命令</li>
+<li>使用 ststmectl stop 命令可以结束指定的服务，结束时会依次执行定义在 Unit 文件中的 ExecStopPre、ExecStop、ExecStopPost命令；</li>
+<li>systemctl restart 命令相当于先结束指定的服务，然后立即重新启动它；</li>
+<li>systemctl kill命令会立即杀死服务，而不会执行 Unit 中指定的结束命令；</li>
+<li>systemctl enable xxx.service 设置开机启动；</li>
+<li>systmectl disable xxx.service 取消开机启动；</li>
+<li>systemctl daemon-reload 重新加载 Unit 文件；</li>
+<li>systemctl reset-failed 移除已经被标记为丢失的 Unit 文件。</li>
+</ol>
+<h2 id="服务的Unit文件"><a href="#服务的Unit文件" class="headerlink" title="服务的Unit文件"></a>服务的Unit文件</h2><p>服务的 Unit 文件可以分为三个配置区段，其中 Unit 段和 Install 段是所有 Unit 文件通用的，用于配置服务（或其他系统资源）的描述、依赖和随系统启动方式，而 Service 段则是服务类型的 Unit 文件（后缀为.service）特有的，用于定义服务的具体管理和操作方法。</p>
+<h4 id="配置区段的常用参数"><a href="#配置区段的常用参数" class="headerlink" title="配置区段的常用参数"></a>配置区段的常用参数</h4><ul>
+<li>Unit <ul>
+<li>Description: 一段描述这个 Unit 文件的文字。</li>
+<li>Documentation: 指定服务的文档，可以是一个或多个文档的路径。</li>
+<li>Requires: 依赖的其他 Unit 列表，依赖服务启动失败会导致这个服务被终止。</li>
+<li>Wants: 与 Requires 相似，但不考虑依赖服务是否启动成功。</li>
+<li>After: 与 Requires 相似，但是在列出的服务都启动完成后才会启动当前服务。</li>
+<li>Before: 与 After 相反。</li>
+<li>BindsTo: 与 Requires 相似，但是关联性更强。</li>
+<li>Part Of: 这是一个 BindTo 作用的子集，仅在列出的任何模块失败或重启时，终止或重启当前服务，而不会随列出的模块的启动而启动。</li>
+<li>OnFailure: 当这个模块启动失败时，就会自动启动列出的每个模块。</li>
+<li>Conflicts: 与这个模块有冲突的模块，如果列出的模块中有已经在运行的，这个服务就不能启动；反之亦然。</li>
+</ul>
+</li>
+<li>Install <ul>
+<li>WantedBy: 和前面的 Wants 相似，只是后面列出的不是服务所依赖的模块，而是依赖当前服务的模块。</li>
+<li>RequiredBy: 和前面的 Requires 相似，只是后面列出的不是服务所依赖的模块，而是依赖当前服务的模块。</li>
+<li>Also: 当这个服务被 enable/disable 时，将自动 enable/disable 后面列出的每个模块。</li>
+</ul>
+</li>
+<li>Service<ul>
+<li>Type: 服务的类型，常用的有 simple 和 forking。</li>
+<li>RemainAfterExix: 值为 true 或 false（也可以写为 yes 或 no），默认为 false。当配置值为 true 时，Systemd 只会负责启动服务进程，之后即便服务进程退出了，Systemd也仍然会认为这个服务还在运行中。这个配置主要是提供给一些并非常驻内存，而是启动注册后立即退出，燃火等待消息按需启动的特许类型服务使用的。</li>
+<li>ExecStart: 这个参数是疾呼每个”.service”文件都会有的，指定服务启动的主要命令，在每个配置文件中只能使用一次。</li>
+<li>ExecStartPre: 指定在启动执行 ExecStart 命令前的准备工作，在同一个配置文件中可以有多个。</li>
+<li>ExecStartPost: 指定在启动执行 ExecStart 命令后的首位工作，在同一个配置文件中可以有多个。</li>
+<li>TimeoutStartSec: 启动服务时的超时时间。Docker 第一次运行时可能会需要从网络上下载服务的镜像文件，因此造成比较严重的延时，建议将值指定为 0，从而关闭检测。</li>
+<li>ExecStop: 停止服务所需要执行的主要命令，在每个配置文件中只能有一个。</li>
+<li>ExecStopPost: 指定在 ExecStop 命令执行后的收尾工作，在同一个配置文件中可以有多个。</li>
+<li>TimeoutStopSec: 停止服务时的超时时间。</li>
+<li>Restart: 这个值用语指定在什么情况下需要重启服务进程。常用的值有 no、on-success、on-failure、on-abnormal、on-abort 和 always。默认值为 no。如下表格表示分别在哪些情况下，服务会被重新启动。</li>
+<li>RestartSec: 如果服务需要被重启，这个参数的值为服务被重启前的等待秒数。</li>
+<li>ExecReload: 重新加载服务所需执行的主要命令。</li>
+<li>Environment: 为服务添加环境变量。</li>
+<li>EnviromentFile: 指定加载一个包含服务所需的环境变量列表的文件，文件中的每一行都是一个环境变量的定义。</li>
+<li>Nice: 服务的进程优先级，值越小优先级越高，默认为0。其中-20 为最高优先级，19为最低优先级。</li>
+<li>WorkingDirectory: 指定服务的工作目录。</li>
+<li>RootDirectory: 指定服务进程的根目录。如果配置了这个参数，服务将无法访问指定目录以外的任何文件。</li>
+<li>User: 指定运行服务的用户，会影响服务对本地文件系统的访问权限。</li>
+<li>Group: 指定运行服务的用户组，会影响服务对本地文件系统的访问权限。</li>
+<li>MountFlags: 之歌值其实是服务的 Mount Namespace 的配置，会影响服务进程上下文中挂载点的信息，即服务是否会继承主机上已有的挂载点，以及如果服务运行时执行了挂载或卸载设备的操作，是否会真实地在主机上产生效果。可选值是 shared、slava 或 private。</li>
+<li>LimitCPU／LimitSTACK／LimitNOFILE／LimitNPROC 等，限制特定服务可用的系统资源量。</li>
+</ul>
+</li>
+</ul>
+<h4 id="Systemd-中用于兼容-SysV-init-运行级别的目标-Unit-文件"><a href="#Systemd-中用于兼容-SysV-init-运行级别的目标-Unit-文件" class="headerlink" title="Systemd 中用于兼容 SysV-init 运行级别的目标 Unit 文件"></a>Systemd 中用于兼容 SysV-init 运行级别的目标 Unit 文件</h4><table>
+<thead>
+<tr>
+<th style="text-align:left">SysV-init 运行级别</th>
+<th style="text-align:center">Systemd 运行目标</th>
+<th style="text-align:center">注释</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">0</td>
+<td style="text-align:center">runlevel0.target, poweroff.target</td>
+<td style="text-align:center">关闭系统</td>
+</tr>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:center">runlevel1.target, rescue.target</td>
+<td style="text-align:center">单用户模式</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:center">runlevel2.target, multi-user.target</td>
+<td style="text-align:center">用于定义／域特定运行级别。默认等同于级别 3</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:center">runlevel3.target, multi-user.target</td>
+<td style="text-align:center">多用户，无图形界面，用户可以通过终端或网络登录</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:center">runlevel4.target, multi-user.target</td>
+<td style="text-align:center">用于定义／域特定运行级别。默认等同于级别 3</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:center">runlevel5.target, graphical.target</td>
+<td style="text-align:center">多用户，图形界面，通常为所有运行级别 3 的服务并启动图形界面服务</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:center">runlevel6.target, reboot.target</td>
+<td style="text-align:center">重启</td>
+</tr>
+<tr>
+<td style="text-align:left">emergency</td>
+<td style="text-align:center">emergency.target</td>
+<td style="text-align:center">急救模式（Emergency shell）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="Service-段的-Restart-属性"><a href="#Service-段的-Restart-属性" class="headerlink" title="Service 段的 Restart 属性"></a>Service 段的 Restart 属性</h4><table>
+<thead>
+<tr>
+<th style="text-align:left">服务退出原因</th>
+<th style="text-align:center">no</th>
+<th style="text-align:center">always</th>
+<th style="text-align:center">on-failure</th>
+<th style="text-align:center">on-abnormal</th>
+<th style="text-align:center">on-abort</th>
+<th style="text-align:center">on-success</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">正常退出</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+</tr>
+<tr>
+<td style="text-align:left">异常退出</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:left">启动／停止超时</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+<tr>
+<td style="text-align:left">被异常杀死</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+<td style="text-align:center">√</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Unit-文件占位符"><a href="#Unit-文件占位符" class="headerlink" title="Unit 文件占位符"></a>Unit 文件占位符</h2><p>在 Unit 文件中，有时会需要使用到一些与运行环境有关的信息，例如节点 ID、运行服务的用户等。这些信息可以使用占位符来表示，然后在实际运行时被动态地替换为实际的值。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">占位符</th>
+<th style="text-align:center">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">%n</td>
+<td style="text-align:center">完整的 Unit 文件名，包括 .service  后缀名</td>
+</tr>
+<tr>
+<td style="text-align:left">%p</td>
+<td style="text-align:center">Unit 模版文件名中在 @ 符号之前的部分，不包括 @ 符号</td>
+</tr>
+<tr>
+<td style="text-align:left">%i</td>
+<td style="text-align:center">Unit 模版文件名中在 @ 符号之后的部分，不包括 @ 符号和 .service 后缀名</td>
+</tr>
+<tr>
+<td style="text-align:left">%t</td>
+<td style="text-align:center">存放系统运行时文件的目录，通常都是 “/run”</td>
+</tr>
+<tr>
+<td style="text-align:left">%u</td>
+<td style="text-align:center">运行服务的用户们，如果 Unit 文件中没有指定，则默认为 root</td>
+</tr>
+<tr>
+<td style="text-align:left">%U</td>
+<td style="text-align:center">运行服务的用户 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">%h</td>
+<td style="text-align:center">运行服务的用户 Home 目录，即 ${HOME} 环境变量的值</td>
+</tr>
+<tr>
+<td style="text-align:left">%s</td>
+<td style="text-align:center">运行服务的用户默认 Shell 类型，即 ${SHELL} 环境变量</td>
+</tr>
+<tr>
+<td style="text-align:left">%m</td>
+<td style="text-align:center">实际运行的节点的 Machine ID，对于运行位置敏感的服务比较有用</td>
+</tr>
+<tr>
+<td style="text-align:left">%b</td>
+<td style="text-align:center">Boot ID，这是一个随机数值，每个节点各不相同，并且每次节点重启时都会改变</td>
+</tr>
+<tr>
+<td style="text-align:left">%H</td>
+<td style="text-align:center">实际运行节点的主机名</td>
+</tr>
+<tr>
+<td style="text-align:left">%v</td>
+<td style="text-align:center">内核版本，即 “uname -r”命令输出的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">%%</td>
+<td style="text-align:center">在 Unit 模版文件中表示一个普通的百分号</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Unit-模版"><a href="#Unit-模版" class="headerlink" title="Unit 模版"></a>Unit 模版</h2><p>在现实中国年，往往有一些应用需要被复制多份运行，Systemd 定义了一种特殊的服务 Unit 文件，称之为 “Unit 模版”。</p>
+<p>Unit 模版文件的写法与普通的服务 Unit 文件几本相同，不过 Unit 模版的文件名是以 @ 符号结尾的。通过模版启动服务实例时，需要在其文件名的 @ 字符后面添加一个参数字符串。</p>
+<h4 id="apache-service"><a href="#apache-service" class="headerlink" title="apache@.service"></a>apache@.service</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=My Advanced Service Template</div><div class="line">After=etcd.service docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartpre=-/usr/bin/docker kill apache%i</div><div class="line">ExecStartPre=-/usr/bin/docker rm apache%i</div><div class="line">ExecStart=/usr/bin/docker run --name apache%i -p %i:80 coreos/apache /usr/sbin/apache2ctl -D FOREGROUND</div><div class="line">ExecStartPost=/usr/bin/etcdctl set /domains/example.com/%H:%i running</div><div class="line">ExecStop=/usr/bin/docker stop apache1</div><div class="line">ExecStopPost=/usr/bin/docker rm apache1</div><div class="line">ExecStopPost=/usr/bin/etcdctl rm /domains/example.com/%H:%i</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>模版服务的启动也与普通的托管于 Systemd 的服务大致相同。</p>
+<p><code>$ sudo systemctl start apache@8080.service</code></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/27/systemd_part1/" class="archive-article-date">
+  	<time datetime="2016-02-26T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-27</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Systemd/">Linux, Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/02/29/cgroup_part2/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          使用 Cgroup
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/02/25/cgroup_part1/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Cgroup 简介</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="systemd_part1" data-title="Systemd 的服务管理模型" data-url="http://dingmingk.github.io/2016/02/27/systemd_part1/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

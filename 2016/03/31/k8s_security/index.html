@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Kubernetes 安全机制 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Kubernetes 通过一系列机制来实现集群的安全控制，其中包括 API Server 的认证授权、准入控制机制及保护敏感信息的 Secret 机制等。集群的安全性必须考虑如下几个目标：
+
+保证容器与其所在的宿主机的隔离；
+限制容器给基础设施及其他容器带来消极影响的能力；
+最小权限原则————合理限制所有组件的权限，确保组件只执行它被授权的行为，通过限制单个组件的能力来限制它所能到达的权限范围；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 安全机制">
+<meta property="og:url" content="http://dingmingk.github.io/2016/03/31/k8s_security/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="Kubernetes 通过一系列机制来实现集群的安全控制，其中包括 API Server 的认证授权、准入控制机制及保护敏感信息的 Secret 机制等。集群的安全性必须考虑如下几个目标：
+
+保证容器与其所在的宿主机的隔离；
+限制容器给基础设施及其他容器带来消极影响的能力；
+最小权限原则————合理限制所有组件的权限，确保组件只执行它被授权的行为，通过限制单个组件的能力来限制它所能到达的权限范围；">
+<meta property="og:updated_time" content="2016-10-24T07:32:51.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes 安全机制">
+<meta name="twitter:description" content="Kubernetes 通过一系列机制来实现集群的安全控制，其中包括 API Server 的认证授权、准入控制机制及保护敏感信息的 Secret 机制等。集群的安全性必须考虑如下几个目标：
+
+保证容器与其所在的宿主机的隔离；
+限制容器给基础设施及其他容器带来消极影响的能力；
+最小权限原则————合理限制所有组件的权限，确保组件只执行它被授权的行为，通过限制单个组件的能力来限制它所能到达的权限范围；">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-k8s_security" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Kubernetes 安全机制
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Kubernetes 通过一系列机制来实现集群的安全控制，其中包括 API Server 的认证授权、准入控制机制及保护敏感信息的 Secret 机制等。集群的安全性必须考虑如下几个目标：</p>
+<ol>
+<li>保证容器与其所在的宿主机的隔离；</li>
+<li>限制容器给基础设施及其他容器带来消极影响的能力；</li>
+<li>最小权限原则————合理限制所有组件的权限，确保组件只执行它被授权的行为，通过限制单个组件的能力来限制它所能到达的权限范围；</li>
+<li>明确组件间边界的划分；</li>
+<li>划分普通用户和管理员的角色；</li>
+<li>在必要的时候允许将管理员权限赋给普通用户；</li>
+<li>允许拥有“Secret”数据（Keys、Certs、Passwords）的应用在集群中运行。</li>
+</ol>
+<p>下面分别从 Authentication、Authorization、Admission Control、Secret 和 Service Account 六个方面来说明集群的安全机制。</p>
+<h2 id="Authentication-认证"><a href="#Authentication-认证" class="headerlink" title="Authentication 认证"></a>Authentication 认证</h2><p>Kubernetes 对 API 调用使用 CA（Client Authentication）、Token 和 HTTP Base 方式实现用户认证。</p>
+<p>使用 CA 认证的应用需包含一个 CA 认证机构给服务器端下发的根证书、服务端证书和私钥文件。因此 API Server 的三个参数“–client-ca-file”“–tls-cert-file”和“–tls-private-key-file”分别指向根证书文件、服务端证书文件和私钥文件。API Server 客户端应用的三个启动参数（例如 Kubectl 的三个参数 “certificate-authority”“client-certificate”和“client-key”），或客户端应用的 kubeconfig 配置文件中的配置项“certificate-authority”“client-certificate”和“client-key”分别指向根证书文件、客户端证书文件和私钥文件。</p>
+<p>Kubernetes 的 CA 认证方式通过添加 API Server 的启动参数“–client-ca-file=SOMEFILE”实现，其中“SOMEFILE”为认证授权文件，该文件包含一个或多个证书颁发机构（CA Certificates Authorities）。</p>
+<p>Token 认证方式通过添加 API Server 的启动参数“–token_auth_file=SOMEFILE”实现，其中“SOMEFILE”指的是 Token 文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">例如 Token 文件内容为：</div><div class="line">lkjqweroiuuou,Thomas,8x7d1kklzseertyywx</div><div class="line">用 CURL 去访问该 API Server：</div><div class="line">curl $APISERVER/api --header &quot;Authorization: Bearer lkjqweroiuuou&quot; --insecure</div><div class="line">&#123;</div><div class="line">  &quot;version&quot; : [</div><div class="line">    &quot;v1&quot;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>基本认证方式是通过添加 API Server 的启动参数“–basic_auth_file=SOMEFILE”实现的，其中“SOMEFILE”指的是用于存储用户和密码信息的基本认证文件。</p>
+<p>当使用基本认证方式从 HTTP 客户端访问 API Server 时，HTTP 请求头中的 Authorization 域必须包含“Basic BASE64ENCODEDUSER:PASSWORD”的值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">tmp=`base64 &quot;dingmingk:passwd&quot;`</div><div class="line">curl $APISERVER/api --header &quot;Authorization: Basic $tmp&quot; --insecure</div><div class="line">&#123;</div><div class="line">  &quot;version&quot;:[</div><div class="line">    &quot;v1&quot;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="Authorization-授权"><a href="#Authorization-授权" class="headerlink" title="Authorization 授权"></a>Authorization 授权</h2><p>在 Kubernetes 中，授权（Authorization）是认证（Authenticaiton）后的一个独立步骤，作用于 API Server 主要端口的所有 HTTP 访问。授权流程不作用于只读端口，在计划中只读端口在不久之后将被删除。授权流程通过访问策略比较请求上下文的属性（例如用户名、资源和 Namespace）。在通过 API 访问资源之前，必须通过访问策略进行校验。访问策略通过 API Server 的启动参数 –authorization_mode 配置，该参数包含如下三个值：</p>
+<ul>
+<li>–authorization_mode=AlwaysDeny</li>
+<li>–authorization_mode=AlwaysAllow</li>
+<li>–authorization_mode=ABAC</li>
+</ul>
+<p>其中，“AlwaysDeny”表示拒绝所有的请求，该配置一般用于测试；“AlwaysAllow”表示接受所有请求，如果集群不需要授权流程，则可以采用该策略；“ABAC”表示使用用户配置的授权策略去管理访问 API Server 的请求，ABAC（Attribute-Based Access Control）为基于属性的访问控制。</p>
+<p>在 Kubernetes 中，一个 HTTP 请求包含如下 4 个能被授权进程识别的属性：</p>
+<ul>
+<li>用户名（代表一个已经被认证的用户的字符型用户名）；</li>
+<li>是否是只读请求（REST 的 GET 操作是只读的）；</li>
+<li>被访问的是哪一类资源，例如访问 Pod 资源/api/v1/namespaces/defaults/pods；</li>
+<li>被访问对象所属的 Namespace，如果这被访问的资源不支持 Namespace，则是空字符串。</li>
+</ul>
+<p>如果选用 ABAC 模式，那么需要通过设置 API Server 的“–authorization_policy_file=SOME_FILENAME”参数来指定授权策略文件，其中“SOME_FILENAME”为授权策略文件。授权策略文件的每一行都是一个 JSON 对象，该 JSON 对象是一个 Map，这个 Map 内不包含 List 和 Map。每行都是一个“策略对象”。策略对象包含下面 4 个属性：</p>
+<ul>
+<li>user（用户名），为字符串类型，该字符串类型的用户名来源于 Token 文件或基本认证文件中的用户名字段的值；</li>
+<li>readonly（只读标识），为布尔类型，当它的值为 true 时，表明该策略允许 GET 请求通过；</li>
+<li>resource（资源），为字符串类型，来自于 URL 的资源，例如“Pods”；</li>
+<li>namespace（命名空间），为字符串类型，表明该策略允许访问某个 Namespace 的资源。</li>
+</ul>
+<p>没被设置的属性，将被等同于根据值的类型设置成零值（例如为字符串类型属性设置一个空字符串；为布尔值属性设置 false；为数值类型属性设置 0）。</p>
+<p>授权策略文件中的策略对象的一个未设置属性，表示匹配 HTTP 请求中该属性的任何值。对请求的 4 个属性值和授权策略文件中的所有策略对象逐个匹配，如果至少有一个策略对象被匹配上，则该请求将被授权通过。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">允许用户 alice 做任何事情：&#123;&quot;user&quot;:&quot;alice&quot;&#125;。</div><div class="line">用户 Kubelet 指定读取资源 Pods：&#123;&quot;user&quot;:&quot;kubelet&quot;,&quot;resource&quot;:&quot;pods&quot;,&quot;readonly&quot;:true&#125;。</div><div class="line">用户 Kubelet 能读和写资源 events：&#123;&quot;user&quot;:&quot;kubelet&quot;,&quot;resource&quot;:&quot;events&quot;&#125;</div><div class="line">用户 bob 只能读取 Namespace &quot;myNamespace&quot; 中的资源 Pods：&#123;&quot;user&quot;:&quot;bob&quot;,&quot;resource&quot;:&quot;pods&quot;,&quot;readonly&quot;:true,&quot;ns&quot;:&quot;myNamespace&quot;&#125;</div></pre></td></tr></table></figure>
+<h2 id="Admission-Control-准入控制"><a href="#Admission-Control-准入控制" class="headerlink" title="Admission Control 准入控制"></a>Admission Control 准入控制</h2><p>Admission Control 是用于拦截所有经过认证和鉴权后的访问 API Server 请求的可插入代码（或插件）。这些可插入代码运行于 API Server 进程中，在被调用前必须被编译成二进制文件。在请求被 API Server 接收前，每个 Admission Control 插件按配置顺序执行。如果其中的任意一个插件拒绝该请求，就意味着这个请求被 API Server 拒绝，同时 API Server 反馈一个错误信息给请求发起方。</p>
+<p>在某些情况下，Admission Control 插件会使用系统配置的默认值取改变进入集群对象的内容。此外，Admission Control 插件可能会改变请求处理所使用的配额，比如增加请求处理的资源配额。</p>
+<p>通过配置 API Server 的启动参数“admission_control”，在该参数中加入需要的 Admission Control 插件列表，各插件的名称之间用逗号隔开。例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">--admission_control=NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota</div></pre></td></tr></table></figure>
+<p>Admission Control 的插件列表如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">名称</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">AlwaysAdmit</td>
+<td style="text-align:left">允许所有请求通过</td>
+</tr>
+<tr>
+<td style="text-align:center">AlwaysDeny</td>
+<td style="text-align:left">拒绝所有请求，一般用于测试</td>
+</tr>
+<tr>
+<td style="text-align:center">DenyExecOnPrivileged</td>
+<td style="text-align:left">拦截所有带有 SecurityContext 属性的 Pod 的请求，拒绝在一个特权容器中执行命令</td>
+</tr>
+<tr>
+<td style="text-align:center">ServiceAccount</td>
+<td style="text-align:left">配合 Service Account Controller 使用，为设定了 Service Account 的 Pod 自动管理 Secret，使得 Pod 能够使用相应的 Secret 下载 Image 和访问 API Server</td>
+</tr>
+<tr>
+<td style="text-align:center">SecurityContextDeny</td>
+<td style="text-align:left">不允许带有 SecurityContext 属性的 Pod 存在，SecurityContext 属性用于创建特权容器</td>
+</tr>
+<tr>
+<td style="text-align:center">ResourceQuota</td>
+<td style="text-align:left">在 Namespace 中做资源配额限制</td>
+</tr>
+<tr>
+<td style="text-align:center">LimitRanger</td>
+<td style="text-align:left">限制 Namespace 中的 Pod 和 Container 的 CPU 和 内存配额</td>
+</tr>
+<tr>
+<td style="text-align:center">NamespaceExists</td>
+<td style="text-align:left">读区请求中的 Namespace 属性，如果该 Namespace 不存在，则拒绝该请求</td>
+</tr>
+<tr>
+<td style="text-align:center">NamespaceAutoProvision(deprecated)</td>
+<td style="text-align:left">读取请求中的 Namespace 属性，如果该 Namespace 不存在，则尝试创建该 Namespace</td>
+</tr>
+<tr>
+<td style="text-align:center">NamespaceLifecycle</td>
+<td style="text-align:left">该插件限制访问处于中止状态的 Namespace，禁止在该 Namespace 中创建新的内容。当 NamespaceLifecycle 和 NamespaceExists 能够合并成一个插件后，NamespaceAutoProvision 就会变成 deprecated</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Secret-私密凭据"><a href="#Secret-私密凭据" class="headerlink" title="Secret 私密凭据"></a>Secret 私密凭据</h2><p>Secret 的主要作用是保管私密数据，比如密码、OAuth Tokens、SSH Keys 等信息。将这些私密信息放在 Secret 对象中比直接放在 Pod 或 Docker Image 中更安全，也更便于使用。</p>
+<p>Kubernetes 在 Pod 创建时，如果该 Pod 指定了 Service Account，那么为该 Pod 自动添加包含凭证信息的 Secrets，用于访问 API Server 和下载 Image。该功能可以通过 Admission Control 添加或失效，然而如果需要以安全的方式去访问 API Server，则建议开启该功能。</p>
+<p>下面的例子用于创建一个 Secret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ kubectl namespace myspace</div><div class="line">$ cat &lt;&lt;EOF &gt; secrets.yaml</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysecret</div><div class="line">type: Opaque</div><div class="line">data:</div><div class="line">  password: dmFsdWUtMgOK</div><div class="line">  username: dmFsdWUtMQOK</div><div class="line">$ kubectl create -f secrets.yaml</div></pre></td></tr></table></figure>
+<p>在上面的例子中，data域的各子域的值必须为 base64 编码值，其中 password 域和 username 域 base64 编码前的值分别为“value-1” 和“value-2”。</p>
+<p>一旦 Secret 被创建，则可以通过下面的三种方式使用它：</p>
+<ol>
+<li>在创建 Pod 时，通过为 Pod 指定 Service Account 来自动使用该 Secret；</li>
+<li>通过挂载该 Secret 到 Pod 来使用它；</li>
+<li>在创建 Pod 时，指定 Pod 的 spc.ImagePullSecrets 来引用它。</li>
+</ol>
+<p>将一个 Secret 通过挂载的方式添加到 Pod 的 Volume 中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: myPod</div><div class="line">  namespace: myns</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    name: mycontainer</div><div class="line">    image: redis</div><div class="line">    volumeMounts:</div><div class="line">    - name: foo</div><div class="line">      mountPath: /etc/foo</div><div class="line">      readOnly: true</div><div class="line">  volumes:</div><div class="line">  - name: foo</div><div class="line">    secret:</div><div class="line">      secretNmae: mysecret</div></pre></td></tr></table></figure>
+<p>手动使用 imagePullSecret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">$ docker login localhost:1180</div><div class="line"></div><div class="line">用 base64 编码 dockercfg 的内容</div><div class="line">$ cat ~/.dockercfg | base64</div><div class="line"></div><div class="line">将上一步命令的输出结果作为 Secret 的“data.dockercfg” 域的内容，由此来创建一个 Secret</div><div class="line">$ cat &gt; image-pull-secret.yaml &lt;&lt;EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: myregistrykey</div><div class="line">data:</div><div class="line">  .dockercfg: xxxxxxxxxxxxxxxxxxxxx</div><div class="line">type: kubernetes.io/dockercfg</div><div class="line">EOF</div><div class="line">$ kubectl create -f image-pull-secret.yaml</div><div class="line"></div><div class="line">在创建 Pod 时，引用该 Secret</div><div class="line">$ cat &gt; pods.yaml &lt;&lt; EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: mypod2</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: foo</div><div class="line">      image: janedoe/awesomeapp:v1</div><div class="line">  imagePullSecrets:</div><div class="line">    - name: myregistrykey</div><div class="line">EOF</div><div class="line"></div><div class="line">$ kubectl create -f pods.yaml</div></pre></td></tr></table></figure>
+<p>Pod 创建时会验证所挂载的 Secret 是否真的指向一个 Secret 对象，因此 Secret 必须在任何引用它的 Pod 之前被创建。Secret 对象属于 Namespace，它们只能被同一个 NameSpace 中的 Pod 所引用。</p>
+<p>Secret 包含三种类型：Opaque、ServiceAccount 和 Dockercfg。前面举例介绍了如何创建 Opaque 和 Dockercfg 类型的 Secret。下面的例子为创建一个 Service Account Secret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysecret</div><div class="line">  annotations:</div><div class="line">    kubernetes.io/service-account.name: myserviceaccount</div><div class="line">type: kubernetes.io/service-account-token</div></pre></td></tr></table></figure>
+<h2 id="Service-Account"><a href="#Service-Account" class="headerlink" title="Service Account"></a>Service Account</h2><p>Service Account 是多个 Secret 的集合。它包含两类 Secret：一类为普通 Secret，用于访问 API Server，也被称为 Service Account Secret；另一类为 imagePullSecret，用于下载容器镜像。如果镜像库运行在 Insecure 模式下，则该 Service Account 可以不包含 imagePullSecret。在下面的例子中创建了一个名为 build-robot 的 Service Account，并查询该 Service Account 的信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">$ cat &gt; serviceaccount.yaml &lt;&lt; EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: ServiceAccount</div><div class="line">metadata:</div><div class="line">  name: myserviceaccount</div><div class="line">secrets:</div><div class="line">  - name: mysecret</div><div class="line">    kind: Secret</div><div class="line">    apiVersion: v1</div><div class="line">  - name: mysecret1</div><div class="line">    kind: Secret</div><div class="line">    apiVersion: v1</div><div class="line">imagePullSecrets:</div><div class="line">  - name: mysecret2</div><div class="line">EOF</div><div class="line">$ kubectl create -f serviceaccount.yaml</div><div class="line">$ kubectl get serviceaccounts build-robot -o yaml</div></pre></td></tr></table></figure>
+<p>在 Pod 的创建过程中指定“spec.serviceAccountName”的值为相应的 Service Account 的名称：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: mypod</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: mycontainer</div><div class="line">      image: nginx</div><div class="line">  serviceAccountName: myserviceaccount</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/31/k8s_security/" class="archive-article-date">
+  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/04/01/k8s_security_demo/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Kubernetes 集群安全配置案例
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/03/31/k8s_hosts/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">修改 Kubernetes 集群重容器的 hosts</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="k8s_security" data-title="Kubernetes 安全机制" data-url="http://dingmingk.github.io/2016/03/31/k8s_security/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

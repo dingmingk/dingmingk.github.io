@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Git 和声 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="冲突解决只要有合并就可能会有冲突。
+自动合并修改不同的文件有时候我们在push代码到远程仓库时，会遇到一些小麻烦。
+
+图为出现非快进式推送时的日志。
+这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。
+
+
+非快进式推送（nor-fast-forwardupdates） 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git 和声">
+<meta property="og:url" content="http://dingmingk.github.io/2015/12/24/git_part3/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="冲突解决只要有合并就可能会有冲突。
+自动合并修改不同的文件有时候我们在push代码到远程仓库时，会遇到一些小麻烦。
+
+图为出现非快进式推送时的日志。
+这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。
+
+
+非快进式推送（nor-fast-forwardupdates） 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其">
+<meta property="og:image" content="http://dingmingk.github.io/assets/blogImg/git_part3_1.png">
+<meta property="og:image" content="http://dingmingk.github.io/assets/blogImg/git_part3_2.png">
+<meta property="og:image" content="http://dingmingk.github.io/assets/blogImg/git_part3_3.png">
+<meta property="og:image" content="http://dingmingk.github.io/assets/blogImg/git_part3_4.png">
+<meta property="og:updated_time" content="2016-10-24T07:15:57.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Git 和声">
+<meta name="twitter:description" content="冲突解决只要有合并就可能会有冲突。
+自动合并修改不同的文件有时候我们在push代码到远程仓库时，会遇到一些小麻烦。
+
+图为出现非快进式推送时的日志。
+这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。
+
+
+非快进式推送（nor-fast-forwardupdates） 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其">
+<meta name="twitter:image" content="http://dingmingk.github.io/assets/blogImg/git_part3_1.png">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-git_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Git 和声
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="冲突解决"><a href="#冲突解决" class="headerlink" title="冲突解决"></a>冲突解决</h2><p>只要有合并就可能会有冲突。</p>
+<h3 id="自动合并"><a href="#自动合并" class="headerlink" title="自动合并"></a>自动合并</h3><h4 id="修改不同的文件"><a href="#修改不同的文件" class="headerlink" title="修改不同的文件"></a>修改不同的文件</h4><p>有时候我们在push代码到远程仓库时，会遇到一些小麻烦。</p>
+<p><img src="/assets/blogImg/git_part3_1.png" alt="git_part3_1.png"></p>
+<p>图为出现非快进式推送时的日志。</p>
+<p>这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。</p>
+<p><img src="/assets/blogImg/git_part3_2.png" alt="git_part3_2.png"></p>
+<blockquote>
+<p><strong>非快进式推送（nor-fast-forwardupdates）</strong> 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其他用户在当前用户版本库上次commit和本次commit之间向远程版本库执行了推送所致。</p>
+</blockquote>
+<p><strong>解决方法</strong></p>
+<ul>
+<li>先执行pull，再继续push，即合并后推送。这才是多成员协同工作推荐的方式。</li>
+<li>使用 <code>git push origin master --force</code>强制推送。这种方式存在覆盖掉其他人提交的危险，不推荐使用。</li>
+</ul>
+<h4 id="修改相同文件的不同区域"><a href="#修改相同文件的不同区域" class="headerlink" title="修改相同文件的不同区域"></a>修改相同文件的不同区域</h4><p>解决方法基本如上。但是如果追溯一下文件每一行的来源，可以看到分别是 dingmingk 和 root 用户更改的第一和最后的一行。</p>
+<p><img src="/assets/blogImg/git_part3_3.png" alt="git_part3_3.png"></p>
+<h4 id="同时更改文件名和文件内容"><a href="#同时更改文件名和文件内容" class="headerlink" title="同时更改文件名和文件内容"></a>同时更改文件名和文件内容</h4><p>解决方法如上。最新版本的文件名和内容都为修改后。</p>
+<h3 id="冲突解决-1"><a href="#冲突解决-1" class="headerlink" title="冲突解决"></a>冲突解决</h3><p>如果两个用户修改了同一文件的同一区域，则在合并的时候会遇到冲突而导致合并过程中端。这是因为 Git 并不能越俎代庖地替用户做出决定，而是把决定权交给用户。在这种情况下，Git 标识出合并冲突，等待用户对冲突做出抉择。</p>
+<p><img src="/assets/blogImg/git_part3_4.png" alt="git_part3_4.png"></p>
+<p>如图所示，特殊标识 &lt;&lt;&lt;&lt;&lt;&lt;&lt;（七个小于号）和 =======（七个等号）之间的内容是当前分支所更改的内容。特殊标识 =======（七个等号）和 &gt;&gt;&gt;&gt;&gt;&gt;&gt;（七个大于号）之间的内容是所合并的版本更改内容。</p>
+<p>冲突解决的实质就是通过编辑操作，将冲突标识符所标识的冲突内容替换为合适的内容，并去掉冲突标识符。编辑完后再重新提交即可。</p>
+<h2 id="里程碑"><a href="#里程碑" class="headerlink" title="里程碑"></a>里程碑</h2><p>里程碑即 Tag，是人为对提交进行的命名。相比于 Git 默认的提交ID，使用一个直观的表意的字符串会方便得多。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">git tag				&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -a			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -m &lt;msg&gt;	&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -s			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -u &lt;key-id&gt; &lt;tagname&gt; [&lt;commit&gt;]</div></pre></td></tr></table></figure>
+<ul>
+<li>第一种是创建轻量级里程碑。</li>
+<li>第二种和第三种想同，都是创建带说明的里程碑。其中第三种直接通过 -m 参数提供里程碑创建说明。</li>
+<li>第四种和第五种相同，都是创建带 GNUPG 签名的里程碑。其中第五种用 -u 参数选择指定的私钥进行签名。</li>
+<li>创建里程碑需要输入里程碑的名字（<tagname>）和一个可选的提交ID（<commit>）。如果没有提供提交ID，则基于头指针 HEAD 创建里程碑。</commit></tagname></li>
+</ul>
+<h3 id="轻量级里程碑"><a href="#轻量级里程碑" class="headerlink" title="轻量级里程碑"></a>轻量级里程碑</h3><h3 id="带说明的里程碑"><a href="#带说明的里程碑" class="headerlink" title="带说明的里程碑"></a>带说明的里程碑</h3><h3 id="带签名的里程碑"><a href="#带签名的里程碑" class="headerlink" title="带签名的里程碑"></a>带签名的里程碑</h3><h3 id="删除里程碑"><a href="#删除里程碑" class="headerlink" title="删除里程碑"></a>删除里程碑</h3><h3 id="里程碑命名规范"><a href="#里程碑命名规范" class="headerlink" title="里程碑命名规范"></a>里程碑命名规范</h3><h2 id="Git-分支"><a href="#Git-分支" class="headerlink" title="Git 分支"></a>Git 分支</h2><h3 id="分支命令"><a href="#分支命令" class="headerlink" title="分支命令"></a>分支命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">git branch</div><div class="line">git branch &lt;branchname&gt;</div><div class="line">git branch &lt;branchname&gt; &lt;start-point&gt;</div><div class="line">git branch -d &lt;branchname&gt;</div><div class="line">git branch -D &lt;branchname&gt;</div><div class="line">git branch -m &lt;oldbranch&gt; &lt;branchname&gt;</div><div class="line">git branch -M &lt;oldbranch&gt; &lt;newbranch&gt;</div></pre></td></tr></table></figure>
+<ul>
+<li>第一种用于显示本地分支列表。当前分支在输出中会显示为特别的颜色，并用星号“*”标识出来。</li>
+<li>第二种和第三种用于创建分支。用法2基于当前头指针（HEAD）指向的提价创建分支，新分支的分支名 <branchname>。第三种基于提交 <start-point> 创建新分支，新分支的分支名为 <branchname>。</branchname></start-point></branchname></li>
+<li>第四种和第五种用户删除分支。第四种在删除分支 <branchname> 时会检查所要删除的分支是否已经合并到其它分支种，否则拒绝删除。第五种会强制删除分支。</branchname></li>
+<li>第六种和第七种用于重命名分支。如果版本库中已经存在名为 <newbranch> 的分支，第六种会拒绝执行重命名，而第七种会强制执行。</newbranch></li>
+</ul>
+<h3 id="分支变基"><a href="#分支变基" class="headerlink" title="分支变基"></a>分支变基</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ git checkout develop</div><div class="line">$ git rebase master</div></pre></td></tr></table></figure>
+<p>这两条命令会把你的 develop 分支里的每个提交（commit）取消掉，并且把它们临时保存为补丁（这些patch放到 .git/rebase 目录中），然后把 develop 分支更新为最新的 master 分支，最后把保存的这些补丁应用到 develop 分支上。</p>
+<h2 id="远程版本库"><a href="#远程版本库" class="headerlink" title="远程版本库"></a>远程版本库</h2><h2 id="代码回滚"><a href="#代码回滚" class="headerlink" title="代码回滚"></a>代码回滚</h2><h3 id="本地代码库回滚"><a href="#本地代码库回滚" class="headerlink" title="本地代码库回滚"></a>本地代码库回滚</h3><p>git reset 命令回滚有三种方式：</p>
+<ul>
+<li>mixed: 默认方式。它回退到某个版本，只保留源码，回退commit和index信息。</li>
+<li>soft: 只回退commit信息，不会恢复index file一级。</li>
+<li>hard: 彻底回退到某个版本，本地的源码也会变为上一个版本的内容。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">* $ git reset --[hard|soft|mixed] &lt;commit&gt;	回滚所有内容到某个提交</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^		回滚所有内容到上一个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^^ xxx	回滚xxx这个文件到上两个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD~3	回滚所有内容到第三个版本</div><div class="line">* $ git reset --[hard|soft|mixed] origin/master	回滚到和远程一样</div></pre></td></tr></table></figure>
+<h3 id="远程代码库回滚"><a href="#远程代码库回滚" class="headerlink" title="远程代码库回滚"></a>远程代码库回滚</h3><p>远程代码库回滚比本地回滚要复杂一些，建议操作前先备份分支。</p>
+<p>操作步骤：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">1. $ git checkout &lt;branch&gt;			切换到分支</div><div class="line">2. $ git pull							拉取最新代码</div><div class="line">3. $ git branch &lt;branch&gt; &lt;branch_backup&gt;	备份分支</div><div class="line">4. $ git reset --hard &lt;commit&gt;	回滚本地代码库</div><div class="line">5. $ git push origin :&lt;branch&gt;	删除远程分支</div><div class="line">6. $ git push origin &lt;branch&gt;		将本地分支推送到远程</div><div class="line">7. $ git push origin :&lt;branch_backup&gt;	删除远程备份分支</div></pre></td></tr></table></figure>
+<h3 id="反转提交"><a href="#反转提交" class="headerlink" title="反转提交"></a>反转提交</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">* $ git revert &lt;commit&gt;				用一次新的反转提交来消除一个历史提交所做的任何修改</div><div class="line">$ git revert -m 1 &lt;commit&gt;			“-m 1”参数表示某次历史提交的父提交</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/24/git_part3/" class="archive-article-date">
+  	<time datetime="2015-12-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-24</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/">Git</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/02/18/curl_sendmail/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Curl 发送邮件
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/12/11/saltUser/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">SaltStack 用户管理</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="git_part3" data-title="Git 和声" data-url="http://dingmingk.github.io/2015/12/24/git_part3/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>使用 Cgroup | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Cgconfig服务要使用 cgroup，首先要确认系统中已安装 libcgroup软件包。（RedHat系）
+1# yum install libcgroup
+cgconfig.conf文件cgconfig.conf 文件包含两个主要类型的条目 ——— mount 和 group。挂载条目生成并挂载层级并将其作为虚拟文件系统，同时将子系统附加到那些层级中
+123456789101112# cat">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 Cgroup">
+<meta property="og:url" content="http://dingmingk.github.io/2016/02/29/cgroup_part2/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="Cgconfig服务要使用 cgroup，首先要确认系统中已安装 libcgroup软件包。（RedHat系）
+1# yum install libcgroup
+cgconfig.conf文件cgconfig.conf 文件包含两个主要类型的条目 ——— mount 和 group。挂载条目生成并挂载层级并将其作为虚拟文件系统，同时将子系统附加到那些层级中
+123456789101112# cat">
+<meta property="og:updated_time" content="2016-10-24T07:20:47.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用 Cgroup">
+<meta name="twitter:description" content="Cgconfig服务要使用 cgroup，首先要确认系统中已安装 libcgroup软件包。（RedHat系）
+1# yum install libcgroup
+cgconfig.conf文件cgconfig.conf 文件包含两个主要类型的条目 ——— mount 和 group。挂载条目生成并挂载层级并将其作为虚拟文件系统，同时将子系统附加到那些层级中
+123456789101112# cat">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-cgroup_part2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      使用 Cgroup
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Cgconfig服务"><a href="#Cgconfig服务" class="headerlink" title="Cgconfig服务"></a>Cgconfig服务</h2><p>要使用 cgroup，首先要确认系统中已安装 <code>libcgroup</code>软件包。（RedHat系）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install libcgroup</div></pre></td></tr></table></figure>
+<h4 id="cgconfig-conf文件"><a href="#cgconfig-conf文件" class="headerlink" title="cgconfig.conf文件"></a>cgconfig.conf文件</h4><p>cgconfig.conf 文件包含两个主要类型的条目 ——— mount 和 group。挂载条目生成并挂载层级并将其作为虚拟文件系统，同时将子系统附加到那些层级中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"># cat /etc/cgconfig.conf</div><div class="line"></div><div class="line">mount &#123;</div><div class="line">        cpuset  = /cgroup/cpuset;</div><div class="line">        cpu     = /cgroup/cpu;</div><div class="line">        cpuacct = /cgroup/cpuacct;</div><div class="line">        memory  = /cgroup/memory;</div><div class="line">        devices = /cgroup/devices;</div><div class="line">        freezer = /cgroup/freezer;</div><div class="line">        net_cls = /cgroup/net_cls;</div><div class="line">        blkio   = /cgroup/blkio;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>挂载子系统的备选方法是使用 shell 命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># mkdir /cgroup/cpu</div><div class="line"># mount -t cgroup -o cpu cpu /cgroup/cpu</div></pre></td></tr></table></figure>
+<p>组群条目使用一下语法设定子系统参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">group &lt;name&gt;</div><div class="line">	[&lt;permissions&gt;]</div><div class="line">	&lt;controller&gt; &#123;</div><div class="line">		&lt;param name&gt; = &lt;param value&gt;;</div><div class="line">		...</div><div class="line">	&#125;</div><div class="line">	...</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h4 id="e-g-为-sql-守护进程创建-cgroup，可为-sqladmin-组群中的用户在-cgroup-中添加任务，并让-root-用户修改子系统参数："><a href="#e-g-为-sql-守护进程创建-cgroup，可为-sqladmin-组群中的用户在-cgroup-中添加任务，并让-root-用户修改子系统参数：" class="headerlink" title="e.g. 为 sql 守护进程创建 cgroup，可为 sqladmin 组群中的用户在 cgroup 中添加任务，并让 root 用户修改子系统参数："></a>e.g. 为 sql 守护进程创建 cgroup，可为 sqladmin 组群中的用户在 cgroup 中添加任务，并让 root 用户修改子系统参数：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">group daemons/sql &#123;</div><div class="line">	perm &#123;</div><div class="line">		task &#123;</div><div class="line">			uid = root;</div><div class="line">			gid = sqladmin;</div><div class="line">		&#125; admin &#123;</div><div class="line">			uid = root;</div><div class="line">			gid =root;</div><div class="line">		&#125;</div><div class="line">	&#125; cpu &#123;</div><div class="line">		cpu.shares = 100;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>以上配置对等的 shell 命令为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"># mkdir -p /cgroup/cpu/daemons/sql</div><div class="line"># chown root:root /cgroup/cpu/daemons/sql/*</div><div class="line"># chown root:sqladmin /cgfroup/cpu/daemons/sql/tasks</div><div class="line"># echo 100 &gt; /cgroup/cpu/daemons/sql/cpu.shares</div></pre></td></tr></table></figure>
+<h2 id="在现有层级中附加或删除子系统"><a href="#在现有层级中附加或删除子系统" class="headerlink" title="在现有层级中附加或删除子系统"></a>在现有层级中附加或删除子系统</h2><p>要在现有层级中添加子系统，从现有层级中取消层级或者将其移动到不同的层级中，请作为 root 编辑 /etc/cgconfig.conf 文件的 mount 部分，当 cgconfig 下次重启时，它会根据您指定的层级识别那些子系统。</p>
+<p>使用 mount 命令挂载时加上 remount 参数，并列出新的子系统列表即可。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mount -t cgroup -o remount,cpu,cpuset,... cpu_and_mem</div></pre></td></tr></table></figure>
+<h2 id="卸载层级"><a href="#卸载层级" class="headerlink" title="卸载层级"></a>卸载层级</h2><p>直接使用 umount 即可卸载层级。不过需要注意的是：如果该层级目前为空（即它只包含 root cgroup），则在卸载它时会取消激活该层级。如果该层级包含任意其他 cgroup，该层级在内核中仍保持活跃，即使不再挂载它也是如此。</p>
+<p>要删除层级，请确定您在卸载该层级前删除所有子 cgroup，或者使用 cgclear命令，它可在层级非空时也可取消激活层级。</p>
+<h2 id="cgroup操作"><a href="#cgroup操作" class="headerlink" title="cgroup操作"></a>cgroup操作</h2><h4 id="cgcreate"><a href="#cgcreate" class="headerlink" title="cgcreate"></a>cgcreate</h4><blockquote>
+<p>语法： cgcreate -t uid:gid -a uid:gid -g subsystems:path</p>
+</blockquote>
+<ul>
+<li>-t（可选）：指定用户（使用用户 ID，uid）和组群（使用组群 ID，gid）以便让这个 cgroup 拥有 tasks 伪文件。这个用户可在该 cgroup 中添加任务。</li>
+<li>-a（可选）：指定用户（使用用户ID，uid）和组群（使用组群ID，gid）以便这个 cgroup 拥有 tasks 外的所有伪文件。这个用户可修改这个 cgroup 中的任务对系统资源的访问。</li>
+<li>-g：指定在其中创建 cgroup 的层级，格式为与那些层级关联的用逗号分开的 subsystems 列表。如果这个列表中的子系统在不同的层级中，则要在每个层级中都创建该组群。层级列表后是一个冒号，然后是与该层级有关的子组群 path。不要在该 path 中包含层级挂载点。</li>
+</ul>
+<p><em>e.g.</em> 在 cpu_and_mem 层级中一同挂载 cpu 和 memory 子系统的系统，并将 net_cls 控制器挂载到名为 net 的另一个层级中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># cgcreate -g cpu,net_cls:/test-subgroup</div></pre></td></tr></table></figure>
+<p><em>备用方法</em>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mkdir /cgroup/hierarchy/name/child_name</div></pre></td></tr></table></figure>
+<h4 id="cgdelete"><a href="#cgdelete" class="headerlink" title="cgdelete"></a>cgdelete</h4><p>使用 cgdelete 删除 cgroup，其语法与 cgcreate 类似。</p>
+<blockquote>
+<p>cgdelete subsystems:path</p>
+<p>-r 递归删除所有子组群</p>
+</blockquote>
+<p><em>e.g.</em> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># cgdelete cpu,net_cls:/test-subgroup</div></pre></td></tr></table></figure>
+<h4 id="cgset"><a href="#cgset" class="headerlink" title="cgset"></a>cgset</h4><p>在可修改相关的 cgroup 的用户账户中 运行 cgset 命令设置子系统参数。</p>
+<blockquote>
+<p>cgset -r parameter=value path_to_cgroup</p>
+<p>parameter： 是要设定的参数，该参数与给定 cgroup 的目录中的文件对应。</p>
+<p>value： 是为参数设定的值</p>
+<p>path_to_cgroup： 是到相对该层级 root 的 cgroup 路径。</p>
+<p>–copy-from path_to_source_cgroup path_to_target_cgroup： 将一个 cgroup 中的参数复制到另一个现有 cgroup 中。</p>
+</blockquote>
+<p><em>备用方法</em></p>
+<p>要直接在 cgroup 中设置参数，可使用 echo 命令将值插入相关子系统伪文件中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># echo 0-1 &gt; /cgroup/cpuset/group1/cpuset.cpus</div></pre></td></tr></table></figure>
+<h2 id="cgclassify"><a href="#cgclassify" class="headerlink" title="cgclassify"></a>cgclassify</h2><blockquote>
+<p>cgclassify -g subsystems:path_to_cgroup pidlist</p>
+<p>subsystems： 是用逗号分开的子系统列表，或者 ＊ 启动与所有可用子系统关联的层级中的进程。</p>
+<p>path_to_cgroup： 是到其层级中的 cgroup 的路径。</p>
+<p>pidlist： 是用空格分开的进程识别符（PID）列表。 </p>
+</blockquote>
+<p><em>e.g.</em> 将 PID 为 1701 和 1138 的进程移动到 cgorup 中的 group1/：<code># cgclassify -g cpu,memory:group1 1701 1138</code></p>
+<p><em>备用方法</em></p>
+<p><code># echo 1701 &gt; /cgroup/lab1/group/tasks</code></p>
+<h2 id="cgred"><a href="#cgred" class="headerlink" title="cgred"></a>cgred</h2><p>Cgred 是一个守护进程，它可根据在 <code>/etc/cgrules.conf</code> 中设定的参数将任务移动到 cgroup 中，条目可以使用以下两种格式之一：</p>
+<ul>
+<li>user hierarchies control_group</li>
+<li>user:command hierarchies control_group</li>
+</ul>
+<p><em>e.g.</em> </p>
+<p><code>maria        devices        /usergroup/staff</code></p>
+<p>这个条目指定任何属于名为 maria 用户的进程根据在 /usergroup/staff cgroup 中指定的参数访问设备子系统。</p>
+<p><code>maria:ftp    devices    /usergroup/staff/ftp</code></p>
+<p>该条目现在指定核实名为 maria 的用户使用 ftp 命令 ，自动将该进程移动到包含 devices 子系统的层级中的 /usergroup/staff/ftp cgroup 中。</p>
+<h4 id="etc-cgrules-conf"><a href="#etc-cgrules-conf" class="headerlink" title="/etc/cgrules.conf"></a>/etc/cgrules.conf</h4><blockquote>
+<p>@：当在 user 使用前缀时，代表是一个组群而不是一个单独用户。例如： @admins 是 admins 组群中的所有用户。</p>
+<p>*： 代表“所有”。</p>
+<p>%： 代表与以上行中项目相同的项目。</p>
+</blockquote>
+<h2 id="cgexec"><a href="#cgexec" class="headerlink" title="cgexec"></a>cgexec</h2><blockquote>
+<p>cgexec -g subsystems:path_to_cgroup command arguments</p>
+<p>subsystems：是用逗号分开的子系统列表或者 * 启动与所有可用子系统关联的层级的进程。</p>
+<p>path_to_cgroup：是到与该层级相关的 cgroup 的路径。</p>
+<p>commond：是要运行的命令。</p>
+<p>arguments：是该命令所有参数。</p>
+<p>–sticky：将所有子进程放在同一 cgroup 中。</p>
+</blockquote>
+<p><em>备用方法</em></p>
+<p><code># echo $$ &gt; /cgroup/lab1/group1/tasks</code></p>
+<p>请注意：**退出用户后，现有 shell 中仍在 group1 cgroup 中。因此更好的方法应为：</p>
+<p><code># sh -c &quot;echo \$$ &gt; /cgroup/lab1/group1/tasks &amp;&amp; USER</code></p>
+<h4 id="在控制组群中启动服务"><a href="#在控制组群中启动服务" class="headerlink" title="在控制组群中启动服务"></a>在控制组群中启动服务</h4><p>您可在某个 cgroup 中启动某些服务。在 cgroup 中启动的服务必须：</p>
+<ul>
+<li>使用 /etc/sysconfig/servicename 文件</li>
+<li>使用 /etc/init.d/functions 的 daemon()功能启动该服务</li>
+</ul>
+<p>要在某个 cgroup 中启动合格服务，请在 /etc/sysconfig 中编辑其文件，使该文件包含如下条目：<strong>CGROUP_DAEMON=”subsystem:control_group”</strong></p>
+<p><em>e.g.</em> <code>CGROUP_DAEMON=&quot;cpuset:daemons/sql&quot;</code></p>
+<h2 id="获得有关控制组群的信息"><a href="#获得有关控制组群的信息" class="headerlink" title="获得有关控制组群的信息"></a>获得有关控制组群的信息</h2><h4 id="查找某个进程"><a href="#查找某个进程" class="headerlink" title="查找某个进程"></a>查找某个进程</h4><p><code>$ ps -O cgroup</code></p>
+<p><code>$ cat /proc/PID/cgroup</code></p>
+<h4 id="查找子系统"><a href="#查找子系统" class="headerlink" title="查找子系统"></a>查找子系统</h4><p><code>$ cat /proc/cgroups</code></p>
+<p><code>$ lssubsys -m subsystems</code></p>
+<h4 id="查找层级"><a href="#查找层级" class="headerlink" title="查找层级"></a>查找层级</h4><p><code>$ tree /cgroup/</code></p>
+<h4 id="查找控制组群"><a href="#查找控制组群" class="headerlink" title="查找控制组群"></a>查找控制组群</h4><p><code>$ lscgroup</code></p>
+<p><code>$ lscgroup cpuset:adminusers</code></p>
+<h4 id="显示控制组群的参数"><a href="#显示控制组群的参数" class="headerlink" title="显示控制组群的参数"></a>显示控制组群的参数</h4><p><code>$ cgget -r parameter list_of_cgroups</code></p>
+<p>其中 parameter 是包含子系统值的伪文件，list_of_cgroups 是用空格分开的 cgorup 列表。</p>
+<h2 id="cgclear"><a href="#cgclear" class="headerlink" title="cgclear"></a>cgclear</h2><p><strong>cgclear 命令将破坏所有层级中的所有 cgroup。如果没有在配置文件中保存这些层级，将无法再次构建它们。</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/29/cgroup_part2/" class="archive-article-date">
+  	<time datetime="2016-02-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-29</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cgroup/">Cgroup</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/03/01/systemd_part3/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Systemd 工具集
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/02/27/systemd_part1/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Systemd 的服务管理模型</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="cgroup_part2" data-title="使用 Cgroup" data-url="http://dingmingk.github.io/2016/02/29/cgroup_part2/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

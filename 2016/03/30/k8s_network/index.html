@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Kubernetes 网络配置方案 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。
+直接路由通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。
+例如">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 网络配置方案">
+<meta property="og:url" content="http://dingmingk.github.io/2016/03/30/k8s_network/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。
+直接路由通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。
+例如">
+<meta property="og:updated_time" content="2016-10-24T07:31:43.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes 网络配置方案">
+<meta name="twitter:description" content="为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。
+直接路由通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。
+例如">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-k8s_network" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Kubernetes 网络配置方案
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。</p>
+<h2 id="直接路由"><a href="#直接路由" class="headerlink" title="直接路由"></a>直接路由</h2><p>通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。</p>
+<p>例如 Pod1 所在 docker0 网桥的 IP 子网是 10.1.10.0，Node 地址为 192.168.1.128；而 Pod2 所在 docker0 网桥的 IP 子网是 10.1.20.0，Node 地址为 192.168.1.129.</p>
+<p>在 Node1 上增加一条到 Node2 上 docker0 的静态路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.20.0 netmask 255.255.255.0 gw 192.168.1.129</div></pre></td></tr></table></figure>
+<p>同样，在 Node2 上增加一条到 Node1 上 docker0 的静态路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.10.0 netmask 255.255.255.0 gw 192.168.1.128</div></pre></td></tr></table></figure>
+<p>我们的集群中机器数量通常很多。假设有 100 台服务器，那么就需要在每台服务器上手工添加到另外 99 台服务器 docker0 的路由规则。为了减少手工操作，可以使用 Quagga 软件来实现路由规则的动态添加。</p>
+<p>除了在每台服务器上安装 Quagga 软件并启动，还可以使用互联网上的一个 Quagga 容器来运行，在这里使用 index.alauda.cn/georce/router 镜像启动 Quagga。在每台 Node 上下载该 Docker 镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker pull index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
+<p>在运行 Quagga 路由器之前，需要确保每个 Node 上 docker0 网桥的子网地址不能重叠，也不能与物理机所在的网络重叠，这需要网络管理员仔细规划。</p>
+<p>下面以 3 个 Node 为例，使用 ifconfig 命令修改 docker0 网桥的地址和子网（假设 Node 所在的物理网络不是 10.1.X.X地址段）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Node 1: # ifconfig docker0 10.1.10.1/24</div><div class="line">Node 2: # ifconfig docker0 10.1.20.1/24</div><div class="line">Node 3: # ifconfig docker0 10.1.30.1/24</div></pre></td></tr></table></figure>
+<p>然后在每个 Node 上启动 Quagga 容器。需要说明的是，Quagga 需要以 –privileged 特权模式运行，并且指定 –net=host，表示直接使用物理机的网络：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -itd --name=router --privileged --net=host index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
+<p>启动成功后，Quagga 会相互学习来完成到其他机器的 docker0 路由的添加。</p>
+<h2 id="使用-flannel-叠加网络"><a href="#使用-flannel-叠加网络" class="headerlink" title="使用 flannel 叠加网络"></a>使用 flannel 叠加网络</h2><p>falnnel 采用叠加网络（Overlay Network）模型来完成网络的打通。</p>
+<h4 id="安装-etcd"><a href="#安装-etcd" class="headerlink" title="安装 etcd"></a>安装 etcd</h4><p>由于 flannel 使用 etcd 作为数据库，所以需要预先安装好 etcd。</p>
+<h4 id="安装-flannel"><a href="#安装-flannel" class="headerlink" title="安装 flannel"></a>安装 flannel</h4><p>需要在每台 Node 上都安装 flannel。flannel 软件的下载地址为 (<a href="https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件" target="_blank" rel="external">https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件</a> flanneld 和 mk-docker-opts.sh 复制到 /usr/bin（或其他 PATH 环境变量中的目录），即可完成对 flannel 的安装。</p>
+<h4 id="配置-flannel"><a href="#配置-flannel" class="headerlink" title="配置 flannel"></a>配置 flannel</h4><p>此处以使用 systemd 系统为例对 flanneld 服务进行配置。编辑服务配置文件 /etc/systemd/system/flanneld.service：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Flanneld overlay address etcd agent</div><div class="line">After=network.target</div><div class="line">Before=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">Type=notify</div><div class="line">EnvironmentFile=/etc/sysconfig/flanneld</div><div class="line">EnvironmentFile=-/etc/sysconfig/docker-network</div><div class="line">ExecStart=/usr/bin/flanneld -etcd-endpoints=$&#123;FLANNEL_ETCD&#125; $FLANNEL_OPTIONS</div><div class="line"></div><div class="line">[Install]</div><div class="line">RequiredBy=docker.service</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>编辑配置文件/etc/sysconfig/flannel，设置 etcd 的 URL 地址：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># Flanneld configuration options</div><div class="line"># etcd url location. Point this to the server where etcd runs</div><div class="line">FLANNEL_ETCD=&quot;http://192.168.1.128:2379&quot;</div><div class="line"></div><div class="line"># etcd config key. THis is the configuration key that flannel queries</div><div class="line"># For address range assignment</div><div class="line">FLANNEL_ETCD_KEY=&quot;/coreos.com/network&quot;</div><div class="line"></div><div class="line"># Any additional options that you want to pass</div><div class="line">#FLANNEL_OPTIONS=&quot; &quot;</div></pre></td></tr></table></figure>
+<p>在启动 flannel 之前，需要在 etcd 中添加一条网络配置记录，这个配置将用于 flannel 分配给每个 Docker 的虚拟 IP 地址段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># etcdctl set /coreos.com/network/config &apos;&#123; &quot;Network&quot; : &quot; 10.1.0.0/16 &quot; &#125;&apos;</div></pre></td></tr></table></figure>
+<h4 id="由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。"><a href="#由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。" class="headerlink" title="由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。"></a>由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。</h4><h4 id="启动-flanneld-服务"><a href="#启动-flanneld-服务" class="headerlink" title="启动 flanneld 服务"></a>启动 flanneld 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart flanneld</div></pre></td></tr></table></figure>
+<h4 id="在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置："><a href="#在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置：" class="headerlink" title="在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置："></a>在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mk-docker-opts.sh -i</div><div class="line"># source /run/flannel/subnet.env</div><div class="line"># ifconfig docker0 $&#123;FLANNEL_SUBNET&#125;</div></pre></td></tr></table></figure>
+<h4 id="重新启动-Docker-服务"><a href="#重新启动-Docker-服务" class="headerlink" title="重新启动 Docker 服务"></a>重新启动 Docker 服务</h4><h2 id="使用-Open-vSwitch"><a href="#使用-Open-vSwitch" class="headerlink" title="使用 Open vSwitch"></a>使用 Open vSwitch</h2><p>以两个 Node 为例，首先确保节点 192.168.18.128 的 Docker0 采用 172.17.43.0／24 网段，而 192.168.18.131 的 Docker0 采用 172.17.42.0/24 网段，对应参数为 DockerDaemon 进程里的 bip 参数。</p>
+<h4 id="安装-ovs"><a href="#安装-ovs" class="headerlink" title="安装 ovs"></a>安装 ovs</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install openvswitch-x.x.x-x.x86_64.rpm</div></pre></td></tr></table></figure>
+<p>禁止 SELINUX 功能，配置后重启机器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># vi /etc/selinux/config</div><div class="line">SELINUX=disabled</div></pre></td></tr></table></figure>
+<p>查看 Open vSwitch 的服务状态，应该启动两个进程：ovsdb-server 与 ovs-vswitchd。</p>
+<h4 id="创建网桥和-GRE-隧道"><a href="#创建网桥和-GRE-隧道" class="headerlink" title="创建网桥和 GRE 隧道"></a>创建网桥和 GRE 隧道</h4><p>接下来需要在每个 Node 上建立 ovs 的网桥 br0，然后在网桥上创建一个 GRE 隧道连接对端网桥，最后把 ovs 的网桥 br0 作为一个端口连接到 docker0 这个 Linux 网桥上。这样以来，两个节点上的 docker0 网段就能互通了。</p>
+<p>创建网桥</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-br br0</div></pre></td></tr></table></figure>
+<p>创建 GRE 隧道连接对端，remote_ip 为对端 eth0 的网卡地址</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-port br0 grel -- set interface grel type=gre option:remote_ip=192.168.18.128</div></pre></td></tr></table></figure>
+<p>添加 br0 到本地 docker0，使得容器流量通过 OVS 流经 tunnel</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># brctl addif docker0 br0</div></pre></td></tr></table></figure>
+<p>启动 br0 与 docker0 网桥</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># ip link set dev br0 up</div><div class="line"># ip link set dev docker0 up</div></pre></td></tr></table></figure>
+<p>添加路由规则。由于 192.168.18.128 与 192.168.18.131 的 docker0 网段分别为 172.17.43.0/24 与 172.17.42.0／24，这两个网段的路由都需要经过本机的 docker0 网桥路由，其中一个 24 网段是通过 OVS 的 GRE 隧道到达对端的，因此需要在每个 Node 上添加通过 docker0 网桥转发的 172.17.0.0/16 段的路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ip route add 172.17.0.0/16 dev docker0</div></pre></td></tr></table></figure>
+<p>清空 Docker 自带的 iptables 规则及 Linux 的规则 ，后者存在拒绝 icmp 报文通过防火墙的规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># iptables -t nat -F; iptables -F</div></pre></td></tr></table></figure>
+<p>在 192.168.18.131 上完成上述步骤后，在 192.168.18.128 节点执行同样的操作。注意，GRE 隧道里的 IP 地址药改为对端节点（192.168.18.131）的 IP 地址。</p>
+<h4 id="Node-上容器之间的互通测试"><a href="#Node-上容器之间的互通测试" class="headerlink" title="Node 上容器之间的互通测试"></a>Node 上容器之间的互通测试</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># tshark -i br0 -R ip proto great</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/30/k8s_network/" class="archive-article-date">
+  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/03/30/k8s_dns/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Kubernetes DNS 服务配置案例
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/03/29/k8s_quota/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Kubernetes 资源配额管理</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="k8s_network" data-title="Kubernetes 网络配置方案" data-url="http://dingmingk.github.io/2016/03/30/k8s_network/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

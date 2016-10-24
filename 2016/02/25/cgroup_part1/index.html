@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Cgroup 简介 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Cgroup是control group的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process group）所使用的物理资源（如：cpu，memory，IO等等）。
+使用 cgroup，系统管理员可耕具体地控制对系统资源的分配、优先顺序、拒绝、管理和监控。可更好地根据任务和拥护分配硬件资源，提高总体效率。
+Cgroup 最初由google的工程师提出，后来被整合进Linux内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cgroup 简介">
+<meta property="og:url" content="http://dingmingk.github.io/2016/02/25/cgroup_part1/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="Cgroup是control group的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process group）所使用的物理资源（如：cpu，memory，IO等等）。
+使用 cgroup，系统管理员可耕具体地控制对系统资源的分配、优先顺序、拒绝、管理和监控。可更好地根据任务和拥护分配硬件资源，提高总体效率。
+Cgroup 最初由google的工程师提出，后来被整合进Linux内">
+<meta property="og:updated_time" content="2016-10-24T07:19:57.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Cgroup 简介">
+<meta name="twitter:description" content="Cgroup是control group的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process group）所使用的物理资源（如：cpu，memory，IO等等）。
+使用 cgroup，系统管理员可耕具体地控制对系统资源的分配、优先顺序、拒绝、管理和监控。可更好地根据任务和拥护分配硬件资源，提高总体效率。
+Cgroup 最初由google的工程师提出，后来被整合进Linux内">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-cgroup_part1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Cgroup 简介
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>Cgroup</code>是<code>control group</code>的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process group）所使用的物理资源（如：cpu，memory，IO等等）。</p>
+<p>使用 cgroup，系统管理员可耕具体地控制对系统资源的分配、优先顺序、拒绝、管理和监控。可更好地根据任务和拥护分配硬件资源，提高总体效率。</p>
+<p>Cgroup 最初由google的工程师提出，后来被整合进Linux内核。Cgroup 也是LXC（Linux container）为实现虚拟化所使用的资源管理工具。最初的 Docker 版本其实就是在LXC上集成一些工具集，后来才重新设计自己的虚拟化层，发布了<code>libcontainer</code>。</p>
+<h2 id="如何管理cgroup"><a href="#如何管理cgroup" class="headerlink" title="如何管理cgroup"></a>如何管理cgroup</h2><p>Cgroup 是分层管理的，类似进程，且子 cgroup 会继承其上级 cgroup 的一些属性。但这两个模式也有不同。</p>
+<h4 id="Linux-进程模式"><a href="#Linux-进程模式" class="headerlink" title="Linux 进程模式"></a>Linux 进程模式</h4><p>Linux 系统中的所有进程都是通用父进程 <code>init</code> 的子进程 ，该进程在引导时由内核执行并启动其它进程（这些进程会按顺序启动其子进程）。因为所有进程都归结到一个父进程，所以 Linux 进程模式是一个单一层级结构，或者树结构。</p>
+<p>另外，init 之外的每个 Linux 进程都会继承其父进程的环境（比如 PATH 变量）和某些属性（比如打开文件描述符）。</p>
+<h4 id="Cgroup-模式"><a href="#Cgroup-模式" class="headerlink" title="Cgroup 模式"></a>Cgroup 模式</h4><p>Cgroup 与进程在以下方面类似：</p>
+<ul>
+<li>它们是分级的</li>
+<li>子 cgroup 会集成其 cgroup 的某些属性</li>
+</ul>
+<p>根本的不同是在某个系统中可同时存在不同的分级 cgroup。如果 Linux 进程模式是进程的单一树模式，那么 cgroup 模式是一个或者更多任务的独立、未连接树（例如：进程）。</p>
+<p>需要多个独立 cgroup 分级，因为每个分级都会附加到一个或者多个子系统中。</p>
+<h4 id="子系统"><a href="#子系统" class="headerlink" title="子系统"></a>子系统</h4><p>以 RedHat6 为例，系统提供9个 cgroup 子系统，根据名称和功能列出如下。</p>
+<ul>
+<li>blkio: 这个子系统为块设备设定输入／输出限制，比如物理设备（磁盘，固态硬盘，USB等等）。</li>
+<li>cpu: 这个子系统使用调度程序提供对 CPU 的 cgroup 任务访问。</li>
+<li>cpuacct: 这个子系统自动生成 cgroup 中任务所使用的 CPU 报告。 </li>
+<li>cpuset: 这个子系统为 cgroup 中的任务分配独立 CPU（在多核系统）和内存节点。</li>
+<li>devices: 这个子系统可允许或者拒绝 cgroup 中的任务访问设备。</li>
+<li>freezer: 这个子系统挂起或者恢复 cgroup 中的任务。</li>
+<li>memory: 这个子系统设定 cgroup 中任务使用的内存限制，并自动生成由那些任务使用的内存资源报告。</li>
+<li>net_cls: 这个子系统使用等级识别符（classid）标记网络数据包，可允许 Linux 流量控制程序（tc）识别从具体 cgroup 中生成的数据包。</li>
+<li>ns: 命名空间子系统。</li>
+</ul>
+<h2 id="子系统、层级、控制组群和任务的关系"><a href="#子系统、层级、控制组群和任务的关系" class="headerlink" title="子系统、层级、控制组群和任务的关系"></a>子系统、层级、控制组群和任务的关系</h2><blockquote>
+<p>在 cgroup 术语中系统进程称为任务。</p>
+</blockquote>
+<h4 id="Rule-1"><a href="#Rule-1" class="headerlink" title="Rule 1"></a>Rule 1</h4><p><strong>任何单一子系统（比如 cpu）最多可附加到一个层级中。</strong></p>
+<p><em>结果是，cpu 子系统永远无法附加到两个不同的层级。</em></p>
+<h4 id="Rule-2"><a href="#Rule-2" class="headerlink" title="Rule 2"></a>Rule 2</h4><p><strong>单一层级可附加一个或者多个子系统</strong></p>
+<p><em>结果是，cpu 和 memory 子系统（或者任意数目的子系统）都可附加到单一层级中，只要每个子系统不再附加到另一个层级即可。</em></p>
+<h4 id="Rule-3"><a href="#Rule-3" class="headerlink" title="Rule 3"></a>Rule 3</h4><p>每次在系统中创建新层级时，该系统中的所有任务都是那个层级的默认 cgroup（我们称之为 root cgroup）的初始成员。任何创建的单一层级，该系统中的每个任务都可以是那个层级中唯一一个 cgroup 的成员。单一任务可以是在多个 cgroup 中，只要每个 cgroup 都在不同的层级中即可。只要某个任务成为同一层级中第二个 cgroup 成员，就会将其从那个层级的第一个 cgroup 中删除。</p>
+<p><strong>一个任务永远不会同时位于同一层级的不同 cgroup 中。</strong></p>
+<p><em>结果是，如果 cpu 和 memory 子系统都附加到名为 cpu_and_mem的层级中，且 net_cls 子系统是附加到名为 net 的层级中，那么运行的 httpd 进程可以是 cpu_and_mem 中任意 cgroup 的成员，同时也是 net 中任意 cgroup 的成员。</em></p>
+<p>httpd 进程所在 cpu_and_mem 中的 cgroup 可将其 CPU 时间限制为分配给其它进程时间的一半，并将其内存用量限制为最多 1024MB。另外，net中的 cgroup 还可将其传输速率限制为 30MB／s。</p>
+<p><strong>首次创建层级时，该系统中的每个任务都至少是一个 cgroup 的成员，即 root cgroup。因此每当使用 cgroup 时，每个系统任务总是至少在一个 cgroup 中。</strong></p>
+<h4 id="Rule-4"><a href="#Rule-4" class="headerlink" title="Rule 4"></a>Rule 4</h4><p><strong>系统中的任意进程（任务）都将自己分支创建子进程（任务）。该子任务自动成为其父进程所在 cgroup 的成员。</strong>然后可根据需要将该子任务移动到不同的 cgroup 中，但开始时它总是继承其父任务的 cgroup（进程术语中称其为“环境”）。</p>
+<p><em>cpu_and_mem 层级中名为 halt_cpu_1gb_max 的 cgroup 成员的任务，以及 net 层级中 cgroup trans_rate_30 的成员。当 httpd 进程将其自身分为几个分支时，其子进程会自动成为 half_cpu_1gb_max cgroup 和 trans_rate_30 cgroup 的成员。它会完全继承其父任务所属的同一 cgroup。</em></p>
+<p>此后，父任务和子任务就彼此完全独立：更改某个任务所属 cgroup 不会影响到另一个。同样更改父任务的 cgroup 也不会以任何方式影响其子任务。<strong>总之：所有子任务总是可继承其父任务的同一 cgroup 的成员关系，但之后可更改或者删除那些成员关系。</strong></p>
+<h2 id="资源管理实施"><a href="#资源管理实施" class="headerlink" title="资源管理实施"></a>资源管理实施</h2><ul>
+<li>因为某个任务可属于任一层级中的单一 cgroup，所以只有一个方法可让单一子系统限制或者影响任务。这是合理的：是一个功能，而不是限制。</li>
+<li>可以将几个子系统分组在一起以便它们可影响单一层级中的所有任务。因为该层级中的 cgroup 有不同的参数设定，因此会对那些任务产生不同的影响。</li>
+<li>有时可能需要重构层级。例如：从附加了几个子系统的层级中删除一个子系统，并将其附加到不同的层级中。</li>
+<li>反正，如果从不同层级中分离子系统的需求降低，则可以删除层级并将其子系统附加到现有层级中。</li>
+<li>这个设计允许简单的 cgroup 使用，比如为单一层级中的具体任务设定几个参数 ，单一层级可以是只附加了 cpu 和 memory 子系统的层级。</li>
+<li>这个设计还允许高精度配置：系统中的每个任务（进程）都可以是每个层级的成员，每个层级都有单一附加的子系统。这样的配置可让系统管理员绝对控制每个单一任务的所有参数。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/25/cgroup_part1/" class="archive-article-date">
+  	<time datetime="2016-02-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-25</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cgroup/">Cgroup</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/02/27/systemd_part1/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Systemd 的服务管理模型
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/02/18/curl_sendmail/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Curl 发送邮件</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="cgroup_part1" data-title="Cgroup 简介" data-url="http://dingmingk.github.io/2016/02/25/cgroup_part1/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Kubernetes DNS 服务配置案例 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。
+Kubernete">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes DNS 服务配置案例">
+<meta property="og:url" content="http://dingmingk.github.io/2016/03/30/k8s_dns/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。
+Kubernete">
+<meta property="og:updated_time" content="2016-10-24T07:28:37.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes DNS 服务配置案例">
+<meta name="twitter:description" content="在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。
+Kubernete">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-k8s_dns" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Kubernetes DNS 服务配置案例
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。</p>
+<p>Kubernetes 提供的 DNS 由以下三个组件组成：</p>
+<ol>
+<li>etcd: DNS 存储</li>
+<li>kube2sky: 将 Kubernetes Master 中的 Service（服务）注册到 etcd。</li>
+<li>skyDNS: 提供 DNS 域名解析服务。</li>
+</ol>
+<p>这三个组件以 Pod 的方式启动和运行，所以在一个 Kubernetes 集群中，它们都可能被调度到任意一个 Node 节点上去。为了能够使它们之间网络互通，需要将各 Pod 之间的网络打通。</p>
+<h2 id="skydns-配置文件"><a href="#skydns-配置文件" class="headerlink" title="skydns 配置文件"></a>skydns 配置文件</h2><p>首先创建 DNS 服务的 ReplicationController 配置文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: kube-dns-v8</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">    kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: kube-dns</div><div class="line">        version: v8</div><div class="line">        kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: etcd</div><div class="line">        image: gcr.io/google_containers/etcd:2.0.9</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        command:</div><div class="line">        - /usr/local/bin/etcd</div><div class="line">        - -data-dir</div><div class="line">        - /var/etcd/data</div><div class="line">        - -listen-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -advertise-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -initial-cluster-token</div><div class="line">        - skydns-etcd</div><div class="line">        volumeMounts:</div><div class="line">        - name: etcd-storage</div><div class="line">          mountPath: /var/etcd/data</div><div class="line">      - name: kube2sky</div><div class="line">        image: gcr.io/google_containers/kube2sky:1.11</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /kube2sky &quot;</div><div class="line">        - --kube_master_url=http://192.168.1.128:8080</div><div class="line">        - -domain=cluster.local</div><div class="line">      - name: skydns</div><div class="line">        image: gcr.io/google_containers/skydns:2015-03-11-001</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /skydns &quot;</div><div class="line">        - -machines=http://localhost:4001</div><div class="line">        - -addr=0.0.0.0:53</div><div class="line">        - -domain=cluster.local</div><div class="line">        ports:</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns</div><div class="line">          protocol: UDP</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns-tcp</div><div class="line">          protocol: TCP</div><div class="line">      volumes:</div><div class="line">        - name: etcd-storage</div><div class="line">          emptyDir: &#123;&#125;</div><div class="line">      dnsPolicy: Default</div></pre></td></tr></table></figure>
+<p>需要修改的几个配置参数如下：</p>
+<ul>
+<li>kube2sky 容器需要访问 Kubernetes Master，需要配置 Master 所在物理主机的 IP 地址和端口号，本例中设置参数 –kube_master_url 的值为 <a href="http://192.168.1.128:8080。" target="_blank" rel="external">http://192.168.1.128:8080。</a></li>
+<li>kube2sky 容器和 skydns 容器的启动参数 -domain,设置 Kubernetes 集群中 Service 所属的域名，本例中为 cluster.local。启动后，kube2sky 会监听 Kubernetes，当有新的 Service 创建时，就会生成相应的记录并保存到 etcd 中。kube2sky 为每个 Service 生成两条记录：<ul>
+<li><service_name>.<namespace_name>.<domain>;</domain></namespace_name></service_name></li>
+<li><service_name>.<namespace_name>.svc.<domain>。</domain></namespace_name></service_name></li>
+</ul>
+</li>
+<li>skydns 的启动参数 -addr=0.0.0.0:53 表示使用本机 TCP 和 UDP 的 53 端口提供服务。</li>
+</ul>
+<p>创建 DNS 服务的 Service 配置文件如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: kube-dns</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-system</div><div class="line">    labels:</div><div class="line">      k8s-app: kube-dns</div><div class="line">      kubernetes.io/cluster-services: &quot; true &quot;</div><div class="line">      kubernetes.io/name: &quot; KubeDNS &quot;</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">  clusterIP: 20.1.0.100</div><div class="line">  ports:</div><div class="line">  - name: dns</div><div class="line">    port: 53</div><div class="line">    protocol: UDP</div><div class="line">  - name: dns-tcp</div><div class="line">    port: 53</div><div class="line">    protocol: TCP</div></pre></td></tr></table></figure>
+<p>注意，skydns 服务使用的 clusterIP 需要我们指定一个固定的 IP 地址，每个 Node 的 Kubernetes 进程都将使用这个 IP 地址，不能通过 Kubernetes 自动分配。</p>
+<p>另外，这个 IP 地址需要在 kube-apiserver 启动参数 –service-cluster-ip-range 指定的 IP 地址范围内。</p>
+<h2 id="修改每个-Node-上的-Kubelet-启动参数"><a href="#修改每个-Node-上的-Kubelet-启动参数" class="headerlink" title="修改每个 Node 上的 Kubelet 启动参数"></a>修改每个 Node 上的 Kubelet 启动参数</h2><p>修改每台 Node 上 Kubelet 的启动参数：</p>
+<ul>
+<li>–cluster_dns=20.1.0.100，为 DNS 服务的 ClusterIP 地址；</li>
+<li>–cluster_domain=cluster.local，为 DNS 服务中设置的域名。</li>
+</ul>
+<p>然后重启 Kubelet 服务。</p>
+<h2 id="创建-skydns-Pod-和服务"><a href="#创建-skydns-Pod-和服务" class="headerlink" title="创建 skydns Pod 和服务"></a>创建 skydns Pod 和服务</h2><p>通过 kubectl create 完成 RC 和 Service 的创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># kubectl create -f skydns-rc.yaml</div><div class="line"># kubectl create -f skydns-svc.yaml</div></pre></td></tr></table></figure>
+<p>创建完成后，可以查看系统创建的 RC、Pod、Service 是否创建成功：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># kubectl get rc|pods|services --namespace=kube-system</div></pre></td></tr></table></figure>
+<h2 id="DNS-服务的工作原理"><a href="#DNS-服务的工作原理" class="headerlink" title="DNS 服务的工作原理"></a>DNS 服务的工作原理</h2><p>让我们看看 DNS 服务背后的工作原理。</p>
+<p>kube2sky 容器应用通过调用 Kubernetes Master 的 API 获得集群中所有 Service 的信息，并持续监控新 Service 的生成，然后写入 etcd 中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">查看 etcd 中存储的 Service 信息</div><div class="line"># kubectl exec kube-dns-v8-xxxxx -c etcd --namespace=kube-system etcdctl ls /skydns/local/cluster</div></pre></td></tr></table></figure>
+<p>根据 Kubelet 启动参数的设置（–cluster_dns），Kubelet 会在每个新创建的 Pod 中设置 DNS 域名解析配置文件 /etc/resolv.conf 文件，在其中增加了一条 nameserver 配置和一条 search 配置。</p>
+<p>最后，应用程序就能够像访问网站域名一样，仅仅通过服务的名字就能访问到服务了。</p>
+<p>通过 DNS 设置，对于其他 Service 的查询将可以不再依赖系统为每个 Pod 创建的环境变量，而是直接使用 Service 的名字就能对其进行访问，使得应用程序中的代码更加简洁。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/30/k8s_dns/" class="archive-article-date">
+  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/03/31/k8s_monitor/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Kubernetes 集群性能监控
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/03/30/k8s_network/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Kubernetes 网络配置方案</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="k8s_dns" data-title="Kubernetes DNS 服务配置案例" data-url="http://dingmingk.github.io/2016/03/30/k8s_dns/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

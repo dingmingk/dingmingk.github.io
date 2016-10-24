@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Curl 发送邮件 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="关于curl，大家都知道它可用来访问web页面，下载文件等等。其实它的功能远不止这么点，它支持众多协议，其中就包括发送邮件的SMTP协议。
+确认curl是否支持SMTP首先确认你的curl是否支持smtp。
+1# curl-config --protocols |grep SMTP
+如果不支持smtp协议，那么重新安装curl。
+安装高版本curl使用yum安装的curl一般不支持smtp协议，接">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Curl 发送邮件">
+<meta property="og:url" content="http://dingmingk.github.io/2016/02/18/curl_sendmail/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="关于curl，大家都知道它可用来访问web页面，下载文件等等。其实它的功能远不止这么点，它支持众多协议，其中就包括发送邮件的SMTP协议。
+确认curl是否支持SMTP首先确认你的curl是否支持smtp。
+1# curl-config --protocols |grep SMTP
+如果不支持smtp协议，那么重新安装curl。
+安装高版本curl使用yum安装的curl一般不支持smtp协议，接">
+<meta property="og:updated_time" content="2016-10-24T06:58:52.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Curl 发送邮件">
+<meta name="twitter:description" content="关于curl，大家都知道它可用来访问web页面，下载文件等等。其实它的功能远不止这么点，它支持众多协议，其中就包括发送邮件的SMTP协议。
+确认curl是否支持SMTP首先确认你的curl是否支持smtp。
+1# curl-config --protocols |grep SMTP
+如果不支持smtp协议，那么重新安装curl。
+安装高版本curl使用yum安装的curl一般不支持smtp协议，接">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-curl_sendmail" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Curl 发送邮件
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>关于curl，大家都知道它可用来访问web页面，下载文件等等。其实它的功能远不止这么点，它支持众多协议，其中就包括发送邮件的SMTP协议。</p>
+<h2 id="确认curl是否支持SMTP"><a href="#确认curl是否支持SMTP" class="headerlink" title="确认curl是否支持SMTP"></a>确认curl是否支持SMTP</h2><p>首先确认你的curl是否支持smtp。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># curl-config --protocols |grep SMTP</div></pre></td></tr></table></figure>
+<p>如果不支持smtp协议，那么重新安装curl。</p>
+<h2 id="安装高版本curl"><a href="#安装高版本curl" class="headerlink" title="安装高版本curl"></a>安装高版本curl</h2><p>使用yum安装的curl一般不支持smtp协议，接下来我们使用源码包来安装。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"># cd /usr/local/src</div><div class="line"># wget https://github.com/bagder/curl/archivemaster.zip</div><div class="line"># unzip master.zip</div><div class="line"># cd curl-master</div><div class="line"># ./buildconf</div><div class="line"># ./configure </div><div class="line"># make &amp;&amp; make install</div></pre></td></tr></table></figure>
+<p>安装好后再次确认是否支持smtp。</p>
+<h2 id="使用curl发送邮件"><a href="#使用curl发送邮件" class="headerlink" title="使用curl发送邮件"></a>使用curl发送邮件</h2><h4 id="编写邮件内容"><a href="#编写邮件内容" class="headerlink" title="编写邮件内容"></a>编写邮件内容</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># cat mail.txt</div><div class="line">From:from@xxx.com</div><div class="line">To:to@xxx.com</div><div class="line">Subject: curl发送邮件标题</div><div class="line"></div><div class="line">邮件内容。。。</div></pre></td></tr></table></figure>
+<h4 id="发送邮件"><a href="#发送邮件" class="headerlink" title="发送邮件"></a>发送邮件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># /usr/local/bin/curl -s --url &quot;smtp://smtp.xxx.com --mail-from &quot;from@xxx.com&quot; --mail-rcpt &quot;to@xxx.com&quot; --upload-file mail.txt --user &quot;from@xxx.com:PASSWORD&quot;</div></pre></td></tr></table></figure>
+<h4 id="参数说明"><a href="#参数说明" class="headerlink" title="参数说明"></a>参数说明</h4><blockquote>
+<p>–url:            smtp地址</p>
+<p>–mail-from:    发件人邮箱</p>
+<p>–mail-rcpt:    收件人邮箱</p>
+<p>–upload-file:    信件内容，包含发件人、收件人、标题、内容</p>
+<p>–user:            账号密码，中间用冒号分割</p>
+</blockquote>
+<h4 id="curl更多协议"><a href="#curl更多协议" class="headerlink" title="curl更多协议"></a>curl更多协议</h4><p>curl支持众多协议，详细内容可使用如下命令查看。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># /usr/local/bin/curl-config --protocols</div></pre></td></tr></table></figure>
+<h2 id="zabbix-curl发邮件脚本"><a href="#zabbix-curl发邮件脚本" class="headerlink" title="zabbix curl发邮件脚本"></a>zabbix curl发邮件脚本</h2><p>我们通常使用<code>sendEmail</code>来发送告警，下面分享一个zabbix使用curl发送告警邮件的脚本。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">#!/bin/bash</div><div class="line"># -------------------------------------------------------------------------------</div><div class="line"># FileName:    zabbix_curl_sendmail.sh</div><div class="line"># Revision:    1.0</div><div class="line"># Date:        2016/02/18</div><div class="line"># Author:      dingmingk</div><div class="line"># Email:       dingmingk@gmail.com</div><div class="line"># Website:     www.dingmingk.com</div><div class="line"># Description: use curl send email</div><div class="line"># Notes:       ~</div><div class="line"># -------------------------------------------------------------------------------</div><div class="line"># Copyright:   2015 (c) dingmingk</div><div class="line"># License:     GPL</div><div class="line"> </div><div class="line">MAIL_FROM=&apos;from@xxx.com&apos;</div><div class="line">MAIL_TO=$1</div><div class="line">MAIL_SUBJECT=$2</div><div class="line">MAIL_CONTENT=$3</div><div class="line">MAIL_CONTENT_FILE=&quot;/tmp/`/bin/date +%s`.txt&quot;</div><div class="line">MAIL_SMTP=&apos;smtp://smtp.xxx.com&apos;</div><div class="line">MAIL_USER=&apos;from@xxx.com&apos;</div><div class="line">MAIL_PASSWORD=&apos;PASSWORD&apos;</div><div class="line"> </div><div class="line"># create mail content file</div><div class="line">echo &quot;From:$&#123;MAIL_FROM&#125;</div><div class="line">To:$1</div><div class="line">Subject: $MAIL_SUBJECT</div><div class="line"> </div><div class="line">$MAIL_CONTENT &quot;&gt; $&#123;MAIL_CONTENT_FILE&#125;</div><div class="line"> </div><div class="line"># send mail</div><div class="line">/usr/local/bin/curl -s --url &quot;$&#123;MAIL_SMTP&#125;&quot; --mail-from &quot;$&#123;MAIL_FROM&#125;&quot; --mail-rcpt $&#123;MAIL_TO&#125; --upload-file $&#123;MAIL_CONTENT_FILE&#125; --user &quot;$&#123;MAIL_USER&#125;:$&#123;MAIL_PASSWORD&#125;&quot; </div><div class="line"> </div><div class="line"># delete mail content file</div><div class="line">rm $&#123;MAIL_CONTENT_FILE&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/02/18/curl_sendmail/" class="archive-article-date">
+  	<time datetime="2016-02-17T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-18</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Curl-Mail/">Linux, Curl, Mail</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2016/02/25/cgroup_part1/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Cgroup 简介
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/12/24/git_part3/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Git 和声</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="curl_sendmail" data-title="Curl 发送邮件" data-url="http://dingmingk.github.io/2016/02/18/curl_sendmail/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2016 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins-Java/" style="font-size: 10px;">Jenkins, Java</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 10px;">Life</a> <a href="/tags/Life-Shanghai-Nanping/" style="font-size: 10px;">Life, Shanghai, Nanping</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Curl-Mail/" style="font-size: 10px;">Linux, Curl, Mail</a> <a href="/tags/Linux-Systemd/" style="font-size: 15px;">Linux, Systemd</a> <a href="/tags/Mac-iTerm-Tmux-Zsh/" style="font-size: 10px;">Mac, iTerm, Tmux, Zsh</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>
