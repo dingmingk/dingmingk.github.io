@@ -4,14 +4,27 @@
   <meta charset="utf-8">
   
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
-  <title>Archives: 2016 | 他的国</title>
+  <title>修改 Kubernetes 集群重容器的 hosts | 他的国</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="他的国">
-<meta property="og:url" content="http://dingmingk.github.io/archives/2016/index.html">
+  <meta name="description" content="最近工作中遇到一个问题，就是某个系统需要访问一个第三发系统，在没有私有DNS的情况下，只能通过修改hosts文件解析域名。
+假设需要添加的解析为 1.2.3.4 thirdparty.com
+而我们知道Docker的hosts文件是容器启动后动态加载的，所以无法在Dockerfile中设置。
+而如果是使用docker run命令启动容器，可以使用｀–add-host thirdparty.com:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="修改 Kubernetes 集群重容器的 hosts">
+<meta property="og:url" content="http://dingmingk.github.io/2016/08/31/k8s_hosts/index.html">
 <meta property="og:site_name" content="他的国">
+<meta property="og:description" content="最近工作中遇到一个问题，就是某个系统需要访问一个第三发系统，在没有私有DNS的情况下，只能通过修改hosts文件解析域名。
+假设需要添加的解析为 1.2.3.4 thirdparty.com
+而我们知道Docker的hosts文件是容器启动后动态加载的，所以无法在Dockerfile中设置。
+而如果是使用docker run命令启动容器，可以使用｀–add-host thirdparty.com:">
+<meta property="og:updated_time" content="2016-10-24T07:39:07.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="他的国">
+<meta name="twitter:title" content="修改 Kubernetes 集群重容器的 hosts">
+<meta name="twitter:description" content="最近工作中遇到一个问题，就是某个系统需要访问一个第三发系统，在没有私有DNS的情况下，只能通过修改hosts文件解析域名。
+假设需要添加的解析为 1.2.3.4 thirdparty.com
+而我们知道Docker的hosts文件是容器启动后动态加载的，所以无法在Dockerfile中设置。
+而如果是使用docker run命令启动容器，可以使用｀–add-host thirdparty.com:">
   
     <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
   
@@ -135,346 +148,131 @@
 </nav>
 
       <div class="body-wrap">
+        <article id="post-k8s_hosts" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
         
   
+    <h1 class="article-title" itemprop="name">
+      修改 Kubernetes 集群重容器的 hosts
+    </h1>
   
+
+      </header>
     
-    
+    <div class="article-entry" itemprop="articleBody">
       
+        <p>最近工作中遇到一个问题，就是某个系统需要访问一个第三发系统，在没有私有DNS的情况下，只能通过修改hosts文件解析域名。</p>
+<p>假设需要添加的解析为 <code>1.2.3.4 thirdparty.com</code></p>
+<p>而我们知道Docker的hosts文件是容器启动后动态加载的，所以无法在Dockerfile中设置。</p>
+<p>而如果是使用<code>docker run</code>命令启动容器，可以使用｀–add-host thirdparty.com:1.2.3.4｀参数修改hosts；</p>
+<p>如果是<code>docker compose</code>，则可以使用<code>extra_hosts: &quot;thirdparty.com:1.2.3.4&quot;</code>。</p>
+<p>但Kubernetes却没有提供类似的方法修改hosts…</p>
+<p>刚开始尝试使用 Services，并手动创建EndPoints指向外部服务的地址。但这种方式实际提供的是一种服务，对于只是域名解析来说不合适。</p>
+<p>还有一种最脏的办法是每次容器创建成功后通过脚本之行<code>kubectl exec</code>添加hosts，太脏了…</p>
+<p>最后一种办法是我发现的最适合也相对干净的一种办法了，需要用到Kubernetes <code>ConfigMap</code>。</p>
+<h4 id="创建一个ConfigMap"><a href="#创建一个ConfigMap" class="headerlink" title="创建一个ConfigMap"></a>创建一个ConfigMap</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: thirdparty-hosts</div><div class="line">data:</div><div class="line">  hosts: |</div><div class="line">    thirdparty.com  1.2.3.4</div><div class="line">    baidu.com  2.3.4.5</div><div class="line">    google.com 3.4.5.6</div><div class="line">``` </div><div class="line"></div><div class="line">#### 集成start.sh脚本到镜像里</div></pre></td></tr></table></figure>
+<p>#!/bin/sh</p>
+<p>cat /mnt/hosts.append/hosts &gt;&gt; /etc/hosts<br>exec your-app args…<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">#### 将ConfigMap以Volume的方式挂载并执行启动脚本</div></pre></td></tr></table></figure></p>
+<p>apiVersion: extensions/v1beta1<br>kind: Deployment<br>…<br>spec:<br>  template:<br>    …<br>    spec:<br>      volumes:</p>
+<pre><code>- name: hosts-volume
+  configMap:
+    name: thirdparty-hosts
+...
+containers:
+  command:
+  - ./start.sh
+  ...
+  volumeMounts:
+  - name: hosts-volume
+    mountPath: /mnt/hosts.append
+  ...
+</code></pre><p>```</p>
+<p>这种方式虽然看起来也有点麻烦，但通过维护一个ConfigMap集中管理所有hosts还不错。</p>
+<p>另外据说 V1.4 版本中添加了一个新特性能更好的解决这个问题，<code>&quot;external name&quot; (CNAME) services</code>，还没升级暂时不评价。</p>
+
       
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2016" class="archive-year">2016</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/08/31/k8s_hosts/" class="archive-article-date">
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/08/31/k8s_hosts/" class="archive-article-date">
   	<time datetime="2016-08-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-08-31</time>
 </a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/08/31/k8s_hosts/">修改 Kubernetes 集群重容器的 hosts</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
 	</div>
 
-          
+      
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/04/01/k8s_context/" class="archive-article-date">
-  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/04/01/k8s_context/">Kubernetes 不同工作组共享集群案例</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+  
+<nav id="article-nav">
+  
+  
+    <a href="/2016/04/01/k8s_context/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Kubernetes 不同工作组共享集群案例</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
 	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
 
-          
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/04/01/k8s_security_demo/" class="archive-article-date">
-  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/04/01/k8s_security_demo/">Kubernetes 集群安全配置案例</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
 
-          
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/31/k8s_security/" class="archive-article-date">
-  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/31/k8s_security/">Kubernetes 安全机制</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="k8s_hosts" data-title="修改 Kubernetes 集群重容器的 hosts" data-url="http://dingmingk.github.io/2016/08/31/k8s_hosts/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
 
-          
 
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/31/k8s_monitor/" class="archive-article-date">
-  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/31/k8s_monitor/">Kubernetes 集群性能监控</a>
-    </h1>
-  
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/30/k8s_dns/" class="archive-article-date">
-  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/30/k8s_dns/">Kubernetes DNS 服务配置案例</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/30/k8s_network/" class="archive-article-date">
-  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/30/k8s_network/">Kubernetes 网络配置方案</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/29/k8s_quota/" class="archive-article-date">
-  	<time datetime="2016-03-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-29</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/29/k8s_quota/">Kubernetes 资源配额管理</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/25/k8s_op_skills/" class="archive-article-date">
-  	<time datetime="2016-03-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-25</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/25/k8s_op_skills/">Kubernetes 常用运维技巧</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2016/03/24/k8s_object_files/" class="archive-article-date">
-  	<time datetime="2016-03-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-24</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2016/03/24/k8s_object_files/">Kubernetes 关键对象定义详解</a>
-    </h1>
-  
-
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
-  
-
-    
-    <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/archives/2016/page/2/">2</a><a class="extend next" rel="next" href="/archives/2016/page/2/">Next &raquo;</a>
-    </nav>
-  
 
 
       </div>
@@ -497,8 +295,8 @@
 		mathjax: false,
 		animate: true,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,
