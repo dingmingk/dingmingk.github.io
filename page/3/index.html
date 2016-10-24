@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta property="og:type" content="website">
 <meta property="og:title" content="他的国">
-<meta property="og:url" content="http://dingmingk.github.io/page/3/index.html">
+<meta property="og:url" content="https://dingmingk.github.io/page/3/index.html">
 <meta property="og:site_name" content="他的国">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="他的国">
@@ -197,90 +197,6 @@
 
 
   
-    <article id="post-nginxgeo" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/12/04/nginxgeo/">Nginx geo 使用方法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><code>geo</code>指令是<code>ngx_http_geo_module</code>模块提供的，默认情况下nginx有加载这个模块，除非手动<code>--without-http_geo_module</code>。</p>
-<p><code>ngx_http_geo_module</code>模块可以用来创建变量，其值依赖于客户端IP地址。</p>
-<blockquote>
-<p>语法: geo [$address] $variable {…}</p>
-<p>默认值: -</p>
-<p>配置段: http</p>
-</blockquote>
-<p>定义从指定的变量获取客户端的IP地址。默认情况下，nginx从<code>$remote_addr</code>变量取得客户端IP地址，但也可以从其它变量获得。如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">geo $remote_addr $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div><div class="line">geo $arg_dingmingk_com $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>如果该变量的值不能代表一个合法的IP地址，那么nginx将使用地址“255.255.255.255”。</p>
-<p>nginx通过CIDR或者地址段来描述地址，支持以下几个参数：</p>
-<ul>
-<li>delete: 删除指定的网络。</li>
-<li>default: 如果客户端地址不能匹配任意一个定义的地址，nginx将使用此值。如果使用CIDR，可以用“0.0.0.0/0”代替default。</li>
-<li>include: 包含一个定义地址和值的文件，可以包含多个。</li>
-<li>proxy: 定义可信地址。如果请求来自可信地址，nginx将使用其“X-Forwarded-For”头来获得地址。相对于普通地址，可信地址是顺序检测的。</li>
-<li>proxy_recursive: 开启递归查找地址。如果关闭递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中的最后一个地址来代替原始客户端地址。如果开启递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中最后一个与所有可信地址都不匹配的地址来代替原始客户端地址。</li>
-<li>ranges: 使用以地址段的形式定义地址，这个参数必须放在首位。为了加速装载地址库，地址应按升序定义。</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	default			ZZ;</div><div class="line">	include			conf/geo.conf;</div><div class="line">	delete 			127.0.0.0/16;</div><div class="line">	proxy				192.168.100.0/24;</div><div class="line">	proxy				2001:0db8::/32;</div><div class="line">	</div><div class="line">	127.0.0.0/24		US;</div><div class="line">	127.0.0.1/32		RU;</div><div class="line">	10.1.0.0/16		RU;</div><div class="line">	192.168.1.0/24	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$vim conf/geo.conf</div><div class="line"></div><div class="line">10.2.0.0/16			RU;</div><div class="line">192.168.2.0/24		RU;</div></pre></td></tr></table></figure>
-<p>地址段例子:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	ranges;</div><div class="line">	default						ZZ;</div><div class="line">	127.0.0.0-127.0.0.0			US;</div><div class="line">	127.0.0.1-127.0.0.1			RU;</div><div class="line">	127.0.0.1-127.0.0.255		US;</div><div class="line">	10.1.0.0-10.1.255.255		RU;</div><div class="line">	192.168.1.0-192.168.1.255	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p><strong>遵循最精确匹配原则，即nginx使用能最精确匹配客户端地址的值。</strong></p>
-<p>下面看几个适用实例以便理解该指令的用法。</p>
-<p>1.使用默认变量也就是<code>$remote_addr</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  #geo $remote_addr $dingmingk_com &#123;</div><div class="line">  geo $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name	test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type		text/plan;</div><div class="line">  					echo 				$dingmingk_com;					echo				$arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ curl 127.0.0.1/helo?boy=king</div><div class="line">1</div><div class="line">king</div></pre></td></tr></table></figure>
-<p>2.使用指定变量</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen				80;</div><div class="line">  			server_name		test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type text/plain;</div><div class="line">  					echo $dingmingk_com;</div><div class="line">  					echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=8.8.8.8</div><div class="line">2</div><div class="line">8.8.8.8</div></pre></td></tr></table></figure>
-<p>3.匹配原则</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1/24 24;</div><div class="line">  			127.0.0.1/32 32;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name  test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  							default_type text/plain;</div><div class="line">  							echo $dingmingk_com;</div><div class="line">  							echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.1</div><div class="line">32</div><div class="line">127.0.0.1</div><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.12</div><div class="line">23</div><div class="line">127.0.0.12</div></pre></td></tr></table></figure>
-<p><strong>geo指令主要是根据IP来对变量进行赋值的。因此geo模块下只能定义IP或网段，否则会报错“nginx:invalid network。”</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2015/12/04/nginxgeo/" class="archive-article-date">
-  	<time datetime="2015-12-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-04</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
     <article id="post-nginxmap" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -358,6 +274,90 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-nginxgeo" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/04/nginxgeo/">Nginx geo 使用方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>geo</code>指令是<code>ngx_http_geo_module</code>模块提供的，默认情况下nginx有加载这个模块，除非手动<code>--without-http_geo_module</code>。</p>
+<p><code>ngx_http_geo_module</code>模块可以用来创建变量，其值依赖于客户端IP地址。</p>
+<blockquote>
+<p>语法: geo [$address] $variable {…}</p>
+<p>默认值: -</p>
+<p>配置段: http</p>
+</blockquote>
+<p>定义从指定的变量获取客户端的IP地址。默认情况下，nginx从<code>$remote_addr</code>变量取得客户端IP地址，但也可以从其它变量获得。如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">geo $remote_addr $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div><div class="line">geo $arg_dingmingk_com $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果该变量的值不能代表一个合法的IP地址，那么nginx将使用地址“255.255.255.255”。</p>
+<p>nginx通过CIDR或者地址段来描述地址，支持以下几个参数：</p>
+<ul>
+<li>delete: 删除指定的网络。</li>
+<li>default: 如果客户端地址不能匹配任意一个定义的地址，nginx将使用此值。如果使用CIDR，可以用“0.0.0.0/0”代替default。</li>
+<li>include: 包含一个定义地址和值的文件，可以包含多个。</li>
+<li>proxy: 定义可信地址。如果请求来自可信地址，nginx将使用其“X-Forwarded-For”头来获得地址。相对于普通地址，可信地址是顺序检测的。</li>
+<li>proxy_recursive: 开启递归查找地址。如果关闭递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中的最后一个地址来代替原始客户端地址。如果开启递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中最后一个与所有可信地址都不匹配的地址来代替原始客户端地址。</li>
+<li>ranges: 使用以地址段的形式定义地址，这个参数必须放在首位。为了加速装载地址库，地址应按升序定义。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	default			ZZ;</div><div class="line">	include			conf/geo.conf;</div><div class="line">	delete 			127.0.0.0/16;</div><div class="line">	proxy				192.168.100.0/24;</div><div class="line">	proxy				2001:0db8::/32;</div><div class="line">	</div><div class="line">	127.0.0.0/24		US;</div><div class="line">	127.0.0.1/32		RU;</div><div class="line">	10.1.0.0/16		RU;</div><div class="line">	192.168.1.0/24	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$vim conf/geo.conf</div><div class="line"></div><div class="line">10.2.0.0/16			RU;</div><div class="line">192.168.2.0/24		RU;</div></pre></td></tr></table></figure>
+<p>地址段例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	ranges;</div><div class="line">	default						ZZ;</div><div class="line">	127.0.0.0-127.0.0.0			US;</div><div class="line">	127.0.0.1-127.0.0.1			RU;</div><div class="line">	127.0.0.1-127.0.0.255		US;</div><div class="line">	10.1.0.0-10.1.255.255		RU;</div><div class="line">	192.168.1.0-192.168.1.255	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>遵循最精确匹配原则，即nginx使用能最精确匹配客户端地址的值。</strong></p>
+<p>下面看几个适用实例以便理解该指令的用法。</p>
+<p>1.使用默认变量也就是<code>$remote_addr</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  #geo $remote_addr $dingmingk_com &#123;</div><div class="line">  geo $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name	test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type		text/plan;</div><div class="line">  					echo 				$dingmingk_com;					echo				$arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ curl 127.0.0.1/helo?boy=king</div><div class="line">1</div><div class="line">king</div></pre></td></tr></table></figure>
+<p>2.使用指定变量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen				80;</div><div class="line">  			server_name		test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type text/plain;</div><div class="line">  					echo $dingmingk_com;</div><div class="line">  					echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=8.8.8.8</div><div class="line">2</div><div class="line">8.8.8.8</div></pre></td></tr></table></figure>
+<p>3.匹配原则</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1/24 24;</div><div class="line">  			127.0.0.1/32 32;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name  test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  							default_type text/plain;</div><div class="line">  							echo $dingmingk_com;</div><div class="line">  							echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.1</div><div class="line">32</div><div class="line">127.0.0.1</div><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.12</div><div class="line">23</div><div class="line">127.0.0.12</div></pre></td></tr></table></figure>
+<p><strong>geo指令主要是根据IP来对变量进行赋值的。因此geo模块下只能定义IP或网段，否则会报错“nginx:invalid network。”</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/04/nginxgeo/" class="archive-article-date">
+  	<time datetime="2015-12-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-04</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
 	</div>
 
       
