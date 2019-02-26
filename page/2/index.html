@@ -228,257 +228,6 @@
 
 
   
-    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">命令</th>
-<th style="text-align:center">功能</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">systemctl</td>
-<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
-</tr>
-<tr>
-<td style="text-align:left">bootctl</td>
-<td style="text-align:center">用于查看和管理系统启动分区</td>
-</tr>
-<tr>
-<td style="text-align:left">hostnamectl</td>
-<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
-</tr>
-<tr>
-<td style="text-align:left">journalctl</td>
-<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
-</tr>
-<tr>
-<td style="text-align:left">localectl</td>
-<td style="text-align:center">用于查看和管理系统的地区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">loginctl</td>
-<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
-</tr>
-<tr>
-<td style="text-align:left">machinectl</td>
-<td style="text-align:center">用于操作 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">timedatectl</td>
-<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-analyze</td>
-<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-ask-password</td>
-<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cat</td>
-<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgls</td>
-<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgtop</td>
-<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-escape</td>
-<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-hwdb</td>
-<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-delta</td>
-<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-detect-virt</td>
-<td style="text-align:center">显示主机的虚拟化类型</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-inhibit</td>
-<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-machine-id-setup</td>
-<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-notify</td>
-<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-nspawn</td>
-<td style="text-align:center">用于创建 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-path</td>
-<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-run</td>
-<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-stdio-bridge</td>
-<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tmpfiles</td>
-<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tty-ask-password-agent</td>
-<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
-</tr>
-</tbody>
-</table>
-<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
-<p>hostnamectl        显示主机名</p>
-<p>hostnamectl set-hostname xxx        设置主机名</p>
-<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
-</blockquote>
-<p><em>timedatectl 和 localectl 作用类似</em>。</p>
-<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
-<p>systemctl poweroff | halt        关机</p>
-<p>systemctl reboot        重启</p>
-<p>systemctl suspend        待机</p>
-<p>systemctl hibernate        休眠</p>
-</blockquote>
-<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
-<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
-<p>systemd-analyze blame | head      按启动耗时长短排序</p>
-<p>systemd-analyze plot        生成详细 SVG 图</p>
-<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
-<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
-<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
-<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
-</blockquote>
-<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
-<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
-<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
-<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
-<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
-<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
-<p>集群节点配置 DNS 记录或 hosts。</p>
-<p><strong>TODO</strong> </p>
-<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
-<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
-<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
-<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
-<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
-<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
-<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
-<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
     <article id="post-systemd_part2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -740,6 +489,257 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">命令</th>
+<th style="text-align:center">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">systemctl</td>
+<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
+</tr>
+<tr>
+<td style="text-align:left">bootctl</td>
+<td style="text-align:center">用于查看和管理系统启动分区</td>
+</tr>
+<tr>
+<td style="text-align:left">hostnamectl</td>
+<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
+</tr>
+<tr>
+<td style="text-align:left">journalctl</td>
+<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
+</tr>
+<tr>
+<td style="text-align:left">localectl</td>
+<td style="text-align:center">用于查看和管理系统的地区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">loginctl</td>
+<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
+</tr>
+<tr>
+<td style="text-align:left">machinectl</td>
+<td style="text-align:center">用于操作 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">timedatectl</td>
+<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-analyze</td>
+<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-ask-password</td>
+<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cat</td>
+<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgls</td>
+<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgtop</td>
+<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-escape</td>
+<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-hwdb</td>
+<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-delta</td>
+<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-detect-virt</td>
+<td style="text-align:center">显示主机的虚拟化类型</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-inhibit</td>
+<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-machine-id-setup</td>
+<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-notify</td>
+<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-nspawn</td>
+<td style="text-align:center">用于创建 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-path</td>
+<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-run</td>
+<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-stdio-bridge</td>
+<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tmpfiles</td>
+<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tty-ask-password-agent</td>
+<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
+</tr>
+</tbody>
+</table>
+<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
+<p>hostnamectl        显示主机名</p>
+<p>hostnamectl set-hostname xxx        设置主机名</p>
+<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
+</blockquote>
+<p><em>timedatectl 和 localectl 作用类似</em>。</p>
+<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
+<p>systemctl poweroff | halt        关机</p>
+<p>systemctl reboot        重启</p>
+<p>systemctl suspend        待机</p>
+<p>systemctl hibernate        休眠</p>
+</blockquote>
+<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
+<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
+<p>systemd-analyze blame | head      按启动耗时长短排序</p>
+<p>systemd-analyze plot        生成详细 SVG 图</p>
+<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
+<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
+<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
+<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
+</blockquote>
+<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
+<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
+<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
+<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
+<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
+<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
+<p>集群节点配置 DNS 记录或 hosts。</p>
+<p><strong>TODO</strong> </p>
+<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
+<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
+<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
+<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
+<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
+<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
+<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
+<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
 	</div>
 
       
