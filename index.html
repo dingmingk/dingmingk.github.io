@@ -137,6 +137,350 @@
       <div class="body-wrap">
         
   
+    <article id="post-continuous" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/04/continuous/">持续交付实践</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li>传统交付过程中遇到的问题</li>
+<li>变革软件交付方式的技术：Docker</li>
+<li>应用 Docker 化交付的过程实践</li>
+</ol>
+<h3 id="研发过程的困境"><a href="#研发过程的困境" class="headerlink" title="研发过程的困境"></a>研发过程的困境</h3><ul>
+<li>任何一家互联网或者软件公司，随着产品规模的扩大，市场需求的变化，都会逐步的发现产品版本管理混乱，运维人员总是在兜底， 不知道开发/测试/集成/预发布/生产等等环境到底经历过几代运维人员之手，所以环境压根没人敢动。</li>
+<li>因为市场永远在变化，需求一定在变化，人员也在变化，导致了研发过程中遇到的这样那样的问题。因此，大多数企业都用CI/CD这个解决方案来应对，如下图：</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_cicd.png" alt="continuous_cicd"></p>
+<ul>
+<li>另外，我认为的持续交付概念如下：</li>
+</ul>
+<blockquote>
+<p><strong>在一起</strong>就是集成，每次集成都应该有<strong>反馈</strong>。<br>只有不停的集成才是持续集成。越少持续，每次反馈<strong>代价越大</strong>。<br><strong>多次集成</strong>产生一次交付。</p>
+</blockquote>
+<hr>
+<ul>
+<li>CI/CD 是无法提升你的代码质量的，是无法解决你代码中的Bug的，但能够提升效率和质量的原因是: 他能把问题发现在前面，让小问题提前暴露出来。</li>
+<li>我们说做持续集成最重要的是<strong>有效反馈</strong>和<strong>持续</strong>，因为CI就像体检服务一样，好比有个胖子要减肥，体检服务不能让他吃的更少动的更多，但他如果每天都称一下体重，就能随时知道自己身体的状态，随时知道每天该干什么， 这就是持续的重要性。</li>
+<li>如果他不做这个事儿，很可能等到我年度体检的时候才发现，TMD脂肪肝又加重了。。 同理如果每次代码提交都能自动和其他代码集成，和测试环境集成，就不会出现最终发布的时候出现各种各样的问题，也就是刚才说的运维总在兜底的问题。</li>
+<li>CI过程的<strong>有效反馈</strong>也很重要，每次集成都应该给出准确的问题定位和建议，谁的代码merge出现冲突，谁提交的commit导致UT失败，谁应该立刻去解决什么样的问题，这都是有效的反馈。就好比胖子中午没吃饭，去称一下体重，体重秤告诉他：还凑合。那这个反馈让他晚饭是吃。。还是不吃呢？。。这就是无效反馈。</li>
+</ul>
+<p>简单来说，持续交付的pipeline就像下面的管道图一样：</p>
+<p><img src="../assets/blogImg/continuous_pipeline.png" alt="continuous_pipeline"></p>
+<blockquote>
+<p>当然这个图里的每个节点（stage）的定义并不适用于所有应用，每个stage 是不同角色，运行需要耗费不同的成本，那么只要保证每个 Stage 是一个独立有效的反馈就是正确的持续交付pipeline。</p>
+</blockquote>
+<p>那么，构建出能够运行这样pipeline的一个环境，都需要什么东西：</p>
+<p><img src="../assets/blogImg/continuous_process.png" alt="continuous_process"></p>
+<ul>
+<li>如上图， 你需要有代码托管服务（存储），运行CI中的单元测试，编译打包服务（环境）， 如果你的应用已经托管在公共云上，还要涉及到网络问题。也就是你核心要解决的除了需要服务本身，关键是解决“存储，环境和网络”这三个问题。</li>
+</ul>
+<hr>
+<p>现在，当你辛辛苦苦做好了这些过程之后，仍然会遇到一些问题：</p>
+<ul>
+<li>每次build，是需要不同的build环境的</li>
+</ul>
+<p><strong>编译环境维护困难</strong></p>
+<ul>
+<li>每次集成 Test，是需要依赖其他环境，被依赖的环境不受提交者的控制</li>
+</ul>
+<p><strong>依赖环境维护困难</strong></p>
+<ul>
+<li>每个package， 在不同的环境，run的结果是不一样的</li>
+</ul>
+<p><strong>切换环境调试困难</strong></p>
+<ul>
+<li>每个package，是无法回溯的</li>
+</ul>
+<p><strong>运行包的版本维护困难</strong></p>
+<ul>
+<li>每个环境，是不同的维护者（开发环境，测试环境，生产/产品环境）</li>
+</ul>
+<p><strong>统一环境标准困难</strong></p>
+<ul>
+<li>每个环境，除了维护者，是无法清楚知道环境的搭建过程的</li>
+</ul>
+<p><strong>环境回溯，更是难上加难</strong></p>
+<hr>
+<p>Why ？ 为什么会遇到这样那样的问题？ 为什么开发人员经常抱怨： “明明我的程序在测试环境已经调试好了，为什么一上生产环境就运行不了？”</p>
+<blockquote>
+<p>归根结底的原因是：</p>
+<blockquote>
+<p><strong>开发人员交付的只是软件代码本身， 而运维人员需要维护的是一整套运行环境，以及运行环境之间的依赖关系。</strong></p>
+</blockquote>
+</blockquote>
+<p><img src="../assets/blogImg/continuous_confusion.png" alt="continuous_confusion"></p>
+<h3 id="变革软件交付方式的技术：Docker"><a href="#变革软件交付方式的技术：Docker" class="headerlink" title="变革软件交付方式的技术：Docker"></a>变革软件交付方式的技术：Docker</h3><ul>
+<li>有人说：“交付方式的变革，改变了全球的经济格局”</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_box.png" alt="continuous_box"></p>
+<ul>
+<li>那么，在软件开发领域，Docker ( An open platform for distributed applications for developers and sysadmins) , 就是变革软件交付方式的技术。 </li>
+</ul>
+<p><img src="../assets/blogImg/continuous_ship.gif" alt="continuous_ship"></p>
+<hr>
+<p>回到最初的问题， 我们找到了开发和运维之间问题的关键，找到了写代码和维护生产环境之间的核心差别， 那么我们试想一下。</p>
+<blockquote>
+<p>如果我们能像描述代码依赖关系一样，描述代码运行所需的环境依赖呢？ 如果又能像描述应用之间的依赖关系一样，描述环境之间的依赖呢？</p>
+</blockquote>
+<ul>
+<li>假定，我们的代码中有一个文件，定义了运行需要的环境依赖栈（就像pom.xml文件中定义了java应用的jar包依赖一样）</li>
+<li>构建时，我们能根据整个文件，将所有软件依赖栈安装到一个镜像中，镜像是只读的。任何变更都会新产生一个新的镜像而不会更改原先的镜像。</li>
+<li>并且只要这个镜像不变，镜像起来的容器之内的环境也不变。</li>
+<li>那我们是不是可以像把代码，依赖，测试脚本，环境依赖，环境描述等等这些东西装到集装箱中一样， 集装箱作为一个整体来传递， 作为一个整体在不同的平台上运行， 集装箱不变，任何平台上运行的结果都不变。 YY思路如下图：</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_mind.png" alt="continuous_mind"></p>
+<hr>
+<p><strong>如果我们能轻松的交付整个软件依赖栈，是不是刚才说到的在不同环境调试的问题就能大大减少或者不复存在了?</strong></p>
+<p>这个YY过程正好被Docker技术所覆盖， 我们看一下Docker提供什么样的能力，能满足刚才的YY：</p>
+<ol>
+<li><p>描述环境的能力</p>
+<p> 提供了描述运行栈，并且自定义Build 过程的能力。Code中的描述文件就 Dockerfile。     </p>
+</li>
+<li>分层文件系统<br> Image可以像Git一样进行管理，并且每一层都是只读的，对环境的每个操作都会被记录，并且可回溯。</li>
+<li>Docker Registry<br> 提供了管理Image存储系统，可以存储，传递，并且对Image进行版本管理。</li>
+<li>屏蔽Host OS 差异<br> 解决了环境差异，保证在任何环境下的运行都是一致的（只要满足运行docker的linux 内核）。</li>
+</ol>
+<p>这几种能力天然的帮助我们解决环境描述和传递的问题，因此docker能够做到<strong>Build Once， Run EveryWhere ！</strong></p>
+<ul>
+<li>因此，软件的交付方式，变成了最简单的 Build – Ship – Run， 如下图：</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_BSR.png" alt="continuous_BSR"></p>
+<h3 id="应用Docker化交付的过程实践"><a href="#应用Docker化交付的过程实践" class="headerlink" title="应用Docker化交付的过程实践"></a>应用Docker化交付的过程实践</h3><p>首先先看个例子，用docker做持续交付能带来的好处。我用docker官方网站上的案例： BBC News。</p>
+<ul>
+<li>简单来说，一个全球新闻中心，内容的变化是最快的， BBC 公司内部的第一个问题是涉及10几种CI环境，26000 Jobs，500Dev人员。</li>
+<li>第二个核心问题是，CI任务需要等待，无法并行。</li>
+</ul>
+<p>经过Docker化改造之后：</p>
+<p><img src="../assets/blogImg/continuous_BBC.png" alt="continuous_BBC"></p>
+<blockquote>
+<p>最明显的改变，开发可以自己定义自己的开发语言，自己所需的build，集成测试环境，以及应用运行所需的依赖环境。</p>
+</blockquote>
+<hr>
+<p><strong>既然效果这么明显， 该怎么做呢？</strong></p>
+<p>基本思路如下：</p>
+<ul>
+<li>安装好Docker环境</li>
+<li>Docker 化你的应用运行环境</li>
+<li>Docker 化你的应用编译，UT环境</li>
+<li>Docker 化你的应用运行的依赖环境</li>
+</ul>
+<hr>
+<h4 id="第一步，如何安装运行一个Docker环境"><a href="#第一步，如何安装运行一个Docker环境" class="headerlink" title="第一步，如何安装运行一个Docker环境"></a>第一步，如何安装运行一个Docker环境</h4><p>官方提供了详细的文档：</p>
+<p><a href="https://docs.docker.com/install/" target="_blank" rel="external">docker_install</a></p>
+<hr>
+<h4 id="第二步，如何将自己的应用运行在Docker容器中"><a href="#第二步，如何将自己的应用运行在Docker容器中" class="headerlink" title="第二步，如何将自己的应用运行在Docker容器中"></a>第二步，如何将自己的应用运行在Docker容器中</h4><p>这句话可以翻译为： 如何将我的应用环境通过Dockerfile描述出来？</p>
+<p>假如我的应用是一个Java Web 应用，需要Java运行环境和Tomcat 容器 ，那么大概我的环境所需下面这些东西：</p>
+<ul>
+<li>某Linux发行版操作系统</li>
+<li>基础软件（起码有个能解压缩包的吧）</li>
+<li>openjdk 7 &amp;&amp; 配置 Java Home 等环境变量</li>
+<li>Tomcat 7 &amp;&amp; 配置 环境变量</li>
+<li>应用包 target.war</li>
+<li>应用包 启动参数 JVM</li>
+<li>Web Server 指定端口 8080</li>
+<li>启动tomcat</li>
+</ul>
+<p>转化为成Dockerfile 的语言大致如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">FROM buildpack-deps:jessie-curl</div><div class="line">RUN apt-get update &amp;&amp; apt-get install -y unzip  openjdk-7-jre-headless=“$JAVA_DEBIAN_VERSION”  </div><div class="line"></div><div class="line">ENV LANG C.UTF-8</div><div class="line"></div><div class="line">ENV JAVA_VERSION 7u91</div><div class="line">ENV JAVA_DEBIAN_VERSION 7u91-2.6.3-1~deb8u1</div><div class="line"></div><div class="line">ENV CATALINA_HOME /usr/local/tomcat</div><div class="line">ENV PATH $CATALINA_HOME/bin:$PATH</div><div class="line">RUN mkdir -p &quot;$CATALINA_HOME&quot;</div><div class="line">WORKDIR $CATALINA_HOMEENV TOMCAT_VERSION 7.0.68</div><div class="line">ENV TOMCAT_TGZ_URL  https://xxxx/apache-tomcat-$TOMCAT_VERSION.tar.gz</div><div class="line"></div><div class="line">RUN set -x \</div><div class="line">    &amp;&amp; curl -fSL &quot;$TOMCAT_TGZ_URL&quot; -o tomcat.tar.gz \</div><div class="line">    &amp;&amp; curl -fSL &quot;$TOMCAT_TGZ_URL.asc&quot; -o tomcat.tar.gz.asc \</div><div class="line">    &amp;&amp; gpg --batch --verify tomcat.tar.gz.asc tomcat.tar.gz \</div><div class="line">    &amp;&amp; tar -xvf tomcat.tar.gz --strip-components=1 \</div><div class="line">    &amp;&amp; rm bin/*.bat \</div><div class="line">    &amp;&amp; rm tomcat.tar.gz*</div><div class="line"></div><div class="line">EXPOSE 8080</div><div class="line">CMD [&quot;catalina.sh&quot;, &quot;run&quot;]</div></pre></td></tr></table></figure>
+<ul>
+<li>可以看出 ，Dockerfile 第一步永远是From 某个镜像， 开始安装了一些基础包（这里是Jre7）， 又设置了java的环境变量， 之后安装tomat（这里是7.0），再声明启动8080端口，最后运行tomcat的启动脚本结束，在最后结束之前将我的Web 应用.war包COPY或者ADD进去即可。</li>
+</ul>
+<hr>
+<p>我们再看一个Nodejs的环境:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:14.04</div><div class="line"></div><div class="line">COPY sources.list /etc/apt/sources.list</div><div class="line">COPY .npmrc /root/.npmrc</div><div class="line"></div><div class="line">RUN apt-get update &amp;&amp; apt-get -y install curl automake tar libtool make wget xz-utils supervisor</div><div class="line"></div><div class="line">ENV NODE_VERSION 0.12.5</div><div class="line">ENV NPM_VERSION 2.11.3</div><div class="line"></div><div class="line">RUN curl -SLO &quot;https://npm.taobao.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz&quot; \</div><div class="line">    &amp;&amp; tar -xzf &quot;node-v$NODE_VERSION-linux-x64.tar.gz&quot; -C /usr/local --strip-components=1 \</div><div class="line">    &amp;&amp; npm install -g npm@&quot;$NPM_VERSION&quot; \</div><div class="line">    &amp;&amp; npm cache clear</div><div class="line"></div><div class="line">RUN rm -rf ~/.node-gyp \</div><div class="line">    &amp;&amp; mkdir ~/.node-gyp \</div><div class="line">    &amp;&amp; tar zxf node-v$NODE_VERSION-linux-x64.tar.gz -C ~/.node-gyp \</div><div class="line">    &amp;&amp; rm &quot;node-v$NODE_VERSION-linux-x64.tar.gz&quot; \</div><div class="line">    &amp;&amp; mv ~/.node-gyp/node-v$NODE_VERSION-linux-x64 ~/.node-gyp/$NODE_VERSION \</div><div class="line">    &amp;&amp; printf &quot;9\n&quot;&gt;~/.node-gyp/$NODE_VERSION/installVersion</div><div class="line"></div><div class="line">CMD [&quot;node&quot;]</div></pre></td></tr></table></figure>
+<ul>
+<li>关于这个环境，COPY了本地的sources.list和.npmrc 到容器中，是更换了安装源为mirrors.aliyun.com 和 NPM源为npm.taobao.org ， 国内源更快。 其他就是安装了基本的Nodejs 运行环境</li>
+</ul>
+<p>那么通过这两个例子，我们发现Dockerfile 还是写起来很麻烦的（其实也不麻烦，就是刚刚说的装要装的东西，配置，运行这三步）。 那么，刚刚说到每一个Dockerfile的第一行都是FROM另一个镜像， 那么思考一下：</p>
+<ul>
+<li>如果有一个安装好Java的环境 ？</li>
+<li>如果有一个安装好Java和Tomcat的环境 ？</li>
+<li>如果是微服务，对环境只依赖Java/Node基础环境，是不是所有应用都可以共用1个环境?</li>
+</ul>
+<p>通过这些思考，得到如下寻找docker镜像的过程：</p>
+<ul>
+<li>寻找java镜像 ，选择镜像版本， 检查 Dockerfile</li>
+<li>寻找tomcat镜像，选择 Tomcat &amp; Java 版本， 检查 Dockerfile</li>
+<li>测试运行 ： docker run -ti —rm -v /home/app.war:/canhin/webapp/ tomcat:7-jre7</li>
+</ul>
+<blockquote>
+<p>说句题外话，这个思路同样适用于公司内部，因为Dockerfile 明确划分出了开发和运维的边界， 如果公司有统一的运维标准，比如某个操作系统的某个版本， 某种确定的Web Server， 这样开发只需要From 运维提供的镜像来描述自己的应用环境特殊的部分就好了。 如果大家的环境都一样，调试和测试的过程中，只需要把应用代码通过-v 的参数挂载进去运行就好了， 这样世界就变的很简单和清楚了。</p>
+</blockquote>
+<p>那么当我需要一个Java 7， Tomcat 7的环境的时候， 直接选择一个官方的tomcat 7 - jre7 镜像即可 ， 比如 <a href="https://hub.docker.com/_/tomcat?tab=description" target="_blank" rel="external">https://hub.docker.com/_/tomcat?tab=description</a> 这个。</p>
+<hr>
+<h4 id="第三步，用Docker描述我的编译环境"><a href="#第三步，用Docker描述我的编译环境" class="headerlink" title="第三步，用Docker描述我的编译环境"></a>第三步，用Docker描述我的编译环境</h4><p>编译/CI环境往往在公司规模越来越大的时候， 变得越来越麻烦， 因为不同语言，不同类型的应用对编译环境的要求都不一样。 就像刚才说到的BBC News的例子，一个大公司几十种编译环境的存在是很正常的。</p>
+<blockquote>
+<p>那么，编译环境Docker化最大的好处是： 自定义，可扩展，可复制。</p>
+</blockquote>
+<ul>
+<li>试想一下， 假如你的应用编译只需要依赖标准的Jdk 1.7 和 Maven 2， 或者你是python应用编译过程其实只是需要安装依赖， 那么你可以跟很多人共用编译镜像。</li>
+<li>但假如你的应用是Nodejs ，编译依赖特定的C库， 或者是C++之类的编译环境一定要和运行环境一致等等，那就需要定制自己的编译环境了。</li>
+</ul>
+<p>这里我做一个最简单的用于编译java的镜像示例：</p>
+<ul>
+<li>编译镜像的Dockerfile 示例：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">FROM registry.aliyuncs.com/acs-sample/centos:7</div><div class="line">RUN yum update  yum install -y open-jdk-1.7.0_65-49 </div><div class="line">COPY build.sh /build.sh</div><div class="line">COPY settings.xml /home/apache-maven-2.2.1/conf/</div><div class="line">ENTRYPOINT [“./build.sh&quot;]</div></pre></td></tr></table></figure>
+<ul>
+<li><p>上述Dockerfile的build.sh示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd /ws ;  mvn -e -U clean package -Dmaven.test.skip=true $@</div><div class="line">cp target/*.war docker/ || exit 0</div></pre></td></tr></table></figure>
+</li>
+<li><p>运行方式示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">git clone git@github.com:dingmingk/myproject.git  ~/myprj ; cd ~/myprj</div><div class="line">docker run --rm -v `pwd`:/ws -v ~/.m2/repo:/buf build_maven:1.0</div></pre></td></tr></table></figure>
+</li>
+<li><p>解释一下这个过程:</p>
+</li>
+</ul>
+<p>我的编译环境需要CentOS7系统， 安装JDK1.7 ， 然后把maven的setting（这里主要配置指向其他私有nexus和编译脚本拷贝进去。<br>编译脚本也很简单，就是maven编译打包命令，并且把最终生成的war拷贝到一个定义好的docker目录下，这个目录随便定义。<br>最后是运行方式，即把源代码挂载到容器里进行编译，同时可以选择把本地的.m2缓存到镜像内加快编译速度</p>
+<hr>
+<p>这里提两个小提示，都是经验之谈：</p>
+<blockquote>
+<p>建议： build app 和 build docker image 建议分开进行， 即先进行应用本身的编译，再将输出物拷贝到镜像内（但脚本语言可以例外） 因为：</p>
+</blockquote>
+<ul>
+<li>镜像分层概念导致源码可能泄露：因为DockerImage 每一层都会保存一个版本， 即便是ADD代码进去，编译后再rm掉，也可以通过获取ADD这一层镜像拿到源码，因为镜像是运行在各个环境中，是不应该包含源代码信息的。</li>
+<li>镜像最小化原则：编译环境可能需要和运行环境不一样的东西，比如Maven的配置，Nodejs的一些C库的依赖， 都不需要在运行环境中体现，所以本着镜像应该最小化原则，不需要的东西最好都不要放进去，也应该分开进行这个步骤。</li>
+<li>所以，整个过程还是分为build app和build docker image 两个过程，类似下面这个简单流程 </li>
+</ul>
+<p><img src="../assets/blogImg/continuous_simple.png" alt="continuous_simple"></p>
+<hr>
+<blockquote>
+<p>建议： Dockerfile 不要放到代码根目录下</p>
+</blockquote>
+<ul>
+<li>避免大量文件传给docker deamon ： docker build会先加载Dockerfile同级目录下所有文件进去，如果有不需要ADD/COPY到镜像里的文件不应该放到Dockerfile目录下， 可以试一下把Dockerfile放到系统/根目录下，这时build 十有八九就会让docker deamon挂掉。</li>
+</ul>
+<hr>
+<h4 id="第四步，用Docker描述UT环境"><a href="#第四步，用Docker描述UT环境" class="headerlink" title="第四步，用Docker描述UT环境"></a>第四步，用Docker描述UT环境</h4><p>简单思路： 运行Docker 镜像环境，安装测试所需依赖 ，运行Docker容器，运行测试命令/脚本</p>
+<p>用一个travis-ci官方的例子来说明容器测试这件事，先看下面一个ruby的镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:14.04</div><div class="line"></div><div class="line">MAINTAINER carlad &quot;https://github.com/carlad&quot;</div><div class="line"></div><div class="line"># Install packages for building ruby</div><div class="line">RUN apt-get update</div><div class="line">RUN apt-get install -y --force-yes build-essential wget git</div><div class="line">RUN apt-get install -y --force-yes zlib1g-dev libssl-dev libreadline-dev libyaml-dev libxml2-dev libxslt-dev</div><div class="line">RUN apt-get clean</div><div class="line"></div><div class="line">RUN wget -P /root/src http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz</div><div class="line">RUN cd /root/src; tar xvf ruby-2.2.2.tar.gz</div><div class="line">RUN cd /root/src/ruby-2.2.2; ./configure; make install</div><div class="line"></div><div class="line">RUN gem update --system</div><div class="line">RUN gem install bundler</div><div class="line"></div><div class="line">RUN git clone https://github.com/travis-ci/docker-sinatra /root/sinatra</div><div class="line">RUN cd /root/sinatra; bundle install</div><div class="line"></div><div class="line">EXPOSE 4567</div></pre></td></tr></table></figure>
+<ul>
+<li>简单来说就是标准的一个ruby镜像，启动4567端口。那么通过这个镜像进行的测试过程如下：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">sudo: required</div><div class="line"></div><div class="line">language: ruby</div><div class="line"></div><div class="line">services:</div><div class="line">  - docker</div><div class="line"></div><div class="line">before_install:</div><div class="line">  - docker build -t carlad/sinatra .</div><div class="line">  - docker run -d -p 127.0.0.1:80:4567 carlad/sinatra /bin/sh -c &quot;cd /root/sinatra; bundle exec foreman start;&quot;</div><div class="line">  - docker ps -a</div><div class="line">  - docker run carlad/sinatra /bin/sh -c &quot;cd /root/sinatra; bundle exec rake test&quot;</div><div class="line"></div><div class="line">script:</div><div class="line">  - bundle exec rake test</div></pre></td></tr></table></figure>
+<ul>
+<li><p>这个其实就是大家可以在本地进行的一个过程，在before install部分内可以看到过程是：</p>
+<p>  先build出运行环境的镜像</p>
+<p>  运行这个镜像，看看服务能否正常启动</p>
+<p>  查看容器是否存活（保证容器不是运行一下就挂了退出）</p>
+<p>  运行测试</p>
+</li>
+</ul>
+<p>再来看一个python的例子，也很好理解：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">language: python</div><div class="line">python:</div><div class="line">  - 2.7</div><div class="line"></div><div class="line">services:</div><div class="line">  - docker</div><div class="line"></div><div class="line">install:</div><div class="line">  - docker build -t blog .</div><div class="line">  - docker run -d -p 127.0.0.1:80:80 --name blog blog</div><div class="line"></div><div class="line">before_script:</div><div class="line">  - pip install -r requirements.txt</div><div class="line">  - pip install mock</div><div class="line">  - pip install requests</div><div class="line">  - pip install feedparser</div><div class="line"></div><div class="line">script:</div><div class="line">  - docker ps | grep -q blog</div><div class="line">  - python tests.py</div></pre></td></tr></table></figure>
+<p>简单来说就是运行容器，安装依赖，运行测试脚本。或者直接通过下面一行命令进行</p>
+<p><code>docker run -v mycode:/ws mytestimage:master /bin/sh -c &quot;python3 djanus/manage.py test djanus mobilerpc &quot;</code></p>
+<blockquote>
+<p>tips: 这里不是说推荐大家用travis-ci ，但travis-ci 制定了一种语法标准， 非常清楚的能够看到整个过程。</p>
+</blockquote>
+<hr>
+<h3 id="用Docker-Compose描述依赖环境"><a href="#用Docker-Compose描述依赖环境" class="headerlink" title="用Docker-Compose描述依赖环境"></a>用Docker-Compose描述依赖环境</h3><p>刚刚说了单独一个容器运行测试的情况， 但实际情况可能是即便是运行测试，也需要依赖proxy，依赖db，依赖redis等。 简单来说一般web应用会需要下面的结构:</p>
+<p><img src="../assets/blogImg/continuous_need.png" alt="continuous_need"></p>
+<p>这个结构很简单也很常见， 那在传统思想里，要运行UT或者集成测试，需要依赖的组件，都是去搭建。 搭一个mysql，配置mysql ，运行mysql 这种思路。</p>
+<ul>
+<li><p>但是在docker的思想里，是声明的概念，就是说我需要一个mysql 去存一些数据进行测试， 这个mysql运行在哪里我根本不care 。 同样的思路告诉docker：</p>
+<p>  I need 负载均衡（haproxy，Nginx）</p>
+<p>  I need 数据库（mysql)</p>
+<p>  I need 文件存储(通过-v , ossfs)</p>
+<p>  I need 缓存服务(redis,kv-store)</p>
+<p>  I need …</p>
+</li>
+<li><p>这时，用于编排多个Docker Image 的服务，docker-compose 就出现了，官方文档里用三张最简单的图表明了compose是怎么用的：</p>
+</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_compose.png" alt="continuous_conpose"></p>
+<ul>
+<li>就是说，我运行一次测试， 需要mysql， 那我就启动一个mysql容器就行，通过link 的方式将我的app链接上，配置一个密码即可，至于其他的信息，我根本不需要，或者说不关心。</li>
+</ul>
+<p>再举一个例子，假设一个php的Wordpress 应用， 除了应用本身还需要一个db ，他的编排文件（docker-compose.yml）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">web:</div><div class="line">  image: registry.aliyuncs.com/acs-sample/wordpress:4.3</div><div class="line">  ports:</div><div class="line">    - &apos;80&apos;</div><div class="line">  volumes:</div><div class="line">    - &apos;wp_upload:/var/www/html/wp-content/uploads&apos;</div><div class="line">  environment:</div><div class="line">    WORDPRESS_AUTH_KEY: changeme</div><div class="line">    WORDPRESS_SECURE_AUTH_KEY: changeme</div><div class="line">    WORDPRESS_LOGGED_IN_KEY: changeme</div><div class="line">    WORDPRESS_NONCE_KEY: changeme</div><div class="line">    WORDPRESS_AUTH_SALT: changeme</div><div class="line">    WORDPRESS_SECURE_AUTH_SALT: changeme</div><div class="line">    WORDPRESS_LOGGED_IN_SALT: changeme</div><div class="line">    WORDPRESS_NONCE_SALT: changeme</div><div class="line">    WORDPRESS_NONCE_AA: changeme</div><div class="line">  command: run test script </div><div class="line">  links:</div><div class="line">    - &apos;db:mysql&apos;</div><div class="line">  labels:</div><div class="line">    aliyun.logs: /var/log</div><div class="line">    aliyun.probe.url: http://container/license.txt</div><div class="line">    aliyun.probe.initial_delay_seconds: &apos;10&apos;</div><div class="line">    aliyun.routing.port_80: http://wordpress</div><div class="line">    aliyun.scale: &apos;3&apos;</div><div class="line">db:</div><div class="line">  image: registry.aliyuncs.com/acs-sample/mysql:5.7</div><div class="line">  environment:</div><div class="line">    MYSQL_ROOT_PASSWORD: password</div><div class="line">  restart: always</div><div class="line">  labels:</div><div class="line">    aliyun.logs: /var/log/mysql</div></pre></td></tr></table></figure>
+<ul>
+<li>除了自身的配置，文件挂载之外，声明的mysql 就是官方5.7的版本，只需要设置一个密码即可， 这样直接运行起来无论是提供服务， 还是运行测试， 都非常的方便。</li>
+</ul>
+<blockquote>
+<p>tips1： compose的好处还在于将配置从Dockerfile中提取出来，比如在测试/生产环境所需要的配置差别， 就可以放到compose里，在不同环境运行的时候换不同的compose文件即可，不用重复的编出不同环境用的docker image</p>
+</blockquote>
+<hr>
+<blockquote>
+<p>tips2: 上面的wordpress示例里，启动多个应用容器之上，并没有用nginx做代理，因为阿里云容器服务提供了routing，省去了这部分， 如果是在企业内部，当启动三个应用，还是需要在compose里再声明一个nginx 或者 haproxy 在前面做应用代理和负载均衡的。</p>
+</blockquote>
+<hr>
+<h3 id="完整拼接"><a href="#完整拼接" class="headerlink" title="完整拼接"></a>完整拼接</h3><p><img src="../assets/blogImg/continuous_archeitecture.png" alt="continuous_archeitecture"></p>
+<p>对一个公司/企业来说，将自身应用docker化，编译服务，测试集群docker化之后， 要跑通整个的过程，达到BBC News 这样的效果， 整个流程就如图中所示：</p>
+<ul>
+<li>代码，测试脚本，配置，Dockerfile/Compose 等从开发本地push到代码仓库中</li>
+<li>代码仓库能够hook 这个信息，通过事件trigger build 服务，通过容器进行app build，运行test， 通过后对应用进行docker image 的build</li>
+<li>build 好的docker image push到远程docker registry 用于存储和传递</li>
+<li>当build test 都pass之后， 通过deploy service 告诉应用集群进行更新，从docker registry 上pull 下来新的image进行应用更新，或更新集群配置</li>
+</ul>
+<h3 id="用docker-为开发-运维人员带来的好处"><a href="#用docker-为开发-运维人员带来的好处" class="headerlink" title="用docker 为开发/运维人员带来的好处"></a>用docker 为开发/运维人员带来的好处</h3><p>Docker技术是 DevOps 的最好诠释， DevOps不是开发去做运维的事情， 而是:</p>
+<ul>
+<li>将编程的思想应用到运维领域</li>
+</ul>
+<p>举例来说： Immutable，Copy on Write 这些思想在研发领域是耳熟能详的，好处大家秒懂。而在运维领域的Immutable，传统是怎么做的？ 靠组织架构，权限管理。各种人为订制的机制，规范。 而docker 是用技术来解决了这个问题， 官方文档的介绍docker是 An open platform for distributed applications for developers and sysadmins， 很明显看到了DevOps有木有？</p>
+<ul>
+<li>由于应用的软件依赖栈完全由应用自己在Dockerfile中定义和维护 ，因此开发人员能够更清楚，更灵活的掌控自己的软件运行环境。 运维人员也不用为应用软件依赖栈的变更碎片化自己的时间。</li>
+<li>最最重要的一点，Dockerfile的存在，非常清晰地将研发和PE的责任和界限划分清楚了。 开发人员可以FROM 运维人员提供的基础镜像，配置自己应用的依赖栈； 运维人员可以FROM 更底层的系统工程师的基础镜像， 配置环境依赖栈； 系统工程师则定义了一个公司的基础Linux系统所需的版本和配置。</li>
+</ul>
+<p>另外，从资源的角度上讲， docker化能够大大减少开发/测试环境的成本，测试或者调试的场景是当发起测试的时候才需要， 其他时候测试环境并不承担业务， 如果用虚拟机则白白的在那里空跑。 Docker 化之后可以在需要的时候随时拉起来整个环境，很快，并且不会出错， 因此阿里云持续交付平台CRP在会在将来提供集成测试环境，作为一项基础服务， 如果没有容器化，那提供整个服务的成本和可行性都是无法想象的</p>
+<ul>
+<li>片尾：希望大家都能运用docker技术做到被说了很久但无法落地的：DevOps</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_devops.png" alt="continuous_devops"></p>
+<hr>
+<h3 id="花絮"><a href="#花絮" class="headerlink" title="花絮"></a>花絮</h3><ul>
+<li>不是都片尾了怎么还有花絮？ 因为我感觉刚才通篇说的好像把docker神话了， 为了防止大家出现过度崇拜和追捧的情况，还是要回过头来考虑一下， 到底什么样的应用适合Docker化，换句话说到底什么样的应用适合容器化？</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_dockerize.png" alt="continuous_dockerize"></p>
+<ul>
+<li>如上图： 我们认为Web应用，微服务，这种即无状态（是指好比一个web应用，通过10台服务器提供服务，当挂掉1台的时候流量自动被其他九台分摊，不会影响到用户，这样就叫无状态应用），又生命周期很短的业务适合docker化， 反过来，每个应用都是有状态，有存储的这种情况，不太容易docker化，或者说docker化的好处不明显 。</li>
+<li>但我们认为的也不一定是对的，今天docker技术，容器技术发展的速度太快， 所以花絮里这个问题 Let’s Think out together ……</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/04/continuous/" class="archive-article-date">
+  	<time datetime="2019-03-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-04</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Continuous/">Continuous</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-k8s_hosts" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -176,6 +520,77 @@
       
       <a href="/2016/08/31/k8s_hosts/" class="archive-article-date">
   	<time datetime="2016-08-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-08-31</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_context" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/04/01/k8s_context/">Kubernetes 不同工作组共享集群案例</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在一个组织内部，不同的工作组可以在同一个 Kubernetes 集群中工作，Kubernetes 通过命名空间和 Context 的设置来实现对不同工作组进行区分，使得它们既可以共享同一个 Kubernetes 集群的服务，也能够互不干扰。</p>
+<p>假设在我们的组织中有两个工作组：开发组和生产运维组。开发组在 Kubernetes 集群中需要不断创建、修改、删除各种 Pod、RC、Service 等资源对象，以便实现敏捷开发的过程。而生产运维组则需要使用严格的权限设置来确保生产系统中的 Pod、RC、Service 处于正常运行状态且不会被误操作。</p>
+<h2 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h2><p>为了在 Kubernetes 集群中实现这两个分组，首先需要创建两个命名空间。</p>
+<p><strong>namespace-development.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
+<p><strong>namespace-production.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: production</div></pre></td></tr></table></figure>
+<p>使用 kubectl create 命令完成命名空间的创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f namespace-development.yaml</div><div class="line">$ kubectl create -f namespace-production.yaml</div></pre></td></tr></table></figure>
+<p>查看系统中的命名空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get namespaces</div></pre></td></tr></table></figure>
+<h2 id="定义-Context（运行环境）"><a href="#定义-Context（运行环境）" class="headerlink" title="定义 Context（运行环境）"></a>定义 Context（运行环境）</h2><p>接下来，需要为这两个工作组分别定义一个 Context，即运行环境。这个运行环境将属于某个特定的命名空间。</p>
+<p>通过 kubectl config set-context 命令定义 Context，并将 Context 置于之前创建的命名空间中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl config set-cluster kubernetes-cluster --server=https://192.168.1.128:8080</div><div class="line">$ kubectl config set-context ctx-dev --namespace=development --cluster=kubernetes-cluster --user=dev</div><div class="line">$ kubectl config set-context ctx-prod --namespace=production --cluster=kubernetes-cluster --user=prod</div></pre></td></tr></table></figure>
+<p>使用 kubectl config view 命令查看已定义的 Context：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">$ kubectl config view</div><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">clusters:</div><div class="line">- cluster:</div><div class="line">    server: http://192.168.1.128:8080</div><div class="line">  name: kubernetes-cluster</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: development</div><div class="line">  name: ctx-dev</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: production</div><div class="line">  name: ctx-prod</div><div class="line">current-context: ctx-dev</div><div class="line">preferences: &#123;&#125;</div><div class="line">users: []</div></pre></td></tr></table></figure>
+<p>注意，通过 kubectl config 命令在 ${HOME}/.kube 目录下生成了一个名为 config 的文件，文件内容即 kubectl config view 命令看到的内容。所以，也可以通过手工编辑该文件的方式来设置 Context。</p>
+<h2 id="设置工作组在特定-Context-环境中工作"><a href="#设置工作组在特定-Context-环境中工作" class="headerlink" title="设置工作组在特定 Context 环境中工作"></a>设置工作组在特定 Context 环境中工作</h2><p>使用 kubectl config use-context <context_name> 命令来设置当前的运行环境。</context_name></p>
+<p>下面的命令把当前运行环境设置为 ”ctx-dev“：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl config use-context ctx-dev</div></pre></td></tr></table></figure>
+<p>通过这个命令，当前的运行环境即被设置为开发组所需的环境。之后的所有操作都将在名为 “development” 的命名空间中完成。</p>
+<p>各工作组之间的工作将不会相互干扰，并且它们都能够在同一个 Kubernetes 集群中同时工作。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/04/01/k8s_context/" class="archive-article-date">
+  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
 </a>
       
 	<div class="article-tag tagcloud">
@@ -303,7 +718,7 @@
 
 
   
-    <article id="post-k8s_context" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-k8s_monitor" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <input type="hidden" class="isFancy" />
@@ -313,7 +728,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2016/04/01/k8s_context/">Kubernetes 不同工作组共享集群案例</a>
+      <a class="article-title" href="/2016/03/31/k8s_monitor/">Kubernetes 集群性能监控</a>
     </h1>
   
 
@@ -321,35 +736,65 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>在一个组织内部，不同的工作组可以在同一个 Kubernetes 集群中工作，Kubernetes 通过命名空间和 Context 的设置来实现对不同工作组进行区分，使得它们既可以共享同一个 Kubernetes 集群的服务，也能够互不干扰。</p>
-<p>假设在我们的组织中有两个工作组：开发组和生产运维组。开发组在 Kubernetes 集群中需要不断创建、修改、删除各种 Pod、RC、Service 等资源对象，以便实现敏捷开发的过程。而生产运维组则需要使用严格的权限设置来确保生产系统中的 Pod、RC、Service 处于正常运行状态且不会被误操作。</p>
-<h2 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h2><p>为了在 Kubernetes 集群中实现这两个分组，首先需要创建两个命名空间。</p>
-<p><strong>namespace-development.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
-<p><strong>namespace-production.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: production</div></pre></td></tr></table></figure>
-<p>使用 kubectl create 命令完成命名空间的创建：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f namespace-development.yaml</div><div class="line">$ kubectl create -f namespace-production.yaml</div></pre></td></tr></table></figure>
-<p>查看系统中的命名空间：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get namespaces</div></pre></td></tr></table></figure>
-<h2 id="定义-Context（运行环境）"><a href="#定义-Context（运行环境）" class="headerlink" title="定义 Context（运行环境）"></a>定义 Context（运行环境）</h2><p>接下来，需要为这两个工作组分别定义一个 Context，即运行环境。这个运行环境将属于某个特定的命名空间。</p>
-<p>通过 kubectl config set-context 命令定义 Context，并将 Context 置于之前创建的命名空间中：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl config set-cluster kubernetes-cluster --server=https://192.168.1.128:8080</div><div class="line">$ kubectl config set-context ctx-dev --namespace=development --cluster=kubernetes-cluster --user=dev</div><div class="line">$ kubectl config set-context ctx-prod --namespace=production --cluster=kubernetes-cluster --user=prod</div></pre></td></tr></table></figure>
-<p>使用 kubectl config view 命令查看已定义的 Context：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">$ kubectl config view</div><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">clusters:</div><div class="line">- cluster:</div><div class="line">    server: http://192.168.1.128:8080</div><div class="line">  name: kubernetes-cluster</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: development</div><div class="line">  name: ctx-dev</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: production</div><div class="line">  name: ctx-prod</div><div class="line">current-context: ctx-dev</div><div class="line">preferences: &#123;&#125;</div><div class="line">users: []</div></pre></td></tr></table></figure>
-<p>注意，通过 kubectl config 命令在 ${HOME}/.kube 目录下生成了一个名为 config 的文件，文件内容即 kubectl config view 命令看到的内容。所以，也可以通过手工编辑该文件的方式来设置 Context。</p>
-<h2 id="设置工作组在特定-Context-环境中工作"><a href="#设置工作组在特定-Context-环境中工作" class="headerlink" title="设置工作组在特定 Context 环境中工作"></a>设置工作组在特定 Context 环境中工作</h2><p>使用 kubectl config use-context <context_name> 命令来设置当前的运行环境。</context_name></p>
-<p>下面的命令把当前运行环境设置为 ”ctx-dev“：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl config use-context ctx-dev</div></pre></td></tr></table></figure>
-<p>通过这个命令，当前的运行环境即被设置为开发组所需的环境。之后的所有操作都将在名为 “development” 的命名空间中完成。</p>
-<p>各工作组之间的工作将不会相互干扰，并且它们都能够在同一个 Kubernetes 集群中同时工作。</p>
+        <p>在 Kubernetes 系统中，使用 cAdvisor 对 Node 所在主机资源和在该 Node 上运行的容器进行监控和性能数据采样。由于 cAdvisor 集成在 Kubelet 中，即运行在每个 Node 上，所以一个 cAdvisor 仅能对一台 Node 进行监控。在大规模容器集群中，我们需要对所有 Node 和全部容器进行性能监控，Kubernetes 使用一套工具来实现集群性能数据的采集、存储和展示：Heapster、InfluxDB 和 Grafana。</p>
+<blockquote>
+<p>Heapster：是对集群中各 Node、Pod 的资源使用数据进行采集的系统，通过访问每个 Node 上 Kubelet 的 API，再通过 Kubelet 调用 cAdvisor 的 API 来采集该节点上所有容器的性能数据。之后 Heapster 进行数据聚合，并将结果保存到后端存储系统中。Heapster 支持多种后端存储系统，包括 memory、InfluxDB、BigQuery、谷歌云平台提供的 Google Cloud Monitoring 和 Google Cloud Logging等。</p>
+<p>InfluxDB：是分布式时序数据库（每条记录都带有时间戳属性），主要用于实时数据采集、事件跟踪记录、存储时间图标、原始数据等。InfluxDB 提供 REST API 用于数据的存储和查询。</p>
+<p>Grafana：通过 Dashboard 将 InfluxDB 中的时序数据展现成图标或曲线等形式，便于运维人员查看集群的运行状态。</p>
+</blockquote>
+<h2 id="配置-Kubernetes-集群的-ServiceAccount-和-Secret"><a href="#配置-Kubernetes-集群的-ServiceAccount-和-Secret" class="headerlink" title="配置 Kubernetes 集群的 ServiceAccount 和 Secret"></a>配置 Kubernetes 集群的 ServiceAccount 和 Secret</h2><p>Heapster 当前版本需要使用 HTTPS 的安全方式与 Kubernetes Master 进行连接，所以需要先进行 ServiceAccount 和 Secret 的创建。如果不使用 Secret，则 Heapster 启动时将会报错，然后 Heapster 容器会被 ReplicationController 反复销毁、创建，无法正常工作。</p>
+<p>关于 ServiceAccount 和 Secret 的原理详见<a href="http://blog.dingmingk.com/blog/kube_security.html" target="_blank" rel="external">http://blog.dingmingk.com/blog/kube_security.html</a>。</p>
+<p>在进行一下操作时，我们假设在 Kubernetes 集群中没有创建过 Secret（如果之前创建过，则可以先删除 etcd 中与 Secret 相关的键值）。</p>
+<p>首先，使用 OpenSSL 工具在 Master 服务器上创建一些证书和私钥相关的文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"># openssl genrsa -out ca.key 2048</div><div class="line"># openssl req -x509 -new -nodes -key ca.key -subj &quot;/CN=yourcompany.com&quot; -days 5000 -out ca.crt</div><div class="line"># openssl genrsa -out server.key 2048</div><div class="line"># openssl req -new -key server.key -subj &quot;/CN=kubernetes-master&quot; -out server.csr</div><div class="line"># openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 5000</div></pre></td></tr></table></figure>
+<p>注意，在生成 server.csr 时 -subj 参数中 /CN 指定的名字需为 Master 的主机名。另外，在生成 ca.crt 时 -subj 参数中 /CN 的名字最好与主机名不同，设为相同可能导致对普通 Master 的 HTTPS 访问认证失败。</p>
+<p>执行完成后会生成 6 个文件：ca.crt、ca.key、ca.srl、server.crt、server.csr、server.key。将这些文件复制到 /var/run/kubernetes/ 目录中，然后设置kube-apiserver 的启动参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">--client_ca_file=/var/run/kubernetes/ca.crt</div><div class="line">--tls-private-key-file=/var/run/kubernetes/server.key</div><div class="line">--tls-cert-file=/var/run/kubernetes/server.crt</div></pre></td></tr></table></figure>
+<p>之后重启 kube-apiserver 服务。</p>
+<p>接下来，给 kube-controller-manager 服务添加以下启动参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">--service_account_private_key_file=/var/run/kubernetes/server.key</div><div class="line">--root-ca-file=/var/run/kubernetes/ca.crt</div></pre></td></tr></table></figure>
+<p>然后重启 kube-controller-manager 服务。</p>
+<p>在 kube-apiserver 服务成功启动后，系统会自动为每个命名空间创建一个 ServiceAccount 和一个 Secret（包含一个 ca.crt 和一个 token）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl get serviceaccounts --all-namespaces</div><div class="line">$ kubectl get secrets --all-namespaces</div><div class="line">$ kubectl describe secret xxx</div></pre></td></tr></table></figure>
+<p>之后 ReplicationController 在创建 Pod 时，会生成类型为 Secret 的 Volume 存储卷，并将该 Volume 挂载到 Pod 内的如下目录中：/var/run/secrets/kubernetes.io/serviceaccount。然后，容器内的应用程序就可以使用该 Secret 与 Master 建立 HTTPS 连接了。Pod 的 Volumes 设置和挂载操作由 ReplicationController 和 Kubelet 自动完成，可以通过查看 Pod 的详细信息了解到。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get pods kube-dns-v8-xxxxx --namespace=kube-system -o yaml</div></pre></td></tr></table></figure>
+<p>进入容器，查看/var/run/secrets/kubernetes.io/serviceaccount 目录，可以看到两个文件 ca.crt 和 token，这两个文件就是与 Master 通信时所需的证书和秘钥信息。</p>
+<h2 id="部署-Heapster、InfluxDB、Grafana"><a href="#部署-Heapster、InfluxDB、Grafana" class="headerlink" title="部署 Heapster、InfluxDB、Grafana"></a>部署 Heapster、InfluxDB、Grafana</h2><p>在 ServiceAccount 和 Secrets 创建完成后，我们就可以创建 Heapster、InfluxDB 和 Grafana 等 ReplicationController 和 Service 了。</p>
+<p><strong>heapsster-service.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    kubernetes.io/cluster-service: &quot;true&quot;</div><div class="line">    kubernetes.io/name: Heapster</div><div class="line">  name: heapster</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">    - port: 80</div><div class="line">      targetPort: 8082</div><div class="line">  selector:</div><div class="line">    k8s-app: heapster</div></pre></td></tr></table></figure>
+<p><strong>InfluxDB-service.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels: null</div><div class="line">  name: monitoring-InfluxDB</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">ports:</div><div class="line">  - name: http</div><div class="line">    port: 8083</div><div class="line">    targetPort: 8083</div><div class="line">    nodePort: 30083</div><div class="line">  - name: api</div><div class="line">    port: 8086</div><div class="line">    targetPort: 8086</div><div class="line">    nodePort: 30086</div><div class="line">selector:</div><div class="line">  name: influxGrafana</div></pre></td></tr></table></figure>
+<p><strong>Grafana-service.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    kubernetes.io/name: monitoring-Grafana</div><div class="line">    kubernetes.io/cluster-service: &quot;true&quot;</div><div class="line">  name: monitoring-Grafana</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">  ports:</div><div class="line">    - port: 80</div><div class="line">      targetPort: 8080</div><div class="line">      nodePort: 30080</div><div class="line">  selector:</div><div class="line">    name: influxGrafana</div></pre></td></tr></table></figure>
+<p><strong>heapster-controller.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    k8s-app: heapster</div><div class="line">    name: heapster</div><div class="line">    version: v6</div><div class="line">  name: heapster</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: heapster</div><div class="line">    k8s-app: heapster</div><div class="line">    version: v6</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: heapster</div><div class="line">        version: v6</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: heapster</div><div class="line">          image: gcr.io/google_containers/heapster:v0.17.0</div><div class="line">          command:</div><div class="line">            - /heapster</div><div class="line">            - --source=kubernetes:http://192.168.1.128:8080?inClusterConfig=false&amp;kubeletHttps=true&amp;useServiceAccount=true&amp;auth=</div><div class="line">            - --sink=InfluxDB:http://monitoring-InfluxDB:8086</div></pre></td></tr></table></figure>
+<p>Heapster 需要设置的参数如下：</p>
+<ul>
+<li>–source：为配置监控来源。在本例中使用 kubernetes:表示从 Kubernetes Master 获取各 Node 的信息。在 URL 后面的参数部分，修改 kubeletHttps、inClusterConfig、useServiceAccount 的值，并设置 auth 的值为空。URL中可配置的参数如下：<ul>
+<li>IP 地址和端口号：为 Kubernetes Master 的地址。</li>
+<li>kubeletPort：默认为 10255（Kubelet 服务的只读端口号）。</li>
+<li>kubeletHttps：是否通过 HTTPS 方式连接 Kubelet，默认为 false。</li>
+<li>apiVersion： API 版本号，默认为 Kubernetes 系统的版本号，当前为 v1.</li>
+<li>inClusterConfig：是否使用 Heapster 命名空间中的 ServiceAccount，默认为 true。</li>
+<li>insecure：是否信任 Kubernetes 证书，默认为 false。</li>
+<li>auth：客户端认证授权文件，当 ServiceAccount 不可用时对其进行设置。</li>
+<li>useServiceAccount：是否使用 ServiceAccount，默认为 false。</li>
+</ul>
+</li>
+<li>–sink：为配置后端的存储系统，在本例中使用 InfluxDB 系统。</li>
+</ul>
+<p><strong>InfluxDB-Grafana-controller.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    name: influxGrafana</div><div class="line">  name: infludb-Grafana</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: influxGrafana</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: influxGrafana</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: InfluxDB</div><div class="line">          image: gcr.io/google_containers/heapster_InfluxDB:v0.3</div><div class="line">          ports:</div><div class="line">            - containerPort: 8083</div><div class="line">              hostPort: 8083</div><div class="line">            - containerPort: 8086</div><div class="line">              hostPort: 8086</div><div class="line">        - name: Grafana</div><div class="line">          image: gcr.io/google_containers/heapster_Grafana:v0.7</div><div class="line">          ports:</div><div class="line">            - containerPort: 8080</div><div class="line">              hostPort: 8080</div><div class="line">          env:</div><div class="line">            - name: INFLUXDB_HOST</div><div class="line">              value: monitoring-InfluxDB</div></pre></td></tr></table></figure>
+<p>最后，创建所有 Service 和 RC：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f heapster-service.yaml</div><div class="line">$ kubectl create -f InfluxDB-server.yaml</div><div class="line">$ kubectl create -f Grafana-service.yaml</div><div class="line">$ kubectl create -f InfluxDB-Grafana-controller.yaml</div><div class="line">$ kubectl create -f heapster-controller.yaml</div></pre></td></tr></table></figure>
+<p>通过 kubectl get pods –namespace=kube-system 确认各 Pod 都成功启动了。</p>
 
       
     </div>
     <div class="article-info article-info-index">
       
-      <a href="/2016/04/01/k8s_context/" class="archive-article-date">
-  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
+      <a href="/2016/03/31/k8s_monitor/" class="archive-article-date">
+  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
 </a>
       
 	<div class="article-tag tagcloud">
@@ -544,7 +989,7 @@
 
 
   
-    <article id="post-k8s_monitor" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-k8s_network" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <input type="hidden" class="isFancy" />
@@ -554,7 +999,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/31/k8s_monitor/">Kubernetes 集群性能监控</a>
+      <a class="article-title" href="/2016/03/30/k8s_network/">Kubernetes 网络配置方案</a>
     </h1>
   
 
@@ -562,65 +1007,60 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>在 Kubernetes 系统中，使用 cAdvisor 对 Node 所在主机资源和在该 Node 上运行的容器进行监控和性能数据采样。由于 cAdvisor 集成在 Kubelet 中，即运行在每个 Node 上，所以一个 cAdvisor 仅能对一台 Node 进行监控。在大规模容器集群中，我们需要对所有 Node 和全部容器进行性能监控，Kubernetes 使用一套工具来实现集群性能数据的采集、存储和展示：Heapster、InfluxDB 和 Grafana。</p>
-<blockquote>
-<p>Heapster：是对集群中各 Node、Pod 的资源使用数据进行采集的系统，通过访问每个 Node 上 Kubelet 的 API，再通过 Kubelet 调用 cAdvisor 的 API 来采集该节点上所有容器的性能数据。之后 Heapster 进行数据聚合，并将结果保存到后端存储系统中。Heapster 支持多种后端存储系统，包括 memory、InfluxDB、BigQuery、谷歌云平台提供的 Google Cloud Monitoring 和 Google Cloud Logging等。</p>
-<p>InfluxDB：是分布式时序数据库（每条记录都带有时间戳属性），主要用于实时数据采集、事件跟踪记录、存储时间图标、原始数据等。InfluxDB 提供 REST API 用于数据的存储和查询。</p>
-<p>Grafana：通过 Dashboard 将 InfluxDB 中的时序数据展现成图标或曲线等形式，便于运维人员查看集群的运行状态。</p>
-</blockquote>
-<h2 id="配置-Kubernetes-集群的-ServiceAccount-和-Secret"><a href="#配置-Kubernetes-集群的-ServiceAccount-和-Secret" class="headerlink" title="配置 Kubernetes 集群的 ServiceAccount 和 Secret"></a>配置 Kubernetes 集群的 ServiceAccount 和 Secret</h2><p>Heapster 当前版本需要使用 HTTPS 的安全方式与 Kubernetes Master 进行连接，所以需要先进行 ServiceAccount 和 Secret 的创建。如果不使用 Secret，则 Heapster 启动时将会报错，然后 Heapster 容器会被 ReplicationController 反复销毁、创建，无法正常工作。</p>
-<p>关于 ServiceAccount 和 Secret 的原理详见<a href="http://blog.dingmingk.com/blog/kube_security.html" target="_blank" rel="external">http://blog.dingmingk.com/blog/kube_security.html</a>。</p>
-<p>在进行一下操作时，我们假设在 Kubernetes 集群中没有创建过 Secret（如果之前创建过，则可以先删除 etcd 中与 Secret 相关的键值）。</p>
-<p>首先，使用 OpenSSL 工具在 Master 服务器上创建一些证书和私钥相关的文件：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"># openssl genrsa -out ca.key 2048</div><div class="line"># openssl req -x509 -new -nodes -key ca.key -subj &quot;/CN=yourcompany.com&quot; -days 5000 -out ca.crt</div><div class="line"># openssl genrsa -out server.key 2048</div><div class="line"># openssl req -new -key server.key -subj &quot;/CN=kubernetes-master&quot; -out server.csr</div><div class="line"># openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 5000</div></pre></td></tr></table></figure>
-<p>注意，在生成 server.csr 时 -subj 参数中 /CN 指定的名字需为 Master 的主机名。另外，在生成 ca.crt 时 -subj 参数中 /CN 的名字最好与主机名不同，设为相同可能导致对普通 Master 的 HTTPS 访问认证失败。</p>
-<p>执行完成后会生成 6 个文件：ca.crt、ca.key、ca.srl、server.crt、server.csr、server.key。将这些文件复制到 /var/run/kubernetes/ 目录中，然后设置kube-apiserver 的启动参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">--client_ca_file=/var/run/kubernetes/ca.crt</div><div class="line">--tls-private-key-file=/var/run/kubernetes/server.key</div><div class="line">--tls-cert-file=/var/run/kubernetes/server.crt</div></pre></td></tr></table></figure>
-<p>之后重启 kube-apiserver 服务。</p>
-<p>接下来，给 kube-controller-manager 服务添加以下启动参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">--service_account_private_key_file=/var/run/kubernetes/server.key</div><div class="line">--root-ca-file=/var/run/kubernetes/ca.crt</div></pre></td></tr></table></figure>
-<p>然后重启 kube-controller-manager 服务。</p>
-<p>在 kube-apiserver 服务成功启动后，系统会自动为每个命名空间创建一个 ServiceAccount 和一个 Secret（包含一个 ca.crt 和一个 token）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl get serviceaccounts --all-namespaces</div><div class="line">$ kubectl get secrets --all-namespaces</div><div class="line">$ kubectl describe secret xxx</div></pre></td></tr></table></figure>
-<p>之后 ReplicationController 在创建 Pod 时，会生成类型为 Secret 的 Volume 存储卷，并将该 Volume 挂载到 Pod 内的如下目录中：/var/run/secrets/kubernetes.io/serviceaccount。然后，容器内的应用程序就可以使用该 Secret 与 Master 建立 HTTPS 连接了。Pod 的 Volumes 设置和挂载操作由 ReplicationController 和 Kubelet 自动完成，可以通过查看 Pod 的详细信息了解到。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get pods kube-dns-v8-xxxxx --namespace=kube-system -o yaml</div></pre></td></tr></table></figure>
-<p>进入容器，查看/var/run/secrets/kubernetes.io/serviceaccount 目录，可以看到两个文件 ca.crt 和 token，这两个文件就是与 Master 通信时所需的证书和秘钥信息。</p>
-<h2 id="部署-Heapster、InfluxDB、Grafana"><a href="#部署-Heapster、InfluxDB、Grafana" class="headerlink" title="部署 Heapster、InfluxDB、Grafana"></a>部署 Heapster、InfluxDB、Grafana</h2><p>在 ServiceAccount 和 Secrets 创建完成后，我们就可以创建 Heapster、InfluxDB 和 Grafana 等 ReplicationController 和 Service 了。</p>
-<p><strong>heapsster-service.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    kubernetes.io/cluster-service: &quot;true&quot;</div><div class="line">    kubernetes.io/name: Heapster</div><div class="line">  name: heapster</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">    - port: 80</div><div class="line">      targetPort: 8082</div><div class="line">  selector:</div><div class="line">    k8s-app: heapster</div></pre></td></tr></table></figure>
-<p><strong>InfluxDB-service.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels: null</div><div class="line">  name: monitoring-InfluxDB</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">ports:</div><div class="line">  - name: http</div><div class="line">    port: 8083</div><div class="line">    targetPort: 8083</div><div class="line">    nodePort: 30083</div><div class="line">  - name: api</div><div class="line">    port: 8086</div><div class="line">    targetPort: 8086</div><div class="line">    nodePort: 30086</div><div class="line">selector:</div><div class="line">  name: influxGrafana</div></pre></td></tr></table></figure>
-<p><strong>Grafana-service.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    kubernetes.io/name: monitoring-Grafana</div><div class="line">    kubernetes.io/cluster-service: &quot;true&quot;</div><div class="line">  name: monitoring-Grafana</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">  ports:</div><div class="line">    - port: 80</div><div class="line">      targetPort: 8080</div><div class="line">      nodePort: 30080</div><div class="line">  selector:</div><div class="line">    name: influxGrafana</div></pre></td></tr></table></figure>
-<p><strong>heapster-controller.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    k8s-app: heapster</div><div class="line">    name: heapster</div><div class="line">    version: v6</div><div class="line">  name: heapster</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: heapster</div><div class="line">    k8s-app: heapster</div><div class="line">    version: v6</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: heapster</div><div class="line">        version: v6</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: heapster</div><div class="line">          image: gcr.io/google_containers/heapster:v0.17.0</div><div class="line">          command:</div><div class="line">            - /heapster</div><div class="line">            - --source=kubernetes:http://192.168.1.128:8080?inClusterConfig=false&amp;kubeletHttps=true&amp;useServiceAccount=true&amp;auth=</div><div class="line">            - --sink=InfluxDB:http://monitoring-InfluxDB:8086</div></pre></td></tr></table></figure>
-<p>Heapster 需要设置的参数如下：</p>
-<ul>
-<li>–source：为配置监控来源。在本例中使用 kubernetes:表示从 Kubernetes Master 获取各 Node 的信息。在 URL 后面的参数部分，修改 kubeletHttps、inClusterConfig、useServiceAccount 的值，并设置 auth 的值为空。URL中可配置的参数如下：<ul>
-<li>IP 地址和端口号：为 Kubernetes Master 的地址。</li>
-<li>kubeletPort：默认为 10255（Kubelet 服务的只读端口号）。</li>
-<li>kubeletHttps：是否通过 HTTPS 方式连接 Kubelet，默认为 false。</li>
-<li>apiVersion： API 版本号，默认为 Kubernetes 系统的版本号，当前为 v1.</li>
-<li>inClusterConfig：是否使用 Heapster 命名空间中的 ServiceAccount，默认为 true。</li>
-<li>insecure：是否信任 Kubernetes 证书，默认为 false。</li>
-<li>auth：客户端认证授权文件，当 ServiceAccount 不可用时对其进行设置。</li>
-<li>useServiceAccount：是否使用 ServiceAccount，默认为 false。</li>
-</ul>
-</li>
-<li>–sink：为配置后端的存储系统，在本例中使用 InfluxDB 系统。</li>
-</ul>
-<p><strong>InfluxDB-Grafana-controller.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    name: influxGrafana</div><div class="line">  name: infludb-Grafana</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: influxGrafana</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: influxGrafana</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: InfluxDB</div><div class="line">          image: gcr.io/google_containers/heapster_InfluxDB:v0.3</div><div class="line">          ports:</div><div class="line">            - containerPort: 8083</div><div class="line">              hostPort: 8083</div><div class="line">            - containerPort: 8086</div><div class="line">              hostPort: 8086</div><div class="line">        - name: Grafana</div><div class="line">          image: gcr.io/google_containers/heapster_Grafana:v0.7</div><div class="line">          ports:</div><div class="line">            - containerPort: 8080</div><div class="line">              hostPort: 8080</div><div class="line">          env:</div><div class="line">            - name: INFLUXDB_HOST</div><div class="line">              value: monitoring-InfluxDB</div></pre></td></tr></table></figure>
-<p>最后，创建所有 Service 和 RC：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f heapster-service.yaml</div><div class="line">$ kubectl create -f InfluxDB-server.yaml</div><div class="line">$ kubectl create -f Grafana-service.yaml</div><div class="line">$ kubectl create -f InfluxDB-Grafana-controller.yaml</div><div class="line">$ kubectl create -f heapster-controller.yaml</div></pre></td></tr></table></figure>
-<p>通过 kubectl get pods –namespace=kube-system 确认各 Pod 都成功启动了。</p>
+        <p>为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。</p>
+<h2 id="直接路由"><a href="#直接路由" class="headerlink" title="直接路由"></a>直接路由</h2><p>通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。</p>
+<p>例如 Pod1 所在 docker0 网桥的 IP 子网是 10.1.10.0，Node 地址为 192.168.1.128；而 Pod2 所在 docker0 网桥的 IP 子网是 10.1.20.0，Node 地址为 192.168.1.129.</p>
+<p>在 Node1 上增加一条到 Node2 上 docker0 的静态路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.20.0 netmask 255.255.255.0 gw 192.168.1.129</div></pre></td></tr></table></figure>
+<p>同样，在 Node2 上增加一条到 Node1 上 docker0 的静态路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.10.0 netmask 255.255.255.0 gw 192.168.1.128</div></pre></td></tr></table></figure>
+<p>我们的集群中机器数量通常很多。假设有 100 台服务器，那么就需要在每台服务器上手工添加到另外 99 台服务器 docker0 的路由规则。为了减少手工操作，可以使用 Quagga 软件来实现路由规则的动态添加。</p>
+<p>除了在每台服务器上安装 Quagga 软件并启动，还可以使用互联网上的一个 Quagga 容器来运行，在这里使用 index.alauda.cn/georce/router 镜像启动 Quagga。在每台 Node 上下载该 Docker 镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker pull index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
+<p>在运行 Quagga 路由器之前，需要确保每个 Node 上 docker0 网桥的子网地址不能重叠，也不能与物理机所在的网络重叠，这需要网络管理员仔细规划。</p>
+<p>下面以 3 个 Node 为例，使用 ifconfig 命令修改 docker0 网桥的地址和子网（假设 Node 所在的物理网络不是 10.1.X.X地址段）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Node 1: # ifconfig docker0 10.1.10.1/24</div><div class="line">Node 2: # ifconfig docker0 10.1.20.1/24</div><div class="line">Node 3: # ifconfig docker0 10.1.30.1/24</div></pre></td></tr></table></figure>
+<p>然后在每个 Node 上启动 Quagga 容器。需要说明的是，Quagga 需要以 –privileged 特权模式运行，并且指定 –net=host，表示直接使用物理机的网络：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -itd --name=router --privileged --net=host index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
+<p>启动成功后，Quagga 会相互学习来完成到其他机器的 docker0 路由的添加。</p>
+<h2 id="使用-flannel-叠加网络"><a href="#使用-flannel-叠加网络" class="headerlink" title="使用 flannel 叠加网络"></a>使用 flannel 叠加网络</h2><p>falnnel 采用叠加网络（Overlay Network）模型来完成网络的打通。</p>
+<h4 id="安装-etcd"><a href="#安装-etcd" class="headerlink" title="安装 etcd"></a>安装 etcd</h4><p>由于 flannel 使用 etcd 作为数据库，所以需要预先安装好 etcd。</p>
+<h4 id="安装-flannel"><a href="#安装-flannel" class="headerlink" title="安装 flannel"></a>安装 flannel</h4><p>需要在每台 Node 上都安装 flannel。flannel 软件的下载地址为 (<a href="https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件" target="_blank" rel="external">https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件</a> flanneld 和 mk-docker-opts.sh 复制到 /usr/bin（或其他 PATH 环境变量中的目录），即可完成对 flannel 的安装。</p>
+<h4 id="配置-flannel"><a href="#配置-flannel" class="headerlink" title="配置 flannel"></a>配置 flannel</h4><p>此处以使用 systemd 系统为例对 flanneld 服务进行配置。编辑服务配置文件 /etc/systemd/system/flanneld.service：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Flanneld overlay address etcd agent</div><div class="line">After=network.target</div><div class="line">Before=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">Type=notify</div><div class="line">EnvironmentFile=/etc/sysconfig/flanneld</div><div class="line">EnvironmentFile=-/etc/sysconfig/docker-network</div><div class="line">ExecStart=/usr/bin/flanneld -etcd-endpoints=$&#123;FLANNEL_ETCD&#125; $FLANNEL_OPTIONS</div><div class="line"></div><div class="line">[Install]</div><div class="line">RequiredBy=docker.service</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>编辑配置文件/etc/sysconfig/flannel，设置 etcd 的 URL 地址：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># Flanneld configuration options</div><div class="line"># etcd url location. Point this to the server where etcd runs</div><div class="line">FLANNEL_ETCD=&quot;http://192.168.1.128:2379&quot;</div><div class="line"></div><div class="line"># etcd config key. THis is the configuration key that flannel queries</div><div class="line"># For address range assignment</div><div class="line">FLANNEL_ETCD_KEY=&quot;/coreos.com/network&quot;</div><div class="line"></div><div class="line"># Any additional options that you want to pass</div><div class="line">#FLANNEL_OPTIONS=&quot; &quot;</div></pre></td></tr></table></figure>
+<p>在启动 flannel 之前，需要在 etcd 中添加一条网络配置记录，这个配置将用于 flannel 分配给每个 Docker 的虚拟 IP 地址段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># etcdctl set /coreos.com/network/config &apos;&#123; &quot;Network&quot; : &quot; 10.1.0.0/16 &quot; &#125;&apos;</div></pre></td></tr></table></figure>
+<h4 id="由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。"><a href="#由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。" class="headerlink" title="由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。"></a>由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。</h4><h4 id="启动-flanneld-服务"><a href="#启动-flanneld-服务" class="headerlink" title="启动 flanneld 服务"></a>启动 flanneld 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart flanneld</div></pre></td></tr></table></figure>
+<h4 id="在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置："><a href="#在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置：" class="headerlink" title="在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置："></a>在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mk-docker-opts.sh -i</div><div class="line"># source /run/flannel/subnet.env</div><div class="line"># ifconfig docker0 $&#123;FLANNEL_SUBNET&#125;</div></pre></td></tr></table></figure>
+<h4 id="重新启动-Docker-服务"><a href="#重新启动-Docker-服务" class="headerlink" title="重新启动 Docker 服务"></a>重新启动 Docker 服务</h4><h2 id="使用-Open-vSwitch"><a href="#使用-Open-vSwitch" class="headerlink" title="使用 Open vSwitch"></a>使用 Open vSwitch</h2><p>以两个 Node 为例，首先确保节点 192.168.18.128 的 Docker0 采用 172.17.43.0／24 网段，而 192.168.18.131 的 Docker0 采用 172.17.42.0/24 网段，对应参数为 DockerDaemon 进程里的 bip 参数。</p>
+<h4 id="安装-ovs"><a href="#安装-ovs" class="headerlink" title="安装 ovs"></a>安装 ovs</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install openvswitch-x.x.x-x.x86_64.rpm</div></pre></td></tr></table></figure>
+<p>禁止 SELINUX 功能，配置后重启机器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># vi /etc/selinux/config</div><div class="line">SELINUX=disabled</div></pre></td></tr></table></figure>
+<p>查看 Open vSwitch 的服务状态，应该启动两个进程：ovsdb-server 与 ovs-vswitchd。</p>
+<h4 id="创建网桥和-GRE-隧道"><a href="#创建网桥和-GRE-隧道" class="headerlink" title="创建网桥和 GRE 隧道"></a>创建网桥和 GRE 隧道</h4><p>接下来需要在每个 Node 上建立 ovs 的网桥 br0，然后在网桥上创建一个 GRE 隧道连接对端网桥，最后把 ovs 的网桥 br0 作为一个端口连接到 docker0 这个 Linux 网桥上。这样以来，两个节点上的 docker0 网段就能互通了。</p>
+<p>创建网桥</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-br br0</div></pre></td></tr></table></figure>
+<p>创建 GRE 隧道连接对端，remote_ip 为对端 eth0 的网卡地址</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-port br0 grel -- set interface grel type=gre option:remote_ip=192.168.18.128</div></pre></td></tr></table></figure>
+<p>添加 br0 到本地 docker0，使得容器流量通过 OVS 流经 tunnel</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># brctl addif docker0 br0</div></pre></td></tr></table></figure>
+<p>启动 br0 与 docker0 网桥</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># ip link set dev br0 up</div><div class="line"># ip link set dev docker0 up</div></pre></td></tr></table></figure>
+<p>添加路由规则。由于 192.168.18.128 与 192.168.18.131 的 docker0 网段分别为 172.17.43.0/24 与 172.17.42.0／24，这两个网段的路由都需要经过本机的 docker0 网桥路由，其中一个 24 网段是通过 OVS 的 GRE 隧道到达对端的，因此需要在每个 Node 上添加通过 docker0 网桥转发的 172.17.0.0/16 段的路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ip route add 172.17.0.0/16 dev docker0</div></pre></td></tr></table></figure>
+<p>清空 Docker 自带的 iptables 规则及 Linux 的规则 ，后者存在拒绝 icmp 报文通过防火墙的规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># iptables -t nat -F; iptables -F</div></pre></td></tr></table></figure>
+<p>在 192.168.18.131 上完成上述步骤后，在 192.168.18.128 节点执行同样的操作。注意，GRE 隧道里的 IP 地址药改为对端节点（192.168.18.131）的 IP 地址。</p>
+<h4 id="Node-上容器之间的互通测试"><a href="#Node-上容器之间的互通测试" class="headerlink" title="Node 上容器之间的互通测试"></a>Node 上容器之间的互通测试</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># tshark -i br0 -R ip proto great</div></pre></td></tr></table></figure>
 
       
     </div>
     <div class="article-info article-info-index">
       
-      <a href="/2016/03/31/k8s_monitor/" class="archive-article-date">
-  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
+      <a href="/2016/03/30/k8s_network/" class="archive-article-date">
+  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
 </a>
       
 	<div class="article-tag tagcloud">
@@ -709,102 +1149,6 @@
     <div class="article-info article-info-index">
       
       <a href="/2016/03/30/k8s_dns/" class="archive-article-date">
-  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_network" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/30/k8s_network/">Kubernetes 网络配置方案</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。</p>
-<h2 id="直接路由"><a href="#直接路由" class="headerlink" title="直接路由"></a>直接路由</h2><p>通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。</p>
-<p>例如 Pod1 所在 docker0 网桥的 IP 子网是 10.1.10.0，Node 地址为 192.168.1.128；而 Pod2 所在 docker0 网桥的 IP 子网是 10.1.20.0，Node 地址为 192.168.1.129.</p>
-<p>在 Node1 上增加一条到 Node2 上 docker0 的静态路由规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.20.0 netmask 255.255.255.0 gw 192.168.1.129</div></pre></td></tr></table></figure>
-<p>同样，在 Node2 上增加一条到 Node1 上 docker0 的静态路由规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.10.0 netmask 255.255.255.0 gw 192.168.1.128</div></pre></td></tr></table></figure>
-<p>我们的集群中机器数量通常很多。假设有 100 台服务器，那么就需要在每台服务器上手工添加到另外 99 台服务器 docker0 的路由规则。为了减少手工操作，可以使用 Quagga 软件来实现路由规则的动态添加。</p>
-<p>除了在每台服务器上安装 Quagga 软件并启动，还可以使用互联网上的一个 Quagga 容器来运行，在这里使用 index.alauda.cn/georce/router 镜像启动 Quagga。在每台 Node 上下载该 Docker 镜像：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker pull index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
-<p>在运行 Quagga 路由器之前，需要确保每个 Node 上 docker0 网桥的子网地址不能重叠，也不能与物理机所在的网络重叠，这需要网络管理员仔细规划。</p>
-<p>下面以 3 个 Node 为例，使用 ifconfig 命令修改 docker0 网桥的地址和子网（假设 Node 所在的物理网络不是 10.1.X.X地址段）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Node 1: # ifconfig docker0 10.1.10.1/24</div><div class="line">Node 2: # ifconfig docker0 10.1.20.1/24</div><div class="line">Node 3: # ifconfig docker0 10.1.30.1/24</div></pre></td></tr></table></figure>
-<p>然后在每个 Node 上启动 Quagga 容器。需要说明的是，Quagga 需要以 –privileged 特权模式运行，并且指定 –net=host，表示直接使用物理机的网络：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -itd --name=router --privileged --net=host index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
-<p>启动成功后，Quagga 会相互学习来完成到其他机器的 docker0 路由的添加。</p>
-<h2 id="使用-flannel-叠加网络"><a href="#使用-flannel-叠加网络" class="headerlink" title="使用 flannel 叠加网络"></a>使用 flannel 叠加网络</h2><p>falnnel 采用叠加网络（Overlay Network）模型来完成网络的打通。</p>
-<h4 id="安装-etcd"><a href="#安装-etcd" class="headerlink" title="安装 etcd"></a>安装 etcd</h4><p>由于 flannel 使用 etcd 作为数据库，所以需要预先安装好 etcd。</p>
-<h4 id="安装-flannel"><a href="#安装-flannel" class="headerlink" title="安装 flannel"></a>安装 flannel</h4><p>需要在每台 Node 上都安装 flannel。flannel 软件的下载地址为 (<a href="https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件" target="_blank" rel="external">https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件</a> flanneld 和 mk-docker-opts.sh 复制到 /usr/bin（或其他 PATH 环境变量中的目录），即可完成对 flannel 的安装。</p>
-<h4 id="配置-flannel"><a href="#配置-flannel" class="headerlink" title="配置 flannel"></a>配置 flannel</h4><p>此处以使用 systemd 系统为例对 flanneld 服务进行配置。编辑服务配置文件 /etc/systemd/system/flanneld.service：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Flanneld overlay address etcd agent</div><div class="line">After=network.target</div><div class="line">Before=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">Type=notify</div><div class="line">EnvironmentFile=/etc/sysconfig/flanneld</div><div class="line">EnvironmentFile=-/etc/sysconfig/docker-network</div><div class="line">ExecStart=/usr/bin/flanneld -etcd-endpoints=$&#123;FLANNEL_ETCD&#125; $FLANNEL_OPTIONS</div><div class="line"></div><div class="line">[Install]</div><div class="line">RequiredBy=docker.service</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
-<p>编辑配置文件/etc/sysconfig/flannel，设置 etcd 的 URL 地址：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># Flanneld configuration options</div><div class="line"># etcd url location. Point this to the server where etcd runs</div><div class="line">FLANNEL_ETCD=&quot;http://192.168.1.128:2379&quot;</div><div class="line"></div><div class="line"># etcd config key. THis is the configuration key that flannel queries</div><div class="line"># For address range assignment</div><div class="line">FLANNEL_ETCD_KEY=&quot;/coreos.com/network&quot;</div><div class="line"></div><div class="line"># Any additional options that you want to pass</div><div class="line">#FLANNEL_OPTIONS=&quot; &quot;</div></pre></td></tr></table></figure>
-<p>在启动 flannel 之前，需要在 etcd 中添加一条网络配置记录，这个配置将用于 flannel 分配给每个 Docker 的虚拟 IP 地址段：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># etcdctl set /coreos.com/network/config &apos;&#123; &quot;Network&quot; : &quot; 10.1.0.0/16 &quot; &#125;&apos;</div></pre></td></tr></table></figure>
-<h4 id="由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。"><a href="#由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。" class="headerlink" title="由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。"></a>由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。</h4><h4 id="启动-flanneld-服务"><a href="#启动-flanneld-服务" class="headerlink" title="启动 flanneld 服务"></a>启动 flanneld 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart flanneld</div></pre></td></tr></table></figure>
-<h4 id="在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置："><a href="#在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置：" class="headerlink" title="在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置："></a>在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mk-docker-opts.sh -i</div><div class="line"># source /run/flannel/subnet.env</div><div class="line"># ifconfig docker0 $&#123;FLANNEL_SUBNET&#125;</div></pre></td></tr></table></figure>
-<h4 id="重新启动-Docker-服务"><a href="#重新启动-Docker-服务" class="headerlink" title="重新启动 Docker 服务"></a>重新启动 Docker 服务</h4><h2 id="使用-Open-vSwitch"><a href="#使用-Open-vSwitch" class="headerlink" title="使用 Open vSwitch"></a>使用 Open vSwitch</h2><p>以两个 Node 为例，首先确保节点 192.168.18.128 的 Docker0 采用 172.17.43.0／24 网段，而 192.168.18.131 的 Docker0 采用 172.17.42.0/24 网段，对应参数为 DockerDaemon 进程里的 bip 参数。</p>
-<h4 id="安装-ovs"><a href="#安装-ovs" class="headerlink" title="安装 ovs"></a>安装 ovs</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install openvswitch-x.x.x-x.x86_64.rpm</div></pre></td></tr></table></figure>
-<p>禁止 SELINUX 功能，配置后重启机器</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># vi /etc/selinux/config</div><div class="line">SELINUX=disabled</div></pre></td></tr></table></figure>
-<p>查看 Open vSwitch 的服务状态，应该启动两个进程：ovsdb-server 与 ovs-vswitchd。</p>
-<h4 id="创建网桥和-GRE-隧道"><a href="#创建网桥和-GRE-隧道" class="headerlink" title="创建网桥和 GRE 隧道"></a>创建网桥和 GRE 隧道</h4><p>接下来需要在每个 Node 上建立 ovs 的网桥 br0，然后在网桥上创建一个 GRE 隧道连接对端网桥，最后把 ovs 的网桥 br0 作为一个端口连接到 docker0 这个 Linux 网桥上。这样以来，两个节点上的 docker0 网段就能互通了。</p>
-<p>创建网桥</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-br br0</div></pre></td></tr></table></figure>
-<p>创建 GRE 隧道连接对端，remote_ip 为对端 eth0 的网卡地址</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-port br0 grel -- set interface grel type=gre option:remote_ip=192.168.18.128</div></pre></td></tr></table></figure>
-<p>添加 br0 到本地 docker0，使得容器流量通过 OVS 流经 tunnel</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># brctl addif docker0 br0</div></pre></td></tr></table></figure>
-<p>启动 br0 与 docker0 网桥</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># ip link set dev br0 up</div><div class="line"># ip link set dev docker0 up</div></pre></td></tr></table></figure>
-<p>添加路由规则。由于 192.168.18.128 与 192.168.18.131 的 docker0 网段分别为 172.17.43.0/24 与 172.17.42.0／24，这两个网段的路由都需要经过本机的 docker0 网桥路由，其中一个 24 网段是通过 OVS 的 GRE 隧道到达对端的，因此需要在每个 Node 上添加通过 docker0 网桥转发的 172.17.0.0/16 段的路由规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ip route add 172.17.0.0/16 dev docker0</div></pre></td></tr></table></figure>
-<p>清空 Docker 自带的 iptables 规则及 Linux 的规则 ，后者存在拒绝 icmp 报文通过防火墙的规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># iptables -t nat -F; iptables -F</div></pre></td></tr></table></figure>
-<p>在 192.168.18.131 上完成上述步骤后，在 192.168.18.128 节点执行同样的操作。注意，GRE 隧道里的 IP 地址药改为对端节点（192.168.18.131）的 IP 地址。</p>
-<h4 id="Node-上容器之间的互通测试"><a href="#Node-上容器之间的互通测试" class="headerlink" title="Node 上容器之间的互通测试"></a>Node 上容器之间的互通测试</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># tshark -i br0 -R ip proto great</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/30/k8s_network/" class="archive-article-date">
   	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
 </a>
       
@@ -1010,535 +1354,9 @@
 
 
   
-    <article id="post-k8s_object_files" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/24/k8s_object_files/">Kubernetes 关键对象定义详解</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Pod定义文件详解"><a href="#Pod定义文件详解" class="headerlink" title="Pod定义文件详解"></a>Pod定义文件详解</h2><p>Pod 的定义模版（yaml 格式）如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: string</div><div class="line">     image: string</div><div class="line">     imagePullPolicy: [Always | Never | IfNotPresent]</div><div class="line">     command: [string]</div><div class="line">     workingDir: string</div><div class="line">     volumeMounts:</div><div class="line">       - name: string</div><div class="line">        mountPath: string</div><div class="line">        readOnly: boolean</div><div class="line">     ports:</div><div class="line">       - name: string</div><div class="line">        containerPort: int</div><div class="line">        hostPost: int</div><div class="line">        protocol: string</div></pre></td></tr></table></figure>
-<p>对各属性的详细说明如下：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">属性名称</th>
-<th style="text-align:center">取值类型</th>
-<th style="text-align:center">是否必选</th>
-<th style="text-align:center">取值说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">version</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">v1</td>
-</tr>
-<tr>
-<td style="text-align:left">kind</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Pod</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">元数据</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Pod 名称，需符合 RFC 1035 规范</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.namespace</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">命名空间，在不指定系统时将使用名为 “defautl” 的命名空间</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.labels[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">自定义标签属性列表</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.annotation[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">自定义注解属性列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">详细描述</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Pod 中运行的容器的列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">容器名称，需符合 RFC 1035 规范</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].image</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">容器的镜像名，在 Node 上如果不存在该镜像，则 Kubelet 会先下载</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].imagePullPolicy</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">获取镜像的策略，可选值包括：Always、Never、IfNotPresent，默认值为 Always。Always：表示每次都下载镜像。IfNotPresent：表示如果本地有该镜像，就是用本地的镜像。Never：表示仅使用本地镜像。</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].command[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">容器的启动命令列表，如果不指定，则使用镜像打包时使用的 CMD 命令。</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].workingDir</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">容器的工作目录</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].volumeMounts[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">可供容器使用的共享存储卷列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].volumeMounts[].name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">引用 Pod 定义的共享存储卷的名称，需使用 volumes[] 部分定义的共享存储卷名称</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].volumeMounts[].mountPath</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">存储卷在容器内 Mount 的绝对路径，应少于 512 个字符</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].volumeMounts[].readOnly</td>
-<td style="text-align:center">boolean</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">是否为只读模式，默认为读写模式</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].ports[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">容器需要暴露的端口号列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].ports[].name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">端口名称</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].ports[].containerPort</td>
-<td style="text-align:center">Int</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">容器需要监听的端口号</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].ports[].hostPort</td>
-<td style="text-align:center">Int</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">容器所在主机需要监听的端口号，默认与 containerPort 相同</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].ports[].protocol</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">端口协议，支持 TCP 和 UDP，默认为 TCP</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].env[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">容器运行前需要设置的环境变量列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].env[].name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">环境变量名称</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].env[].value</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">环境变量的值</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].resources</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">资源限制条件</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].resources.limits</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">资源限制条件</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].resources.limits.cpu</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">CPU 限制条件，将用于 docker run –cpu-shares 参数</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.containers[].resources.limits.memory</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">内存限制条件，将用于 docker run –memory 参数</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.volumes[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">在该 Pod 上定义的共享存储卷列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.volumes[].name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">共享存储卷名称，需唯一，符合 RFC 1035 规范。容器定义部分 containers[].volumeMounts[].name 将引用该共享存储卷的名称</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.volumes[].emptyDir</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">默认的存储卷类型，表示与 Pod 同生命周期的一个临时目录，其值为一个空对象：emptyDir:{}。该类型与 hostPath 类型互斥，应只定义一种</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.volumes[].hostPath</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">使用 Pod 所在主机的目录，通过 volumes[].hostPath.path 指定。该类型与 emptyDir 类型互斥，应只定义一种</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.volumes[].hostPath.path</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">Pod 所在主机的目录，将被用于容器中 mount 的目录。</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.dnsPolicy</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">DNS 策略，可选值包括：Default、ClusterFirst</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.restartPolicy</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">该 Pod 内容器的重启策略，可选值为 Always、OnFailure、Never，默认值为 Always。Always：容器一旦终止运行，无论容器是如何终止的，Kubelet 都将重启它。OnFailure：只有容器以非零退出码终止时，Kubelet 才会重启该容器。如果容器正常结束（退出码为0），则 Kubelet 将不会重启它。Never：容器终止后，Kubelet 将退出码报告给 Master，不再重启它</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.nodeSelector</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">指定需要调度到的 Node 的 Label，以 key=value 格式指定</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.imagePullSecrets</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">Pull 镜像时使用的 secret 名称，以 name=secretkey 格式定义</td>
-</tr>
-</tbody>
-</table>
-<h2 id="RC-定义文件详解"><a href="#RC-定义文件详解" class="headerlink" title="RC 定义文件详解"></a>RC 定义文件详解</h2><p>RC（ReplicationController）定义文件模版（yaml格式）如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  replicas: number</div><div class="line">  selector: []</div><div class="line">  template: object</div></pre></td></tr></table></figure>
-<p>对各属性的说明如下：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">属性名称</th>
-<th style="text-align:center">取值类型</th>
-<th style="text-align:center">是否必选</th>
-<th style="text-align:center">取值说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">version</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">v1</td>
-</tr>
-<tr>
-<td style="text-align:left">kind</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">ReplicationController</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata</td>
-<td style="text-align:center">object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">元数据</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">ReplicationController 名称，需符合 RFC 1035 规范</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.namespace</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">命名空间，不指定系统时将使用名为 “default” 的命名空间</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.labels[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">自定义标签属性列表</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.annotaion[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">自定义注解属性列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">详细描述</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.replicas</td>
-<td style="text-align:center">number</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Pod 副本数量，设置为 0 表示不创建 Pod</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.selector[]</td>
-<td style="text-align:center">Listt</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Label Selector 配置，将选择具有指定 Label 标签的 Pod 作为管理范围</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.template</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">容器的定义，与 Pod 的 spec 内容相同</td>
-</tr>
-</tbody>
-</table>
-<h2 id="Service定义文件详解"><a href="#Service定义文件详解" class="headerlink" title="Service定义文件详解"></a>Service定义文件详解</h2><p>Service 的定义文件模版（yaml格式）如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  selector: []</div><div class="line">  type: string</div><div class="line">  clusterIP: string</div><div class="line">  sessionAffinity: string</div><div class="line">  ports:</div><div class="line">    - name: string</div><div class="line">     port: int</div><div class="line">     targetPort: int</div><div class="line">     protocol: string</div><div class="line">  status:</div><div class="line">    loadBalancer:</div><div class="line">      ingress:</div><div class="line">        ip: string</div><div class="line">        hostname: string</div></pre></td></tr></table></figure>
-<p>对各属性的说明如下：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">属性名称</th>
-<th style="text-align:center">取值类型</th>
-<th style="text-align:center">是否必选</th>
-<th style="text-align:center">取值说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">version</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">v1</td>
-</tr>
-<tr>
-<td style="text-align:left">kind</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Service</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">元数据</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Service 名称，需符合 RFC 1035 规范</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.namespace</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">命名空间，不指定系统时将使用名为“default”的命名空间</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.labels[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">自定义标签属性列表</td>
-</tr>
-<tr>
-<td style="text-align:left">metadata.annotation[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">自定义注解属性列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">详细描述</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.selector[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Label Selector 配置，将选择具有指定 Label 标签的 Pod 作为管理范围</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.type</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center">Required</td>
-<td style="text-align:center">Service 的类型，指定 Service 的访问方式，默认为 ClusterIP。ClusterIP：虚拟的服务器 IP 地址，该地址用于 Kubernetes 集群内部的 Pod 访问，在 Node 上 kube-proxy 通过设置的 iptables 规则进行转发。NodePort：使用宿主机的端口，使能够访问各 Node 的外部客户端通过 Node 的 IP 地址和端口号就能访问服务。LoadBalancer：使用外接负载均衡器完成到服务的负载分发啊 ，需要在 spec.status.loadBalancer 字段指定外部负载均衡器的 IP 地址，并同时定义 nodePort 和 clusterIP</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.type.clusterIP</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">虚拟服务 IP 地址，当 type=ClusterIP 时，如果不指定，则系统将自动分配；当 type=LoadBalancer 时，则需要指定</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.sessionAffinity</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">是否支持 Session，可选值为 ClientIP，默认为空。ClientIP：表示将同一个客户端（根据客户端的IP地址决定）的访问请求都转发到同一个后端 Pod</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.ports[]</td>
-<td style="text-align:center">List</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">Service 需要暴露的端口号列表</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.ports[].name</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">端口名称</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.ports[].port</td>
-<td style="text-align:center">Int</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">服务监听的端口号</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.ports[].targetPort</td>
-<td style="text-align:center">Int</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">需要转发到后段 Pod 的端口号</td>
-</tr>
-<tr>
-<td style="text-align:left">spec.ports[].protocol</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">端口协议，支持 TCP 和 UDP，默认为 TCP</td>
-</tr>
-<tr>
-<td style="text-align:left">status</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">当 spec.type=LoadBalancer 时，设置外部负载均衡器的地址</td>
-</tr>
-<tr>
-<td style="text-align:left">status.loadBalancer</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">外部负载均衡器</td>
-</tr>
-<tr>
-<td style="text-align:left">status.loadBalancer.ingress</td>
-<td style="text-align:center">Object</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">外部负载均衡器</td>
-</tr>
-<tr>
-<td style="text-align:left">status.loadBalancer.ingress.ip</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">外部负载均衡器的 IP 地址</td>
-</tr>
-<tr>
-<td style="text-align:left">status.loadBalancer.ingress.hostname</td>
-<td style="text-align:center">String</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">外部负载均衡器的主机名</td>
-</tr>
-</tbody>
-</table>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/24/k8s_object_files/" class="archive-article-date">
-  	<time datetime="2016-03-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-24</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
     </nav>
   
 
@@ -1601,7 +1419,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

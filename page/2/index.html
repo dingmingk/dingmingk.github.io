@@ -137,6 +137,532 @@
       <div class="body-wrap">
         
   
+    <article id="post-k8s_object_files" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/24/k8s_object_files/">Kubernetes 关键对象定义详解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Pod定义文件详解"><a href="#Pod定义文件详解" class="headerlink" title="Pod定义文件详解"></a>Pod定义文件详解</h2><p>Pod 的定义模版（yaml 格式）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: string</div><div class="line">     image: string</div><div class="line">     imagePullPolicy: [Always | Never | IfNotPresent]</div><div class="line">     command: [string]</div><div class="line">     workingDir: string</div><div class="line">     volumeMounts:</div><div class="line">       - name: string</div><div class="line">        mountPath: string</div><div class="line">        readOnly: boolean</div><div class="line">     ports:</div><div class="line">       - name: string</div><div class="line">        containerPort: int</div><div class="line">        hostPost: int</div><div class="line">        protocol: string</div></pre></td></tr></table></figure>
+<p>对各属性的详细说明如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性名称</th>
+<th style="text-align:center">取值类型</th>
+<th style="text-align:center">是否必选</th>
+<th style="text-align:center">取值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">version</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">v1</td>
+</tr>
+<tr>
+<td style="text-align:left">kind</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">元数据</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod 名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.namespace</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">命名空间，在不指定系统时将使用名为 “defautl” 的命名空间</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.labels[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义标签属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.annotation[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义注解属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">详细描述</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod 中运行的容器的列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">容器名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].image</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">容器的镜像名，在 Node 上如果不存在该镜像，则 Kubelet 会先下载</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].imagePullPolicy</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">获取镜像的策略，可选值包括：Always、Never、IfNotPresent，默认值为 Always。Always：表示每次都下载镜像。IfNotPresent：表示如果本地有该镜像，就是用本地的镜像。Never：表示仅使用本地镜像。</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].command[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器的启动命令列表，如果不指定，则使用镜像打包时使用的 CMD 命令。</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].workingDir</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器的工作目录</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">可供容器使用的共享存储卷列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">引用 Pod 定义的共享存储卷的名称，需使用 volumes[] 部分定义的共享存储卷名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[].mountPath</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">存储卷在容器内 Mount 的绝对路径，应少于 512 个字符</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].volumeMounts[].readOnly</td>
+<td style="text-align:center">boolean</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">是否为只读模式，默认为读写模式</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器需要暴露的端口号列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].containerPort</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器需要监听的端口号</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].hostPort</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器所在主机需要监听的端口号，默认与 containerPort 相同</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].ports[].protocol</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口协议，支持 TCP 和 UDP，默认为 TCP</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].env[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">容器运行前需要设置的环境变量列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].env[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">环境变量名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].env[].value</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">环境变量的值</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">资源限制条件</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources.limits</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">资源限制条件</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources.limits.cpu</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">CPU 限制条件，将用于 docker run –cpu-shares 参数</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.containers[].resources.limits.memory</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">内存限制条件，将用于 docker run –memory 参数</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">在该 Pod 上定义的共享存储卷列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">共享存储卷名称，需唯一，符合 RFC 1035 规范。容器定义部分 containers[].volumeMounts[].name 将引用该共享存储卷的名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].emptyDir</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">默认的存储卷类型，表示与 Pod 同生命周期的一个临时目录，其值为一个空对象：emptyDir:{}。该类型与 hostPath 类型互斥，应只定义一种</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].hostPath</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">使用 Pod 所在主机的目录，通过 volumes[].hostPath.path 指定。该类型与 emptyDir 类型互斥，应只定义一种</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.volumes[].hostPath.path</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">Pod 所在主机的目录，将被用于容器中 mount 的目录。</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.dnsPolicy</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">DNS 策略，可选值包括：Default、ClusterFirst</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.restartPolicy</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">该 Pod 内容器的重启策略，可选值为 Always、OnFailure、Never，默认值为 Always。Always：容器一旦终止运行，无论容器是如何终止的，Kubelet 都将重启它。OnFailure：只有容器以非零退出码终止时，Kubelet 才会重启该容器。如果容器正常结束（退出码为0），则 Kubelet 将不会重启它。Never：容器终止后，Kubelet 将退出码报告给 Master，不再重启它</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.nodeSelector</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">指定需要调度到的 Node 的 Label，以 key=value 格式指定</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.imagePullSecrets</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">Pull 镜像时使用的 secret 名称，以 name=secretkey 格式定义</td>
+</tr>
+</tbody>
+</table>
+<h2 id="RC-定义文件详解"><a href="#RC-定义文件详解" class="headerlink" title="RC 定义文件详解"></a>RC 定义文件详解</h2><p>RC（ReplicationController）定义文件模版（yaml格式）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  replicas: number</div><div class="line">  selector: []</div><div class="line">  template: object</div></pre></td></tr></table></figure>
+<p>对各属性的说明如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性名称</th>
+<th style="text-align:center">取值类型</th>
+<th style="text-align:center">是否必选</th>
+<th style="text-align:center">取值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">version</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">v1</td>
+</tr>
+<tr>
+<td style="text-align:left">kind</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">ReplicationController</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata</td>
+<td style="text-align:center">object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">元数据</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">ReplicationController 名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.namespace</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">命名空间，不指定系统时将使用名为 “default” 的命名空间</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.labels[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义标签属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.annotaion[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义注解属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">详细描述</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.replicas</td>
+<td style="text-align:center">number</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Pod 副本数量，设置为 0 表示不创建 Pod</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.selector[]</td>
+<td style="text-align:center">Listt</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Label Selector 配置，将选择具有指定 Label 标签的 Pod 作为管理范围</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.template</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">容器的定义，与 Pod 的 spec 内容相同</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Service定义文件详解"><a href="#Service定义文件详解" class="headerlink" title="Service定义文件详解"></a>Service定义文件详解</h2><p>Service 的定义文件模版（yaml格式）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: string</div><div class="line">  namespace: string</div><div class="line">  labels:</div><div class="line">    - name: string</div><div class="line">  annotations:</div><div class="line">    - name: string</div><div class="line">spec:</div><div class="line">  selector: []</div><div class="line">  type: string</div><div class="line">  clusterIP: string</div><div class="line">  sessionAffinity: string</div><div class="line">  ports:</div><div class="line">    - name: string</div><div class="line">     port: int</div><div class="line">     targetPort: int</div><div class="line">     protocol: string</div><div class="line">  status:</div><div class="line">    loadBalancer:</div><div class="line">      ingress:</div><div class="line">        ip: string</div><div class="line">        hostname: string</div></pre></td></tr></table></figure>
+<p>对各属性的说明如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性名称</th>
+<th style="text-align:center">取值类型</th>
+<th style="text-align:center">是否必选</th>
+<th style="text-align:center">取值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">version</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">v1</td>
+</tr>
+<tr>
+<td style="text-align:left">kind</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Service</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">元数据</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Service 名称，需符合 RFC 1035 规范</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.namespace</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">命名空间，不指定系统时将使用名为“default”的命名空间</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.labels[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义标签属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">metadata.annotation[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">自定义注解属性列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">详细描述</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.selector[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Label Selector 配置，将选择具有指定 Label 标签的 Pod 作为管理范围</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.type</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center">Required</td>
+<td style="text-align:center">Service 的类型，指定 Service 的访问方式，默认为 ClusterIP。ClusterIP：虚拟的服务器 IP 地址，该地址用于 Kubernetes 集群内部的 Pod 访问，在 Node 上 kube-proxy 通过设置的 iptables 规则进行转发。NodePort：使用宿主机的端口，使能够访问各 Node 的外部客户端通过 Node 的 IP 地址和端口号就能访问服务。LoadBalancer：使用外接负载均衡器完成到服务的负载分发啊 ，需要在 spec.status.loadBalancer 字段指定外部负载均衡器的 IP 地址，并同时定义 nodePort 和 clusterIP</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.type.clusterIP</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">虚拟服务 IP 地址，当 type=ClusterIP 时，如果不指定，则系统将自动分配；当 type=LoadBalancer 时，则需要指定</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.sessionAffinity</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">是否支持 Session，可选值为 ClientIP，默认为空。ClientIP：表示将同一个客户端（根据客户端的IP地址决定）的访问请求都转发到同一个后端 Pod</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[]</td>
+<td style="text-align:center">List</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">Service 需要暴露的端口号列表</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].name</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口名称</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].port</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">服务监听的端口号</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].targetPort</td>
+<td style="text-align:center">Int</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">需要转发到后段 Pod 的端口号</td>
+</tr>
+<tr>
+<td style="text-align:left">spec.ports[].protocol</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">端口协议，支持 TCP 和 UDP，默认为 TCP</td>
+</tr>
+<tr>
+<td style="text-align:left">status</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">当 spec.type=LoadBalancer 时，设置外部负载均衡器的地址</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer.ingress</td>
+<td style="text-align:center">Object</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer.ingress.ip</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器的 IP 地址</td>
+</tr>
+<tr>
+<td style="text-align:left">status.loadBalancer.ingress.hostname</td>
+<td style="text-align:center">String</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">外部负载均衡器的主机名</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/24/k8s_object_files/" class="archive-article-date">
+  	<time datetime="2016-03-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-24</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-fleet" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -209,6 +735,257 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
+<p>集群节点配置 DNS 记录或 hosts。</p>
+<p><strong>TODO</strong> </p>
+<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
+<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
+<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
+<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
+<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
+<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
+<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
+<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">命令</th>
+<th style="text-align:center">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">systemctl</td>
+<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
+</tr>
+<tr>
+<td style="text-align:left">bootctl</td>
+<td style="text-align:center">用于查看和管理系统启动分区</td>
+</tr>
+<tr>
+<td style="text-align:left">hostnamectl</td>
+<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
+</tr>
+<tr>
+<td style="text-align:left">journalctl</td>
+<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
+</tr>
+<tr>
+<td style="text-align:left">localectl</td>
+<td style="text-align:center">用于查看和管理系统的地区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">loginctl</td>
+<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
+</tr>
+<tr>
+<td style="text-align:left">machinectl</td>
+<td style="text-align:center">用于操作 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">timedatectl</td>
+<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-analyze</td>
+<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-ask-password</td>
+<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cat</td>
+<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgls</td>
+<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgtop</td>
+<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-escape</td>
+<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-hwdb</td>
+<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-delta</td>
+<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-detect-virt</td>
+<td style="text-align:center">显示主机的虚拟化类型</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-inhibit</td>
+<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-machine-id-setup</td>
+<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-notify</td>
+<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-nspawn</td>
+<td style="text-align:center">用于创建 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-path</td>
+<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-run</td>
+<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-stdio-bridge</td>
+<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tmpfiles</td>
+<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tty-ask-password-agent</td>
+<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
+</tr>
+</tbody>
+</table>
+<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
+<p>hostnamectl        显示主机名</p>
+<p>hostnamectl set-hostname xxx        设置主机名</p>
+<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
+</blockquote>
+<p><em>timedatectl 和 localectl 作用类似</em>。</p>
+<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
+<p>systemctl poweroff | halt        关机</p>
+<p>systemctl reboot        重启</p>
+<p>systemctl suspend        待机</p>
+<p>systemctl hibernate        休眠</p>
+</blockquote>
+<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
+<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
+<p>systemd-analyze blame | head      按启动耗时长短排序</p>
+<p>systemd-analyze plot        生成详细 SVG 图</p>
+<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
+<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
+<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
+<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
+</blockquote>
+<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
+<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
+<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
+<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
+<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
+<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
 	</div>
 
       
@@ -489,257 +1266,6 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">命令</th>
-<th style="text-align:center">功能</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">systemctl</td>
-<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
-</tr>
-<tr>
-<td style="text-align:left">bootctl</td>
-<td style="text-align:center">用于查看和管理系统启动分区</td>
-</tr>
-<tr>
-<td style="text-align:left">hostnamectl</td>
-<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
-</tr>
-<tr>
-<td style="text-align:left">journalctl</td>
-<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
-</tr>
-<tr>
-<td style="text-align:left">localectl</td>
-<td style="text-align:center">用于查看和管理系统的地区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">loginctl</td>
-<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
-</tr>
-<tr>
-<td style="text-align:left">machinectl</td>
-<td style="text-align:center">用于操作 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">timedatectl</td>
-<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-analyze</td>
-<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-ask-password</td>
-<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cat</td>
-<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgls</td>
-<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgtop</td>
-<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-escape</td>
-<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-hwdb</td>
-<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-delta</td>
-<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-detect-virt</td>
-<td style="text-align:center">显示主机的虚拟化类型</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-inhibit</td>
-<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-machine-id-setup</td>
-<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-notify</td>
-<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-nspawn</td>
-<td style="text-align:center">用于创建 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-path</td>
-<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-run</td>
-<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-stdio-bridge</td>
-<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tmpfiles</td>
-<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tty-ask-password-agent</td>
-<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
-</tr>
-</tbody>
-</table>
-<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
-<p>hostnamectl        显示主机名</p>
-<p>hostnamectl set-hostname xxx        设置主机名</p>
-<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
-</blockquote>
-<p><em>timedatectl 和 localectl 作用类似</em>。</p>
-<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
-<p>systemctl poweroff | halt        关机</p>
-<p>systemctl reboot        重启</p>
-<p>systemctl suspend        待机</p>
-<p>systemctl hibernate        休眠</p>
-</blockquote>
-<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
-<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
-<p>systemd-analyze blame | head      按启动耗时长短排序</p>
-<p>systemd-analyze plot        生成详细 SVG 图</p>
-<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
-<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
-<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
-<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
-</blockquote>
-<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
-<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
-<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
-<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
-<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
-<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
-<p>集群节点配置 DNS 记录或 hosts。</p>
-<p><strong>TODO</strong> </p>
-<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
-<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
-<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
-<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
-<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
-<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
-<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
-<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
 	</div>
 
       
@@ -1489,65 +2015,9 @@
 
 
   
-    <article id="post-saltUser" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/12/11/saltUser/">SaltStack 用户管理</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><code>SaltStack</code>拥有非常多的模块，功能很强大。其中<code>salt.states.user</code>这个模块可以帮助我们更方便管理服务器用户权限。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">root:</div><div class="line">  user.present:</div><div class="line">    - shell: /bin/bash</div><div class="line">    - passwd: &apos;xxxxxxxxxxxxxxxxxxx&apos;</div><div class="line">    - uid: 0</div><div class="line">    - gid: 0</div><div class="line">    - require:</div><div class="line">      - group: root</div><div class="line">  group.present:</div><div class="line">    - gid: 0</div><div class="line">    </div><div class="line">admin:</div><div class="line">  user.absent</div><div class="line">  </div><div class="line">/root/.ssh/authorized_keys:</div><div class="line">  file.managed:</div><div class="line">    - source: salt://files/.ssh/root_authorized_keys</div><div class="line">    - user: root</div><div class="line">    - group: root</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ openssl passwd -1 -salt &apos;root&apos;</div><div class="line">Password:</div></pre></td></tr></table></figure>
-<p>输入密码后会生成一串md5值，替换上面配置文件中的xxx。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ salt &apos;target&apos; state.sls user.sls</div></pre></td></tr></table></figure>
-<p>推送到客户端生效。</p>
-<p>另外Salt有专门的模块来管理SSH证书，这里先用文件管理的土办法。<em>TODO</em></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2015/12/11/saltUser/" class="archive-article-date">
-  	<time datetime="2015-12-10T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-11</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SaltStack/">SaltStack</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
+      <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
     </nav>
   
 
@@ -1610,7 +2080,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

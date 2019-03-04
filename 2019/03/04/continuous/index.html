@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>持续交付实践 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="目录
+传统交付过程中遇到的问题
+变革软件交付方式的技术：Docker
+应用 Docker 化交付的过程实践
+
+研发过程的困境
+任何一家互联网或者软件公司，随着产品规模的扩大，市场需求的变化，都会逐步的发现产品版本管理混乱，运维人员总是在兜底， 不知道开发/测试/集成/预发布/生产等等环境到底经历过几代运维人员之手，所以环境压根没人敢动。
+因为市场永远在变化，需求一定在变化，人员也在变化，导致了研发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="持续交付实践">
+<meta property="og:url" content="https://dingmingk.github.io/2019/03/04/continuous/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="目录
+传统交付过程中遇到的问题
+变革软件交付方式的技术：Docker
+应用 Docker 化交付的过程实践
+
+研发过程的困境
+任何一家互联网或者软件公司，随着产品规模的扩大，市场需求的变化，都会逐步的发现产品版本管理混乱，运维人员总是在兜底， 不知道开发/测试/集成/预发布/生产等等环境到底经历过几代运维人员之手，所以环境压根没人敢动。
+因为市场永远在变化，需求一定在变化，人员也在变化，导致了研发">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_cicd.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_pipeline.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_process.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_confusion.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_box.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_ship.gif">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_mind.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_BSR.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_BBC.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_simple.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_need.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_compose.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_archeitecture.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_devops.png">
+<meta property="og:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_dockerize.png">
+<meta property="og:updated_time" content="2019-03-04T05:47:06.125Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="持续交付实践">
+<meta name="twitter:description" content="目录
+传统交付过程中遇到的问题
+变革软件交付方式的技术：Docker
+应用 Docker 化交付的过程实践
+
+研发过程的困境
+任何一家互联网或者软件公司，随着产品规模的扩大，市场需求的变化，都会逐步的发现产品版本管理混乱，运维人员总是在兜底， 不知道开发/测试/集成/预发布/生产等等环境到底经历过几代运维人员之手，所以环境压根没人敢动。
+因为市场永远在变化，需求一定在变化，人员也在变化，导致了研发">
+<meta name="twitter:image" content="https://dingmingk.github.io/../assets/blogImg/continuous_cicd.png">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-continuous" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      持续交付实践
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li>传统交付过程中遇到的问题</li>
+<li>变革软件交付方式的技术：Docker</li>
+<li>应用 Docker 化交付的过程实践</li>
+</ol>
+<h3 id="研发过程的困境"><a href="#研发过程的困境" class="headerlink" title="研发过程的困境"></a>研发过程的困境</h3><ul>
+<li>任何一家互联网或者软件公司，随着产品规模的扩大，市场需求的变化，都会逐步的发现产品版本管理混乱，运维人员总是在兜底， 不知道开发/测试/集成/预发布/生产等等环境到底经历过几代运维人员之手，所以环境压根没人敢动。</li>
+<li>因为市场永远在变化，需求一定在变化，人员也在变化，导致了研发过程中遇到的这样那样的问题。因此，大多数企业都用CI/CD这个解决方案来应对，如下图：</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_cicd.png" alt="continuous_cicd"></p>
+<ul>
+<li>另外，我认为的持续交付概念如下：</li>
+</ul>
+<blockquote>
+<p><strong>在一起</strong>就是集成，每次集成都应该有<strong>反馈</strong>。<br>只有不停的集成才是持续集成。越少持续，每次反馈<strong>代价越大</strong>。<br><strong>多次集成</strong>产生一次交付。</p>
+</blockquote>
+<hr>
+<ul>
+<li>CI/CD 是无法提升你的代码质量的，是无法解决你代码中的Bug的，但能够提升效率和质量的原因是: 他能把问题发现在前面，让小问题提前暴露出来。</li>
+<li>我们说做持续集成最重要的是<strong>有效反馈</strong>和<strong>持续</strong>，因为CI就像体检服务一样，好比有个胖子要减肥，体检服务不能让他吃的更少动的更多，但他如果每天都称一下体重，就能随时知道自己身体的状态，随时知道每天该干什么， 这就是持续的重要性。</li>
+<li>如果他不做这个事儿，很可能等到我年度体检的时候才发现，TMD脂肪肝又加重了。。 同理如果每次代码提交都能自动和其他代码集成，和测试环境集成，就不会出现最终发布的时候出现各种各样的问题，也就是刚才说的运维总在兜底的问题。</li>
+<li>CI过程的<strong>有效反馈</strong>也很重要，每次集成都应该给出准确的问题定位和建议，谁的代码merge出现冲突，谁提交的commit导致UT失败，谁应该立刻去解决什么样的问题，这都是有效的反馈。就好比胖子中午没吃饭，去称一下体重，体重秤告诉他：还凑合。那这个反馈让他晚饭是吃。。还是不吃呢？。。这就是无效反馈。</li>
+</ul>
+<p>简单来说，持续交付的pipeline就像下面的管道图一样：</p>
+<p><img src="../assets/blogImg/continuous_pipeline.png" alt="continuous_pipeline"></p>
+<blockquote>
+<p>当然这个图里的每个节点（stage）的定义并不适用于所有应用，每个stage 是不同角色，运行需要耗费不同的成本，那么只要保证每个 Stage 是一个独立有效的反馈就是正确的持续交付pipeline。</p>
+</blockquote>
+<p>那么，构建出能够运行这样pipeline的一个环境，都需要什么东西：</p>
+<p><img src="../assets/blogImg/continuous_process.png" alt="continuous_process"></p>
+<ul>
+<li>如上图， 你需要有代码托管服务（存储），运行CI中的单元测试，编译打包服务（环境）， 如果你的应用已经托管在公共云上，还要涉及到网络问题。也就是你核心要解决的除了需要服务本身，关键是解决“存储，环境和网络”这三个问题。</li>
+</ul>
+<hr>
+<p>现在，当你辛辛苦苦做好了这些过程之后，仍然会遇到一些问题：</p>
+<ul>
+<li>每次build，是需要不同的build环境的</li>
+</ul>
+<p><strong>编译环境维护困难</strong></p>
+<ul>
+<li>每次集成 Test，是需要依赖其他环境，被依赖的环境不受提交者的控制</li>
+</ul>
+<p><strong>依赖环境维护困难</strong></p>
+<ul>
+<li>每个package， 在不同的环境，run的结果是不一样的</li>
+</ul>
+<p><strong>切换环境调试困难</strong></p>
+<ul>
+<li>每个package，是无法回溯的</li>
+</ul>
+<p><strong>运行包的版本维护困难</strong></p>
+<ul>
+<li>每个环境，是不同的维护者（开发环境，测试环境，生产/产品环境）</li>
+</ul>
+<p><strong>统一环境标准困难</strong></p>
+<ul>
+<li>每个环境，除了维护者，是无法清楚知道环境的搭建过程的</li>
+</ul>
+<p><strong>环境回溯，更是难上加难</strong></p>
+<hr>
+<p>Why ？ 为什么会遇到这样那样的问题？ 为什么开发人员经常抱怨： “明明我的程序在测试环境已经调试好了，为什么一上生产环境就运行不了？”</p>
+<blockquote>
+<p>归根结底的原因是：</p>
+<blockquote>
+<p><strong>开发人员交付的只是软件代码本身， 而运维人员需要维护的是一整套运行环境，以及运行环境之间的依赖关系。</strong></p>
+</blockquote>
+</blockquote>
+<p><img src="../assets/blogImg/continuous_confusion.png" alt="continuous_confusion"></p>
+<h3 id="变革软件交付方式的技术：Docker"><a href="#变革软件交付方式的技术：Docker" class="headerlink" title="变革软件交付方式的技术：Docker"></a>变革软件交付方式的技术：Docker</h3><ul>
+<li>有人说：“交付方式的变革，改变了全球的经济格局”</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_box.png" alt="continuous_box"></p>
+<ul>
+<li>那么，在软件开发领域，Docker ( An open platform for distributed applications for developers and sysadmins) , 就是变革软件交付方式的技术。 </li>
+</ul>
+<p><img src="../assets/blogImg/continuous_ship.gif" alt="continuous_ship"></p>
+<hr>
+<p>回到最初的问题， 我们找到了开发和运维之间问题的关键，找到了写代码和维护生产环境之间的核心差别， 那么我们试想一下。</p>
+<blockquote>
+<p>如果我们能像描述代码依赖关系一样，描述代码运行所需的环境依赖呢？ 如果又能像描述应用之间的依赖关系一样，描述环境之间的依赖呢？</p>
+</blockquote>
+<ul>
+<li>假定，我们的代码中有一个文件，定义了运行需要的环境依赖栈（就像pom.xml文件中定义了java应用的jar包依赖一样）</li>
+<li>构建时，我们能根据整个文件，将所有软件依赖栈安装到一个镜像中，镜像是只读的。任何变更都会新产生一个新的镜像而不会更改原先的镜像。</li>
+<li>并且只要这个镜像不变，镜像起来的容器之内的环境也不变。</li>
+<li>那我们是不是可以像把代码，依赖，测试脚本，环境依赖，环境描述等等这些东西装到集装箱中一样， 集装箱作为一个整体来传递， 作为一个整体在不同的平台上运行， 集装箱不变，任何平台上运行的结果都不变。 YY思路如下图：</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_mind.png" alt="continuous_mind"></p>
+<hr>
+<p><strong>如果我们能轻松的交付整个软件依赖栈，是不是刚才说到的在不同环境调试的问题就能大大减少或者不复存在了?</strong></p>
+<p>这个YY过程正好被Docker技术所覆盖， 我们看一下Docker提供什么样的能力，能满足刚才的YY：</p>
+<ol>
+<li><p>描述环境的能力</p>
+<p> 提供了描述运行栈，并且自定义Build 过程的能力。Code中的描述文件就 Dockerfile。     </p>
+</li>
+<li>分层文件系统<br> Image可以像Git一样进行管理，并且每一层都是只读的，对环境的每个操作都会被记录，并且可回溯。</li>
+<li>Docker Registry<br> 提供了管理Image存储系统，可以存储，传递，并且对Image进行版本管理。</li>
+<li>屏蔽Host OS 差异<br> 解决了环境差异，保证在任何环境下的运行都是一致的（只要满足运行docker的linux 内核）。</li>
+</ol>
+<p>这几种能力天然的帮助我们解决环境描述和传递的问题，因此docker能够做到<strong>Build Once， Run EveryWhere ！</strong></p>
+<ul>
+<li>因此，软件的交付方式，变成了最简单的 Build – Ship – Run， 如下图：</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_BSR.png" alt="continuous_BSR"></p>
+<h3 id="应用Docker化交付的过程实践"><a href="#应用Docker化交付的过程实践" class="headerlink" title="应用Docker化交付的过程实践"></a>应用Docker化交付的过程实践</h3><p>首先先看个例子，用docker做持续交付能带来的好处。我用docker官方网站上的案例： BBC News。</p>
+<ul>
+<li>简单来说，一个全球新闻中心，内容的变化是最快的， BBC 公司内部的第一个问题是涉及10几种CI环境，26000 Jobs，500Dev人员。</li>
+<li>第二个核心问题是，CI任务需要等待，无法并行。</li>
+</ul>
+<p>经过Docker化改造之后：</p>
+<p><img src="../assets/blogImg/continuous_BBC.png" alt="continuous_BBC"></p>
+<blockquote>
+<p>最明显的改变，开发可以自己定义自己的开发语言，自己所需的build，集成测试环境，以及应用运行所需的依赖环境。</p>
+</blockquote>
+<hr>
+<p><strong>既然效果这么明显， 该怎么做呢？</strong></p>
+<p>基本思路如下：</p>
+<ul>
+<li>安装好Docker环境</li>
+<li>Docker 化你的应用运行环境</li>
+<li>Docker 化你的应用编译，UT环境</li>
+<li>Docker 化你的应用运行的依赖环境</li>
+</ul>
+<hr>
+<h4 id="第一步，如何安装运行一个Docker环境"><a href="#第一步，如何安装运行一个Docker环境" class="headerlink" title="第一步，如何安装运行一个Docker环境"></a>第一步，如何安装运行一个Docker环境</h4><p>官方提供了详细的文档：</p>
+<p><a href="https://docs.docker.com/install/" target="_blank" rel="external">docker_install</a></p>
+<hr>
+<h4 id="第二步，如何将自己的应用运行在Docker容器中"><a href="#第二步，如何将自己的应用运行在Docker容器中" class="headerlink" title="第二步，如何将自己的应用运行在Docker容器中"></a>第二步，如何将自己的应用运行在Docker容器中</h4><p>这句话可以翻译为： 如何将我的应用环境通过Dockerfile描述出来？</p>
+<p>假如我的应用是一个Java Web 应用，需要Java运行环境和Tomcat 容器 ，那么大概我的环境所需下面这些东西：</p>
+<ul>
+<li>某Linux发行版操作系统</li>
+<li>基础软件（起码有个能解压缩包的吧）</li>
+<li>openjdk 7 &amp;&amp; 配置 Java Home 等环境变量</li>
+<li>Tomcat 7 &amp;&amp; 配置 环境变量</li>
+<li>应用包 target.war</li>
+<li>应用包 启动参数 JVM</li>
+<li>Web Server 指定端口 8080</li>
+<li>启动tomcat</li>
+</ul>
+<p>转化为成Dockerfile 的语言大致如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">FROM buildpack-deps:jessie-curl</div><div class="line">RUN apt-get update &amp;&amp; apt-get install -y unzip  openjdk-7-jre-headless=“$JAVA_DEBIAN_VERSION”  </div><div class="line"></div><div class="line">ENV LANG C.UTF-8</div><div class="line"></div><div class="line">ENV JAVA_VERSION 7u91</div><div class="line">ENV JAVA_DEBIAN_VERSION 7u91-2.6.3-1~deb8u1</div><div class="line"></div><div class="line">ENV CATALINA_HOME /usr/local/tomcat</div><div class="line">ENV PATH $CATALINA_HOME/bin:$PATH</div><div class="line">RUN mkdir -p &quot;$CATALINA_HOME&quot;</div><div class="line">WORKDIR $CATALINA_HOMEENV TOMCAT_VERSION 7.0.68</div><div class="line">ENV TOMCAT_TGZ_URL  https://xxxx/apache-tomcat-$TOMCAT_VERSION.tar.gz</div><div class="line"></div><div class="line">RUN set -x \</div><div class="line">    &amp;&amp; curl -fSL &quot;$TOMCAT_TGZ_URL&quot; -o tomcat.tar.gz \</div><div class="line">    &amp;&amp; curl -fSL &quot;$TOMCAT_TGZ_URL.asc&quot; -o tomcat.tar.gz.asc \</div><div class="line">    &amp;&amp; gpg --batch --verify tomcat.tar.gz.asc tomcat.tar.gz \</div><div class="line">    &amp;&amp; tar -xvf tomcat.tar.gz --strip-components=1 \</div><div class="line">    &amp;&amp; rm bin/*.bat \</div><div class="line">    &amp;&amp; rm tomcat.tar.gz*</div><div class="line"></div><div class="line">EXPOSE 8080</div><div class="line">CMD [&quot;catalina.sh&quot;, &quot;run&quot;]</div></pre></td></tr></table></figure>
+<ul>
+<li>可以看出 ，Dockerfile 第一步永远是From 某个镜像， 开始安装了一些基础包（这里是Jre7）， 又设置了java的环境变量， 之后安装tomat（这里是7.0），再声明启动8080端口，最后运行tomcat的启动脚本结束，在最后结束之前将我的Web 应用.war包COPY或者ADD进去即可。</li>
+</ul>
+<hr>
+<p>我们再看一个Nodejs的环境:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:14.04</div><div class="line"></div><div class="line">COPY sources.list /etc/apt/sources.list</div><div class="line">COPY .npmrc /root/.npmrc</div><div class="line"></div><div class="line">RUN apt-get update &amp;&amp; apt-get -y install curl automake tar libtool make wget xz-utils supervisor</div><div class="line"></div><div class="line">ENV NODE_VERSION 0.12.5</div><div class="line">ENV NPM_VERSION 2.11.3</div><div class="line"></div><div class="line">RUN curl -SLO &quot;https://npm.taobao.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz&quot; \</div><div class="line">    &amp;&amp; tar -xzf &quot;node-v$NODE_VERSION-linux-x64.tar.gz&quot; -C /usr/local --strip-components=1 \</div><div class="line">    &amp;&amp; npm install -g npm@&quot;$NPM_VERSION&quot; \</div><div class="line">    &amp;&amp; npm cache clear</div><div class="line"></div><div class="line">RUN rm -rf ~/.node-gyp \</div><div class="line">    &amp;&amp; mkdir ~/.node-gyp \</div><div class="line">    &amp;&amp; tar zxf node-v$NODE_VERSION-linux-x64.tar.gz -C ~/.node-gyp \</div><div class="line">    &amp;&amp; rm &quot;node-v$NODE_VERSION-linux-x64.tar.gz&quot; \</div><div class="line">    &amp;&amp; mv ~/.node-gyp/node-v$NODE_VERSION-linux-x64 ~/.node-gyp/$NODE_VERSION \</div><div class="line">    &amp;&amp; printf &quot;9\n&quot;&gt;~/.node-gyp/$NODE_VERSION/installVersion</div><div class="line"></div><div class="line">CMD [&quot;node&quot;]</div></pre></td></tr></table></figure>
+<ul>
+<li>关于这个环境，COPY了本地的sources.list和.npmrc 到容器中，是更换了安装源为mirrors.aliyun.com 和 NPM源为npm.taobao.org ， 国内源更快。 其他就是安装了基本的Nodejs 运行环境</li>
+</ul>
+<p>那么通过这两个例子，我们发现Dockerfile 还是写起来很麻烦的（其实也不麻烦，就是刚刚说的装要装的东西，配置，运行这三步）。 那么，刚刚说到每一个Dockerfile的第一行都是FROM另一个镜像， 那么思考一下：</p>
+<ul>
+<li>如果有一个安装好Java的环境 ？</li>
+<li>如果有一个安装好Java和Tomcat的环境 ？</li>
+<li>如果是微服务，对环境只依赖Java/Node基础环境，是不是所有应用都可以共用1个环境?</li>
+</ul>
+<p>通过这些思考，得到如下寻找docker镜像的过程：</p>
+<ul>
+<li>寻找java镜像 ，选择镜像版本， 检查 Dockerfile</li>
+<li>寻找tomcat镜像，选择 Tomcat &amp; Java 版本， 检查 Dockerfile</li>
+<li>测试运行 ： docker run -ti —rm -v /home/app.war:/canhin/webapp/ tomcat:7-jre7</li>
+</ul>
+<blockquote>
+<p>说句题外话，这个思路同样适用于公司内部，因为Dockerfile 明确划分出了开发和运维的边界， 如果公司有统一的运维标准，比如某个操作系统的某个版本， 某种确定的Web Server， 这样开发只需要From 运维提供的镜像来描述自己的应用环境特殊的部分就好了。 如果大家的环境都一样，调试和测试的过程中，只需要把应用代码通过-v 的参数挂载进去运行就好了， 这样世界就变的很简单和清楚了。</p>
+</blockquote>
+<p>那么当我需要一个Java 7， Tomcat 7的环境的时候， 直接选择一个官方的tomcat 7 - jre7 镜像即可 ， 比如 <a href="https://hub.docker.com/_/tomcat?tab=description" target="_blank" rel="external">https://hub.docker.com/_/tomcat?tab=description</a> 这个。</p>
+<hr>
+<h4 id="第三步，用Docker描述我的编译环境"><a href="#第三步，用Docker描述我的编译环境" class="headerlink" title="第三步，用Docker描述我的编译环境"></a>第三步，用Docker描述我的编译环境</h4><p>编译/CI环境往往在公司规模越来越大的时候， 变得越来越麻烦， 因为不同语言，不同类型的应用对编译环境的要求都不一样。 就像刚才说到的BBC News的例子，一个大公司几十种编译环境的存在是很正常的。</p>
+<blockquote>
+<p>那么，编译环境Docker化最大的好处是： 自定义，可扩展，可复制。</p>
+</blockquote>
+<ul>
+<li>试想一下， 假如你的应用编译只需要依赖标准的Jdk 1.7 和 Maven 2， 或者你是python应用编译过程其实只是需要安装依赖， 那么你可以跟很多人共用编译镜像。</li>
+<li>但假如你的应用是Nodejs ，编译依赖特定的C库， 或者是C++之类的编译环境一定要和运行环境一致等等，那就需要定制自己的编译环境了。</li>
+</ul>
+<p>这里我做一个最简单的用于编译java的镜像示例：</p>
+<ul>
+<li>编译镜像的Dockerfile 示例：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">FROM registry.aliyuncs.com/acs-sample/centos:7</div><div class="line">RUN yum update  yum install -y open-jdk-1.7.0_65-49 </div><div class="line">COPY build.sh /build.sh</div><div class="line">COPY settings.xml /home/apache-maven-2.2.1/conf/</div><div class="line">ENTRYPOINT [“./build.sh&quot;]</div></pre></td></tr></table></figure>
+<ul>
+<li><p>上述Dockerfile的build.sh示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd /ws ;  mvn -e -U clean package -Dmaven.test.skip=true $@</div><div class="line">cp target/*.war docker/ || exit 0</div></pre></td></tr></table></figure>
+</li>
+<li><p>运行方式示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">git clone git@github.com:dingmingk/myproject.git  ~/myprj ; cd ~/myprj</div><div class="line">docker run --rm -v `pwd`:/ws -v ~/.m2/repo:/buf build_maven:1.0</div></pre></td></tr></table></figure>
+</li>
+<li><p>解释一下这个过程:</p>
+</li>
+</ul>
+<p>我的编译环境需要CentOS7系统， 安装JDK1.7 ， 然后把maven的setting（这里主要配置指向其他私有nexus和编译脚本拷贝进去。<br>编译脚本也很简单，就是maven编译打包命令，并且把最终生成的war拷贝到一个定义好的docker目录下，这个目录随便定义。<br>最后是运行方式，即把源代码挂载到容器里进行编译，同时可以选择把本地的.m2缓存到镜像内加快编译速度</p>
+<hr>
+<p>这里提两个小提示，都是经验之谈：</p>
+<blockquote>
+<p>建议： build app 和 build docker image 建议分开进行， 即先进行应用本身的编译，再将输出物拷贝到镜像内（但脚本语言可以例外） 因为：</p>
+</blockquote>
+<ul>
+<li>镜像分层概念导致源码可能泄露：因为DockerImage 每一层都会保存一个版本， 即便是ADD代码进去，编译后再rm掉，也可以通过获取ADD这一层镜像拿到源码，因为镜像是运行在各个环境中，是不应该包含源代码信息的。</li>
+<li>镜像最小化原则：编译环境可能需要和运行环境不一样的东西，比如Maven的配置，Nodejs的一些C库的依赖， 都不需要在运行环境中体现，所以本着镜像应该最小化原则，不需要的东西最好都不要放进去，也应该分开进行这个步骤。</li>
+<li>所以，整个过程还是分为build app和build docker image 两个过程，类似下面这个简单流程 </li>
+</ul>
+<p><img src="../assets/blogImg/continuous_simple.png" alt="continuous_simple"></p>
+<hr>
+<blockquote>
+<p>建议： Dockerfile 不要放到代码根目录下</p>
+</blockquote>
+<ul>
+<li>避免大量文件传给docker deamon ： docker build会先加载Dockerfile同级目录下所有文件进去，如果有不需要ADD/COPY到镜像里的文件不应该放到Dockerfile目录下， 可以试一下把Dockerfile放到系统/根目录下，这时build 十有八九就会让docker deamon挂掉。</li>
+</ul>
+<hr>
+<h4 id="第四步，用Docker描述UT环境"><a href="#第四步，用Docker描述UT环境" class="headerlink" title="第四步，用Docker描述UT环境"></a>第四步，用Docker描述UT环境</h4><p>简单思路： 运行Docker 镜像环境，安装测试所需依赖 ，运行Docker容器，运行测试命令/脚本</p>
+<p>用一个travis-ci官方的例子来说明容器测试这件事，先看下面一个ruby的镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:14.04</div><div class="line"></div><div class="line">MAINTAINER carlad &quot;https://github.com/carlad&quot;</div><div class="line"></div><div class="line"># Install packages for building ruby</div><div class="line">RUN apt-get update</div><div class="line">RUN apt-get install -y --force-yes build-essential wget git</div><div class="line">RUN apt-get install -y --force-yes zlib1g-dev libssl-dev libreadline-dev libyaml-dev libxml2-dev libxslt-dev</div><div class="line">RUN apt-get clean</div><div class="line"></div><div class="line">RUN wget -P /root/src http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz</div><div class="line">RUN cd /root/src; tar xvf ruby-2.2.2.tar.gz</div><div class="line">RUN cd /root/src/ruby-2.2.2; ./configure; make install</div><div class="line"></div><div class="line">RUN gem update --system</div><div class="line">RUN gem install bundler</div><div class="line"></div><div class="line">RUN git clone https://github.com/travis-ci/docker-sinatra /root/sinatra</div><div class="line">RUN cd /root/sinatra; bundle install</div><div class="line"></div><div class="line">EXPOSE 4567</div></pre></td></tr></table></figure>
+<ul>
+<li>简单来说就是标准的一个ruby镜像，启动4567端口。那么通过这个镜像进行的测试过程如下：</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">sudo: required</div><div class="line"></div><div class="line">language: ruby</div><div class="line"></div><div class="line">services:</div><div class="line">  - docker</div><div class="line"></div><div class="line">before_install:</div><div class="line">  - docker build -t carlad/sinatra .</div><div class="line">  - docker run -d -p 127.0.0.1:80:4567 carlad/sinatra /bin/sh -c &quot;cd /root/sinatra; bundle exec foreman start;&quot;</div><div class="line">  - docker ps -a</div><div class="line">  - docker run carlad/sinatra /bin/sh -c &quot;cd /root/sinatra; bundle exec rake test&quot;</div><div class="line"></div><div class="line">script:</div><div class="line">  - bundle exec rake test</div></pre></td></tr></table></figure>
+<ul>
+<li><p>这个其实就是大家可以在本地进行的一个过程，在before install部分内可以看到过程是：</p>
+<p>  先build出运行环境的镜像</p>
+<p>  运行这个镜像，看看服务能否正常启动</p>
+<p>  查看容器是否存活（保证容器不是运行一下就挂了退出）</p>
+<p>  运行测试</p>
+</li>
+</ul>
+<p>再来看一个python的例子，也很好理解：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">language: python</div><div class="line">python:</div><div class="line">  - 2.7</div><div class="line"></div><div class="line">services:</div><div class="line">  - docker</div><div class="line"></div><div class="line">install:</div><div class="line">  - docker build -t blog .</div><div class="line">  - docker run -d -p 127.0.0.1:80:80 --name blog blog</div><div class="line"></div><div class="line">before_script:</div><div class="line">  - pip install -r requirements.txt</div><div class="line">  - pip install mock</div><div class="line">  - pip install requests</div><div class="line">  - pip install feedparser</div><div class="line"></div><div class="line">script:</div><div class="line">  - docker ps | grep -q blog</div><div class="line">  - python tests.py</div></pre></td></tr></table></figure>
+<p>简单来说就是运行容器，安装依赖，运行测试脚本。或者直接通过下面一行命令进行</p>
+<p><code>docker run -v mycode:/ws mytestimage:master /bin/sh -c &quot;python3 djanus/manage.py test djanus mobilerpc &quot;</code></p>
+<blockquote>
+<p>tips: 这里不是说推荐大家用travis-ci ，但travis-ci 制定了一种语法标准， 非常清楚的能够看到整个过程。</p>
+</blockquote>
+<hr>
+<h3 id="用Docker-Compose描述依赖环境"><a href="#用Docker-Compose描述依赖环境" class="headerlink" title="用Docker-Compose描述依赖环境"></a>用Docker-Compose描述依赖环境</h3><p>刚刚说了单独一个容器运行测试的情况， 但实际情况可能是即便是运行测试，也需要依赖proxy，依赖db，依赖redis等。 简单来说一般web应用会需要下面的结构:</p>
+<p><img src="../assets/blogImg/continuous_need.png" alt="continuous_need"></p>
+<p>这个结构很简单也很常见， 那在传统思想里，要运行UT或者集成测试，需要依赖的组件，都是去搭建。 搭一个mysql，配置mysql ，运行mysql 这种思路。</p>
+<ul>
+<li><p>但是在docker的思想里，是声明的概念，就是说我需要一个mysql 去存一些数据进行测试， 这个mysql运行在哪里我根本不care 。 同样的思路告诉docker：</p>
+<p>  I need 负载均衡（haproxy，Nginx）</p>
+<p>  I need 数据库（mysql)</p>
+<p>  I need 文件存储(通过-v , ossfs)</p>
+<p>  I need 缓存服务(redis,kv-store)</p>
+<p>  I need …</p>
+</li>
+<li><p>这时，用于编排多个Docker Image 的服务，docker-compose 就出现了，官方文档里用三张最简单的图表明了compose是怎么用的：</p>
+</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_compose.png" alt="continuous_conpose"></p>
+<ul>
+<li>就是说，我运行一次测试， 需要mysql， 那我就启动一个mysql容器就行，通过link 的方式将我的app链接上，配置一个密码即可，至于其他的信息，我根本不需要，或者说不关心。</li>
+</ul>
+<p>再举一个例子，假设一个php的Wordpress 应用， 除了应用本身还需要一个db ，他的编排文件（docker-compose.yml）如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">web:</div><div class="line">  image: registry.aliyuncs.com/acs-sample/wordpress:4.3</div><div class="line">  ports:</div><div class="line">    - &apos;80&apos;</div><div class="line">  volumes:</div><div class="line">    - &apos;wp_upload:/var/www/html/wp-content/uploads&apos;</div><div class="line">  environment:</div><div class="line">    WORDPRESS_AUTH_KEY: changeme</div><div class="line">    WORDPRESS_SECURE_AUTH_KEY: changeme</div><div class="line">    WORDPRESS_LOGGED_IN_KEY: changeme</div><div class="line">    WORDPRESS_NONCE_KEY: changeme</div><div class="line">    WORDPRESS_AUTH_SALT: changeme</div><div class="line">    WORDPRESS_SECURE_AUTH_SALT: changeme</div><div class="line">    WORDPRESS_LOGGED_IN_SALT: changeme</div><div class="line">    WORDPRESS_NONCE_SALT: changeme</div><div class="line">    WORDPRESS_NONCE_AA: changeme</div><div class="line">  command: run test script </div><div class="line">  links:</div><div class="line">    - &apos;db:mysql&apos;</div><div class="line">  labels:</div><div class="line">    aliyun.logs: /var/log</div><div class="line">    aliyun.probe.url: http://container/license.txt</div><div class="line">    aliyun.probe.initial_delay_seconds: &apos;10&apos;</div><div class="line">    aliyun.routing.port_80: http://wordpress</div><div class="line">    aliyun.scale: &apos;3&apos;</div><div class="line">db:</div><div class="line">  image: registry.aliyuncs.com/acs-sample/mysql:5.7</div><div class="line">  environment:</div><div class="line">    MYSQL_ROOT_PASSWORD: password</div><div class="line">  restart: always</div><div class="line">  labels:</div><div class="line">    aliyun.logs: /var/log/mysql</div></pre></td></tr></table></figure>
+<ul>
+<li>除了自身的配置，文件挂载之外，声明的mysql 就是官方5.7的版本，只需要设置一个密码即可， 这样直接运行起来无论是提供服务， 还是运行测试， 都非常的方便。</li>
+</ul>
+<blockquote>
+<p>tips1： compose的好处还在于将配置从Dockerfile中提取出来，比如在测试/生产环境所需要的配置差别， 就可以放到compose里，在不同环境运行的时候换不同的compose文件即可，不用重复的编出不同环境用的docker image</p>
+</blockquote>
+<hr>
+<blockquote>
+<p>tips2: 上面的wordpress示例里，启动多个应用容器之上，并没有用nginx做代理，因为阿里云容器服务提供了routing，省去了这部分， 如果是在企业内部，当启动三个应用，还是需要在compose里再声明一个nginx 或者 haproxy 在前面做应用代理和负载均衡的。</p>
+</blockquote>
+<hr>
+<h3 id="完整拼接"><a href="#完整拼接" class="headerlink" title="完整拼接"></a>完整拼接</h3><p><img src="../assets/blogImg/continuous_archeitecture.png" alt="continuous_archeitecture"></p>
+<p>对一个公司/企业来说，将自身应用docker化，编译服务，测试集群docker化之后， 要跑通整个的过程，达到BBC News 这样的效果， 整个流程就如图中所示：</p>
+<ul>
+<li>代码，测试脚本，配置，Dockerfile/Compose 等从开发本地push到代码仓库中</li>
+<li>代码仓库能够hook 这个信息，通过事件trigger build 服务，通过容器进行app build，运行test， 通过后对应用进行docker image 的build</li>
+<li>build 好的docker image push到远程docker registry 用于存储和传递</li>
+<li>当build test 都pass之后， 通过deploy service 告诉应用集群进行更新，从docker registry 上pull 下来新的image进行应用更新，或更新集群配置</li>
+</ul>
+<h3 id="用docker-为开发-运维人员带来的好处"><a href="#用docker-为开发-运维人员带来的好处" class="headerlink" title="用docker 为开发/运维人员带来的好处"></a>用docker 为开发/运维人员带来的好处</h3><p>Docker技术是 DevOps 的最好诠释， DevOps不是开发去做运维的事情， 而是:</p>
+<ul>
+<li>将编程的思想应用到运维领域</li>
+</ul>
+<p>举例来说： Immutable，Copy on Write 这些思想在研发领域是耳熟能详的，好处大家秒懂。而在运维领域的Immutable，传统是怎么做的？ 靠组织架构，权限管理。各种人为订制的机制，规范。 而docker 是用技术来解决了这个问题， 官方文档的介绍docker是 An open platform for distributed applications for developers and sysadmins， 很明显看到了DevOps有木有？</p>
+<ul>
+<li>由于应用的软件依赖栈完全由应用自己在Dockerfile中定义和维护 ，因此开发人员能够更清楚，更灵活的掌控自己的软件运行环境。 运维人员也不用为应用软件依赖栈的变更碎片化自己的时间。</li>
+<li>最最重要的一点，Dockerfile的存在，非常清晰地将研发和PE的责任和界限划分清楚了。 开发人员可以FROM 运维人员提供的基础镜像，配置自己应用的依赖栈； 运维人员可以FROM 更底层的系统工程师的基础镜像， 配置环境依赖栈； 系统工程师则定义了一个公司的基础Linux系统所需的版本和配置。</li>
+</ul>
+<p>另外，从资源的角度上讲， docker化能够大大减少开发/测试环境的成本，测试或者调试的场景是当发起测试的时候才需要， 其他时候测试环境并不承担业务， 如果用虚拟机则白白的在那里空跑。 Docker 化之后可以在需要的时候随时拉起来整个环境，很快，并且不会出错， 因此阿里云持续交付平台CRP在会在将来提供集成测试环境，作为一项基础服务， 如果没有容器化，那提供整个服务的成本和可行性都是无法想象的</p>
+<ul>
+<li>片尾：希望大家都能运用docker技术做到被说了很久但无法落地的：DevOps</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_devops.png" alt="continuous_devops"></p>
+<hr>
+<h3 id="花絮"><a href="#花絮" class="headerlink" title="花絮"></a>花絮</h3><ul>
+<li>不是都片尾了怎么还有花絮？ 因为我感觉刚才通篇说的好像把docker神话了， 为了防止大家出现过度崇拜和追捧的情况，还是要回过头来考虑一下， 到底什么样的应用适合Docker化，换句话说到底什么样的应用适合容器化？</li>
+</ul>
+<p><img src="../assets/blogImg/continuous_dockerize.png" alt="continuous_dockerize"></p>
+<ul>
+<li>如上图： 我们认为Web应用，微服务，这种即无状态（是指好比一个web应用，通过10台服务器提供服务，当挂掉1台的时候流量自动被其他九台分摊，不会影响到用户，这样就叫无状态应用），又生命周期很短的业务适合docker化， 反过来，每个应用都是有状态，有存储的这种情况，不太容易docker化，或者说docker化的好处不明显 。</li>
+<li>但我们认为的也不一定是对的，今天docker技术，容器技术发展的速度太快， 所以花絮里这个问题 Let’s Think out together ……</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/04/continuous/" class="archive-article-date">
+  	<time datetime="2019-03-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-04</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Continuous/">Continuous</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+  
+    <a href="/2016/08/31/k8s_hosts/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">修改 Kubernetes 集群中容器的 hosts</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="continuous" data-title="持续交付实践" data-url="https://dingmingk.github.io/2019/03/04/continuous/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2019 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>
