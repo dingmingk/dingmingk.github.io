@@ -137,6 +137,175 @@
       <div class="body-wrap">
         
   
+    <article id="post-ss" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/10/14/ss/">使用 ss 命令代替 netstat</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>ss是Socket Statistics的缩写。</p>
+</blockquote>
+<p>顾名思义， ss命令可以用来获取socket统计信息，它可以显示和netstat类似的内容。但ss的优势在于它能够显示更多更详细的有关TCP和连接状态的信息，而且比netstat更快速更高效。</p>
+<h4 id="为什么要告别netstat"><a href="#为什么要告别netstat" class="headerlink" title="为什么要告别netstat"></a>为什么要告别netstat</h4><p>当服务器的socket连接数非常大时，无论使用<code>netstat</code>还是<code>cat /proc/net/tcp</code>，执行速度都很慢。</p>
+<p><strong>天下武功唯快不破</strong>。ss的秘诀在于，它利用到了TCP协议栈中tcp_diag。</p>
+<p><em>tcp_diag</em>是一个用于分析统计的模块，可以获得linux内核中第一手信息，这就确保了ss的快捷高效。当然，如果你的系统中没有tcp_diag，ss也可以正常运行，只是效率会变得很慢（仍然比netstat快）。</p>
+<h4 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h4><p><em>TODO</em></p>
+<p>自己手头暂时没有适合测试的机器，网上有人测试过数据如下：</p>
+<p>(当服务器维持3w个socket链接时)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">netstat -at | wc  耗时 15.60 秒</div><div class="line">ss -atr     | wc  耗时  5.40 秒（未利用tcp_diag）</div><div class="line">ss -atr     | wc  耗时  0.47 秒（利用tcp_diag）</div></pre></td></tr></table></figure>
+<h4 id="安装ss"><a href="#安装ss" class="headerlink" title="安装ss"></a>安装ss</h4><p>几乎所有的linux系统都会默认包含netstat命令，但并非所有系统都会默认包含ss命令。</p>
+<p>netstat命令是net-tools工具集中的一员：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$rpm -q netstat-tools</div><div class="line">net-tools-1.60-110.el6_2.x86_64</div></pre></td></tr></table></figure>
+<p>而ss命令是iproute工具集中的一员：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$rpm -q /usr/sbin/ss</div><div class="line">iproute-2.6.32-45.el6.x86_64</div><div class="line">$rpm -q iproute</div><div class="line">iproute-2.6.32-45.el6.x86_64</div></pre></td></tr></table></figure>
+<p>如果你无法使用ss命令，那么可能是缺少了iproute，需要安装一下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">yum install iproute iproute-doc</div></pre></td></tr></table></figure>
+<h4 id="ss常见用法"><a href="#ss常见用法" class="headerlink" title="ss常见用法"></a>ss常见用法</h4><p><strong>当前服务器的网络连接统计</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ ss -s</div><div class="line">Total: 78 (kernel 85)</div><div class="line">TCP:   5 (estab 2, closed 0, orphaned 0, synrecv 0, timewait 0/0), ports 5</div><div class="line"></div><div class="line">Transport Total     IP        IPv6</div><div class="line">*         85        -         -</div><div class="line">RAW       0         0         0</div><div class="line">UDP       4         4         0</div><div class="line">TCP       5         5         0</div><div class="line">INET      9         9         0</div><div class="line">FRAG      0         0         0</div></pre></td></tr></table></figure>
+<p><strong>查看所有打开的网络接口以及对应的程序名称</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ ss -pl</div><div class="line">State       Recv-Q Send-Q                                 Local Address:Port                                     Peer Address:Port</div><div class="line">LISTEN      0      128                                                *:http                                                *:*</div><div class="line">users:((&quot;nginx&quot;,2591,6),(&quot;nginx&quot;,15272,6))</div><div class="line">LISTEN      0      10                                         127.0.0.1:15770                                               *:*</div><div class="line">users:((&quot;aegis_quartz&quot;,16616,8))</div><div class="line">LISTEN      0      128                                                *:22                                               *:*</div><div class="line">users:((&quot;sshd&quot;,24244,3))</div><div class="line">``` </div><div class="line">**查看所有socket连接**</div></pre></td></tr></table></figure>
+<p>$ ss -a<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">* 如果只想查看TCP sockets， 那么使用 `-ta` 选项</div><div class="line">* 如果只想查看UDP sockets， 那么使用 `-ua` 选项</div><div class="line">* 如果只想查看RAW sockets， 那么使用 `-wa` 选项</div><div class="line">* 如果只想查看UNIX sockets， 那么使用 `-xa` 选项</div><div class="line"></div><div class="line">#### 附录</div><div class="line">#####ss命令参数列表</div></pre></td></tr></table></figure></p>
+<pre><code>-h, --help
+       Show summary of options.
+
+-V, --version
+       Output version information.
+
+-n, --numeric
+       Do now try to resolve service names.
+
+-r, --resolve
+       Try to resolve numeric address/ports.
+
+-a, --all
+       Display all sockets.
+
+-l, --listening
+       Display listening sockets.
+
+-o, --options
+       Show timer information.
+
+-e, --extended
+       Show detailed socket information
+
+-m, --memory
+       Show socket memory usage.
+
+-p, --processes
+       Show process using socket.
+
+-i, --info
+       Show internal TCP information.
+
+-s, --summary
+       Print  summary  statistics. This option does not parse socket lists obtaining summary from various sources.
+       It is useful when amount of sockets is so huge that parsing /proc/net/tcp is painful.
+
+-4, --ipv4
+       Display only IP version 4 sockets (alias for -f inet).
+
+-6, --ipv6
+       Display only IP version 6 sockets (alias for -f inet6).
+
+-0, --packet
+       Display PACKET sockets.
+
+-t, --tcp
+       Display only TCP sockets.
+</code></pre><p>```</p>
+<h5 id="iproute-amp-net-tools"><a href="#iproute-amp-net-tools" class="headerlink" title="iproute &amp; net-tools"></a>iproute &amp; net-tools</h5><p>从某种意义上来说，iproute工具集几乎可以替代掉net-tools工具集。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">用途</th>
+<th style="text-align:center">net-tools</th>
+<th style="text-align:center">iproute2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">地址和链路配置</td>
+<td style="text-align:center">ifconfig</td>
+<td style="text-align:center">ip addr, ip link</td>
+</tr>
+<tr>
+<td style="text-align:left">路由表</td>
+<td style="text-align:center">route</td>
+<td style="text-align:center">ip route</td>
+</tr>
+<tr>
+<td style="text-align:left">邻居</td>
+<td style="text-align:center">arp</td>
+<td style="text-align:center">ip neigh</td>
+</tr>
+<tr>
+<td style="text-align:left">VLAN</td>
+<td style="text-align:center">vconfig</td>
+<td style="text-align:center">ip link</td>
+</tr>
+<tr>
+<td style="text-align:left">隧道</td>
+<td style="text-align:center">iptunnel</td>
+<td style="text-align:center">ip tunnel</td>
+</tr>
+<tr>
+<td style="text-align:left">组播</td>
+<td style="text-align:center">ipmaddr</td>
+<td style="text-align:center">ip maddr</td>
+</tr>
+<tr>
+<td style="text-align:left">统计</td>
+<td style="text-align:center">netstat</td>
+<td style="text-align:center">ss</td>
+</tr>
+</tbody>
+</table>
+<p><img src="/assets/blogImg/netstat2iproute.png" alt="netstat2iproute"></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/10/14/ss/" class="archive-article-date">
+  	<time datetime="2015-10-13T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-10-14</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-pain" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -258,7 +427,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

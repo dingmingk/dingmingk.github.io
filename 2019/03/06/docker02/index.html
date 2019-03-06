@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Docker 进阶 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="容器技术系列分享（三）Docker 进阶目录
+Docker Image
+Docker Network
+Docker Volume
+Docker Process
+Docker security
+
+Docker ImageDocker镜像应该是小而快的。假设你在BusyBox镜像中预编译Go二进制文件，他们就会变得又大又复杂。如果不能构建一个良好的Dockerfile来帮助你提高构建缓存命中率，那么你">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker 进阶">
+<meta property="og:url" content="https://dingmingk.github.io/2019/03/06/docker02/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="容器技术系列分享（三）Docker 进阶目录
+Docker Image
+Docker Network
+Docker Volume
+Docker Process
+Docker security
+
+Docker ImageDocker镜像应该是小而快的。假设你在BusyBox镜像中预编译Go二进制文件，他们就会变得又大又复杂。如果不能构建一个良好的Dockerfile来帮助你提高构建缓存命中率，那么你">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_networks.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_network_bridge.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_network_none.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_network_isolatedbridge.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_network_isolatedbridgerun.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_network_overlay.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_volume.jpeg">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_volume_jenkins01.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_volume_jenkins02.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_volume_jenkins03.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_volume_jenkins04.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_process_redis.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_process_redis02.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_process_redis03.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_process_redis04.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_process_redis05.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/docker_process_redis06.png">
+<meta property="og:updated_time" content="2019-03-06T09:54:33.042Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Docker 进阶">
+<meta name="twitter:description" content="容器技术系列分享（三）Docker 进阶目录
+Docker Image
+Docker Network
+Docker Volume
+Docker Process
+Docker security
+
+Docker ImageDocker镜像应该是小而快的。假设你在BusyBox镜像中预编译Go二进制文件，他们就会变得又大又复杂。如果不能构建一个良好的Dockerfile来帮助你提高构建缓存命中率，那么你">
+<meta name="twitter:image" content="https://dingmingk.github.io/assets/blogImg/docker_networks.png">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-docker02" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Docker 进阶
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（三）"><a href="#容器技术系列分享（三）" class="headerlink" title="容器技术系列分享（三）"></a>容器技术系列分享（三）</h1><h2 id="Docker-进阶"><a href="#Docker-进阶" class="headerlink" title="Docker 进阶"></a>Docker 进阶</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>Docker Image</li>
+<li>Docker Network</li>
+<li>Docker Volume</li>
+<li>Docker Process</li>
+<li>Docker security</li>
+</ul>
+<h4 id="Docker-Image"><a href="#Docker-Image" class="headerlink" title="Docker Image"></a>Docker Image</h4><p>Docker镜像应该是小而快的。假设你在BusyBox镜像中预编译Go二进制文件，他们就会变得又大又复杂。如果不能构建一个良好的Dockerfile来帮助你提高构建缓存命中率，那么你的镜像构建过程将会变得相当的缓慢。</p>
+<p>比如一个用于软件安装的bash脚本，里面堆砌着大量的curl、wget等命令语句，大家在写Dockerfile的时候通常就会像写这个bash脚本一样，将一系列的Docker命令堆砌在其中，这种Dockerfile在构建镜像的时候是比较低效和缓慢的。</p>
+<h5 id="秩序"><a href="#秩序" class="headerlink" title="秩序"></a>秩序</h5><p>有频率的改变Dockerfile中命令的排序，观察分析运行命令所耗费的时间及与其他镜像共享资源的方式。</p>
+<p>比如像WORKDIR、CMD、ENV这些命令应该在底部，而RUN apt-get -y update更新应该在上面，因为它需要更长时间来运行，也可以与所有的镜像共享。</p>
+<p>任何ADD（或其它缓存失效的命令）命令应该尽可能地在Dockerfile底部，在那里可以做出很多改变，后续命令缓存失效。</p>
+<h5 id="合适的基础镜像"><a href="#合适的基础镜像" class="headerlink" title="合适的基础镜像"></a>合适的基础镜像</h5><p>比如Ruby2运行Ruby应用程序，Python3运行Python应用程序，但这两个镜像使用不同的基础镜像，所以你需要下载和构建不同的基础镜像。然而，如果使用Ubuntu运行这两个程序，就只需要下载一次基础镜像。</p>
+<h5 id="优化层级"><a href="#优化层级" class="headerlink" title="优化层级"></a>优化层级</h5><p>在一个Dockerfile中每个命令都会在原来的基础上生成一层镜像，你可以使用三十多层命令，也可以通过组合RUN命令，并使用一行EXPOSE命令列出所有的开放端口，这样可以有效减少镜像的层数。</p>
+<p>通过将RUN命令分组，可以在容器间分享更多的层。当然如果有一组命令可以多个容器通用，那么应该创建一个独立的基础镜像，它包含所建立的所有镜像。</p>
+<p>对于每一层来说你都可以跨多个镜像分享，这样可以节省大量的磁盘空间。</p>
+<h5 id="容器体积"><a href="#容器体积" class="headerlink" title="容器体积"></a>容器体积</h5><p>在创建容器并考虑到体积问题的时候，不要为了节省空间去使用体积小的镜像，尽量使用你将要提供数据的应用程序打成的镜像。如果你这样做了，并且提交了磁盘数据，你不仅在容器中储存了你的数据，而且对实际应用程序的调试也非常有用。</p>
+<h5 id="消耗"><a href="#消耗" class="headerlink" title="消耗"></a>消耗</h5><p>当你已经构建了一个镜像，在运行它的时候发现有一个package缺少了，把它添加到Dockerfile的底部，而不是添加到顶部的run apt-get命令那里。这意味着你能尽快的重新构建这个镜像了。一旦你的镜像可以正常工作，你可以再提交源码之前重新优化整理Dockerfile。</p>
+<h5 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div></pre></td><td class="code"><pre><div class="line"># 1 - Common Header / Packages</div><div class="line">FROM ubuntu:trusty</div><div class="line">MAINTAINER Jin Dingming ”jindm@2345.com”</div><div class="line"></div><div class="line">RUN apt-get -yq update \</div><div class="line">&amp;&amp; apt-get -yqq install \</div><div class="line">wget \</div><div class="line">curl \</div><div class="line">git \</div><div class="line">software-properties-common</div><div class="line"></div><div class="line"># 2 - Python</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">python-dev \</div><div class="line">python-pip \</div><div class="line">python-pysqlite2 \</div><div class="line">python-mysqldb</div><div class="line"></div><div class="line"># 3 - Apache</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">apache2 \</div><div class="line">apache2-utils</div><div class="line"></div><div class="line"># 4 - Apache ENVs</div><div class="line">ENV APACHE_CONFDIR /etc/apache2</div><div class="line">ENV APACHE_ENVVARS $APACHE_CONFDIR/envvars</div><div class="line">ENV APACHE_RUN_USER www-data</div><div class="line">ENV APACHE_RUN_GROUP www-data</div><div class="line">ENV APACHE_RUN_DIR /var/run/apache2</div><div class="line">ENV APACHE_PID_FILE $APACHE_RUN_DIR/apache2.pid</div><div class="line">ENV APACHE_LOCK_DIR /var/lock/apache2</div><div class="line">ENV APACHE_LOG_DIR /var/log/apache2</div><div class="line"></div><div class="line"># 5 - Graphite and Deps</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">libapache2-mod-python \</div><div class="line">python-cairo \</div><div class="line">python-jinja2 \</div><div class="line">sqlite3</div><div class="line"></div><div class="line">RUN \</div><div class="line">pip install whisper \</div><div class="line">carbon \</div><div class="line">graphite-web \</div><div class="line">&apos;Twisted&lt;12.0&apos; \</div><div class="line">&apos;django&lt;1.6&apos; \</div><div class="line">django-tagging</div><div class="line"></div><div class="line"># 6 - Other</div><div class="line">EXPOSE 80 2003 2004 7002</div><div class="line"></div><div class="line">WORKDIR /app</div><div class="line"></div><div class="line">VOLUME /opt/graphite/data</div><div class="line"></div><div class="line"># Define default command.</div><div class="line">CMD [&quot;/app/bin/start_graphite&quot;]</div><div class="line"></div><div class="line"># 7 - First use of ADD</div><div class="line">ADD . /app</div><div class="line"></div><div class="line"># 8 - Final setup</div><div class="line">RUN mkdir -p /app/wsgi \</div><div class="line">&amp;&amp; useradd -d /app -c &apos;application&apos; -s &apos;/bin/false&apos; graphite \</div><div class="line">&amp;&amp; chmod +x /app/bin/* \</div><div class="line">&amp;&amp; chown -R graphite:graphite /app \</div><div class="line">&amp;&amp; chown -R graphite:graphite /opt/graphite \</div><div class="line">&amp;&amp; rm -f /etc/apache2/sites-enabled/* \</div><div class="line">&amp;&amp; mv /app/apache-graphite.conf /etc/apache2/sites-enabled/apache-graphite.conf</div></pre></td></tr></table></figure>
+<h5 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h5><ol>
+<li><p>Common Header/Packages</p>
+<p> 这是最常见的共享层，在同一个主机上运行所有镜像应该从它开始。可以看到这里添加了一些诸如curl和git的操作，他们不是必须的，但是对调试很有用，而且因为他们在分享层，所以不会占用太多空间。</p>
+</li>
+<li><p>Python</p>
+</li>
+<li><p>Apache</p>
+<p> 2-3是语言规范层。这里的python和apache，把谁放在前面并没有硬性规定，主要看业务契合度。</p>
+</li>
+<li><p>Apache Envs</p>
+<p> 在Apache安装好之后直接配置环境依赖，以便于其他镜像构建时尽量多应用缓存。</p>
+</li>
+<li><p>Graphite and Deps</p>
+<p> 这里包含一些特定的apt和pip资源包，利用&amp;&amp;符号连接多个单一命令能减少镜像层级数量。</p>
+</li>
+<li><p>Other</p>
+<p> 这部分配置镜像本身的属性，如端口映射、目录挂载等。</p>
+</li>
+<li><p>First ADD</p>
+<p> 最后，将需要的应用程序打包进镜像。</p>
+</li>
+<li><p>Final setup</p>
+<p> 容器的启动命令。</p>
+</li>
+</ol>
+<h4 id="Docker-Network"><a href="#Docker-Network" class="headerlink" title="Docker Network"></a>Docker Network</h4><p>Docker 网络为容器安全提供了隔离，不同的网络方案在效率和复杂度上也有区别，选择一个最合适的网络方案对应用性能和后期维护成本都有至关重要的影响。</p>
+<h5 id="默认网络（Default-Networks）"><a href="#默认网络（Default-Networks）" class="headerlink" title="默认网络（Default Networks）"></a>默认网络（Default Networks）</h5><p>当你安装好Docker后，它会自动创建三个网络，你可以使用<code>docker network ls</code>命令列举它们:</p>
+<p><img src="/assets/blogImg/docker_networks.png" alt="docker_networks"></p>
+<ul>
+<li>bridge 网络</li>
+</ul>
+<p>Docker安装好后都会提供默认的bridge网络即docker0网络。如果不指定<code>docker run --net=&lt;network&gt;</code>的话，Docker daemon会默认将容器连接到这个网络。在宿主机中可以看到这个网络。</p>
+<p><img src="/assets/blogImg/docker_network_bridge.png" alt="docker_network_bridge"></p>
+<ul>
+<li>none 网络</li>
+</ul>
+<p>none 网络会添加容器到一个容器自己的网络栈，但是并没有网络接口。</p>
+<p><img src="/assets/blogImg/docker_network_none.png" alt="docker_network_none"></p>
+<ul>
+<li>host 网络</li>
+</ul>
+<p>host 网络添加一个容器到宿主机的网络栈中，你会发现容器中的网络配置和宿主机一样。</p>
+<h5 id="自定义网络（User-defined-networks）"><a href="#自定义网络（User-defined-networks）" class="headerlink" title="自定义网络（User-defined networks）"></a>自定义网络（User-defined networks）</h5><p>除了Docker提供的默认网络，用户还可以创建自定义网络以便提供更好的容器网络隔离，Docker为创建自定义网络提供了一些默认的 network driver。你可以创建一个新的 bridge network 或者 overlay network，也可以创建一个network plugin或者remote network。</p>
+<p>用户也可以创建多个网络，把容器连接到不止一个网络中。容器仅可以同网络内的容器进行通信而不能跨网络通信。</p>
+<ul>
+<li>自定义bridge网络</li>
+</ul>
+<p>最简单的用户自定义网络就是创建一个bridge网络。</p>
+<p><img src="/assets/blogImg/docker_network_isolatedbridge.png" alt="docker_network_isolatedbridge"></p>
+<p>创建完之后，就可以指定新创建的容器运行在这个网络上。</p>
+<p><img src="/assets/blogImg/docker_network_isolatedbridgerun.png" alt="docker_network_isolatedbridgerun"></p>
+<h5 id="overlay网络（An-overlay-network）"><a href="#overlay网络（An-overlay-network）" class="headerlink" title="overlay网络（An overlay network）"></a>overlay网络（An overlay network）</h5><p>Docker的overlay网络驱动提供原生开箱即用（out-of-the-box）的跨主机网络。完成这个支持是基于 <em>libnetwork</em> 和 <em>libkv</em>，libnetwork是一个内置基于VXLAN overlay网络驱动的一个库。</p>
+<p>overlay网络需要一个可用的key-value存储服务，目前Docker的libkv支持Consul、Etcd、Zookeeper。</p>
+<p><img src="/assets/blogImg/docker_network_overlay.png" alt="docker_network_overlay"></p>
+<p><strong>overlay网络方案对比</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:center">Flannel</th>
+<th style="text-align:center">Calico</th>
+<th style="text-align:center">macvlan</th>
+<th style="text-align:center">Open vSwitch</th>
+<th style="text-align:right">route</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">方案特性</td>
+<td style="text-align:center">通过虚拟设备flannel0实现对docker0的管理</td>
+<td style="text-align:center">基于BGP协议的纯三层网路方案</td>
+<td style="text-align:center">基于Linux Kernel的macvlan技术</td>
+<td style="text-align:center">基于隧道的虚拟路由器技术</td>
+<td style="text-align:right">基于Linux Kernel的vRoute技术</td>
+</tr>
+<tr>
+<td style="text-align:left">网络要求</td>
+<td style="text-align:center">三层互通</td>
+<td style="text-align:center">三层互通</td>
+<td style="text-align:center">二层互通</td>
+<td style="text-align:center">三层互通</td>
+<td style="text-align:right">二层互通</td>
+</tr>
+<tr>
+<td style="text-align:left">配置难度</td>
+<td style="text-align:center">简单，基于Etcd。</td>
+<td style="text-align:center">简单，基于Etcd。</td>
+<td style="text-align:center">简单，直接使用宿主机网络，需要仔细规划IP范围。</td>
+<td style="text-align:center">复杂，需要手工配置各节点的bridge。</td>
+<td style="text-align:right">简单，使用宿主机vRoute功能，需要仔细规划每个Node的IP地址范围。</td>
+</tr>
+<tr>
+<td style="text-align:left">网络性能</td>
+<td style="text-align:center">host-gw&gt;VXLAN&gt;UDP</td>
+<td style="text-align:center">BGP模式性能损失小，IPIP模式较小</td>
+<td style="text-align:center">性能损失可忽略</td>
+<td style="text-align:center">性能损失较小</td>
+<td style="text-align:right">性能损失小</td>
+</tr>
+<tr>
+<td style="text-align:left">网络限制</td>
+<td style="text-align:center">无</td>
+<td style="text-align:center">在不支持BGP协议的网络下无法使用</td>
+<td style="text-align:center">基于macvlan的容器无法与宿主机网络通信</td>
+<td style="text-align:center">无</td>
+<td style="text-align:right">在无法实现大二层互通的网络环境下无法使用</td>
+</tr>
+</tbody>
+</table>
+<h5 id="自定义网络插件（Custom-network-plugin）"><a href="#自定义网络插件（Custom-network-plugin）" class="headerlink" title="自定义网络插件（Custom network plugin）"></a>自定义网络插件（Custom network plugin）</h5><p>你可以编写自己的网络驱动，驱动是和Docker daemon运行在同一台主机上的一个进程，并且由Docker plugin系统调用和使用。</p>
+<p>网络插件和其他的Docker插件一样受到一些限制和安装规则。所有的插件使用Plugin API，有自己的生命周期，包含：安装、启动、停止、激活。</p>
+<p>自定义的网络驱动安装好后，可以像使用内置的网络驱动一样使用它，例如：</p>
+<p><code>docker network create --driver weave mynet</code></p>
+<h5 id="Docker内置DNS服务器（Embedded-DNS-Server）"><a href="#Docker内置DNS服务器（Embedded-DNS-Server）" class="headerlink" title="Docker内置DNS服务器（Embedded DNS Server）"></a>Docker内置DNS服务器（Embedded DNS Server）</h5><p>Docker daemon会为每个连接到自定义网络的容器运行一个内置的DNS服务提供自动的服务发现。域名解析的请求会首先被内置的DNS服务器拦截，如果内置的DNS服务器不能解析这个请求，它才会被转发到外部的容器配置的DNS服务器。基于这个机制，容器的resolv.conf文件会将DNS服务器配置为127.0.0.1，即内置DNS服务器监听的地址。</p>
+<h4 id="Docker-Volume"><a href="#Docker-Volume" class="headerlink" title="Docker Volume"></a>Docker Volume</h4><p><img src="/assets/blogImg/docker_volume.jpeg" alt="docker_volume"></p>
+<p>Volume数据卷是Docker的一个重要概念。数据卷是可供一个或多个容器使用的特殊目录，可以为容器应用存储提供有价值的特性：</p>
+<ul>
+<li>持久化数据与容器的生命周期解耦：在容器删除之后数据卷中的内容可以保持。Docker 1.9之后引进的<em>named volume</em>可以更加方便地管理数据卷的生命周期，数据卷可以被独立地创建和删除。</li>
+<li>数据卷可以用于实现容器之间的数据共享</li>
+<li>可以支持不同类型的数据存储实现</li>
+</ul>
+<p>Docker缺省提供了对宿主机本地文件卷的支持，可以将宿主机的目录挂载到容器之中。由于没有容器分层文件系统带来的性能损失，本地文件卷非常适合一些需要高性能数据访问的场景，比如MySQL的数据库文件存储。</p>
+<p>同时Docker支持通过volume plugin实现不同类型的数据卷，可以更加灵活解决不同应用负载的存储需求。</p>
+<p>但是Docker数据卷的权限管理经常令人困惑，后面就结合实例介绍Docker数据卷权限管理中的常见问题和解决方法。</p>
+<h5 id="从Jenkins挂载本地数据卷错误谈起"><a href="#从Jenkins挂载本地数据卷错误谈起" class="headerlink" title="从Jenkins挂载本地数据卷错误谈起"></a>从Jenkins挂载本地数据卷错误谈起</h5><p>首先，我们使用Jenkins官方镜像启动一个容器，并检查日志。</p>
+<p>可以发现容器日志一切正常。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">docker run -d -p 8080:8080 -p 50000:50000 --name jenkins jenkins</div><div class="line">docker logs jenkins</div></pre></td></tr></table></figure>
+<p>但是，为了持久化Jenkins的数据，当我们把宿主机目录挂载到容器中时，问题出现了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">docker rm -f jenkins</div><div class="line">docker run -d -p 8080:8080 -p 50000:50000 -v $(pwd)/data:/var/jenkins_home --name jenkins jenkins</div><div class="line">docker logs jenkins</div></pre></td></tr></table></figure>
+<p>错误日志如下：</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins01.png" alt="docker_volume_jenkins01"></p>
+<p>不映射本地数据卷时，查看jenkins容器的当前用户是jenkins,且”/var/jenkins_home”目录权限归属于jenkins用户。</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins02.png" alt="docker_volume_jenkins02"></p>
+<p>而映射本地数据卷时，”/var/jenkins_home”目录的拥有者变成了root用户。</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins03.png" alt="docker_volume_jenkins03"></p>
+<p>这就解释了为什么当jenkins用户的进程访问“/var/jenkins_home“时，会出现Permission denied的问题。</p>
+<p>我们再检查一下宿主机上的数据卷目录，当前路径下“data”目录的拥有者是root，这是因为这个目录是Docker进程缺省创建出来的。</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins04.png" alt="docker_volume_jenkins04"></p>
+<p>发现问题之后，相应的解决办法也很简单：把当前目录的拥有者赋值给 <em>uid 1000</em>，再启动jenkins容器就一切正常了。</p>
+<p>虽然问题解决了，但思考并没有结束。因为当使用本地数据卷时，jenkins容器会依赖宿主机目录权限的正确性，这会给自动化部署带来额外的工作。如何让jenkins容器为数据卷自动地设置正确的权限？这个问题对很多以non-root方式运行的应用也都有借鉴意义。</p>
+<h5 id="为-non-root-应用正确地挂载本地数据卷"><a href="#为-non-root-应用正确地挂载本地数据卷" class="headerlink" title="为 non-root 应用正确地挂载本地数据卷"></a>为 non-root 应用正确地挂载本地数据卷</h5><p>基本思路有两个：</p>
+<ul>
+<li>一个是利用Data Container的方法在容器见共享数据卷。这样就规避了解决宿主机上数据卷的权限问题。由于在1.9版本之后，Docker提供了named volume来取代纯数据容器，所以还需要真正地解决这个问题。</li>
+<li>另外一个思路就是让容器中进程以root用户启动，在容器启动脚本中利用chown命令来修正数据卷文件权限，之后切换到non-root用户来执行程序。</li>
+</ul>
+<p>参照第二个思路来解决之前jenkins的问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">FROM jenkins:latest</div><div class="line">USER root</div><div class="line">RUN GOSU_SHA=5ec5d23079e94aea5f7ed92ee8a1a34bbf64c2d4053dadf383992908a2f9dc8a \</div><div class="line">  &amp;&amp; curl -sSL -o /usr/local/bin/gosu &quot;https://github.com/tianon/gosu/releases/download/1.9/gosu-$(dpkg --print-architecture)&quot; \</div><div class="line">  &amp;&amp; chmod +x /usr/local/bin/gosu \</div><div class="line">  &amp;&amp; echo &quot;$GOSU_SHA  /usr/local/bin/gosu&quot; | sha256sum -c - </div><div class="line">COPY entrypoint.sh /entrypoint.sh</div><div class="line">ENTRYPOINT [&quot;/entrypoint.sh&quot;]</div></pre></td></tr></table></figure>
+<p>这是一个基于jenkins镜像的Dockerfile：它会切换到root用户并在镜像中添加<em>gosu</em>命令，和新的入口点”/entrypoint.sh”。</p>
+<blockquote>
+<p>gosu 是经常出现在官方Docker镜像中的一个小工具。它是su和sudo命令的轻量级替代品，并解决了它们在tty和信号传递中的一些问题。</p>
+</blockquote>
+<p>新入口点的entrypoint.sh内容如下：它会为JENKINS_HOME目录设置jenkins的拥有权限，并且再利用gosu命令切换到jenkins用户来执行jenkins应用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#! /bin/bash</div><div class="line">set -e</div><div class="line">chown -R 1000 &quot;$JENKINS_HOME&quot;</div><div class="line">exec gosu jenkins /bin/tini -- /usr/local/bin/jenkins.sh</div></pre></td></tr></table></figure>
+<h4 id="Docker-Process"><a href="#Docker-Process" class="headerlink" title="Docker Process"></a>Docker Process</h4><p>Docker在进程管理上有一些特殊之处，如果不注意这些细节就会带来一些隐患。另外Docker鼓励“一个容器一个进程（one process per container)”的方式。这种方式非常适合以单进程为主的微服务架构的应用。然而由于一些传统的应用是由若干紧耦合的多个进程构成的，这些进程难以拆分到不同的容器中，所以在单个容器内运行多个进程便成了一种折衷方案；此外在一些场景中，用户期望利用Docker容器来作为轻量级的虚拟化方案，动态的安装配置应用，这也需要在容器中运行多个进程。而在Docker容器中正确运行多进程应用将会带来更多的挑战。</p>
+<h5 id="容器的PID-namespace"><a href="#容器的PID-namespace" class="headerlink" title="容器的PID namespace"></a>容器的PID namespace</h5><p>在Docker中，进程管理的基础就是Linux内核中的PID名空间技术。在不同PID名空间中，进程ID是独立的；即在两个不同名空间下的进程可以有相同的PID。</p>
+<p>Linux内核为所有的PID名空间维护了一个树状结构：最顶层的是系统初始化时创建的root namespace（根名空间），再创建的新PID namespace就称之为child namespace（子名空间），而原先的PID名空间就是新创建的PID名空间的parent namespace（父名空间）。通过这种方式，系统中的PID名空间会形成一个层级体系。父节点可以看到子节点中的进程，并可以通过信号等方式对子节点中的进程产生影响。反过来，子节点不能看到父节点名空间中的任何内容，也不可能通过kill或ptrace影响父节点或其他名空间中的进程。</p>
+<p>在Docker中，每个Container都是Docker Daemon的子进程，每个Container进程缺省都具有不同的PID名空间。通过名空间技术，Docker实现容器间的进程隔离。另外Docker Daemon也会利用PID名空间的树状结构，实现了对容器中的进程交互、监控和回收。注：Docker还利用了其他名空间（UTS，IPC，USER）等实现了各种系统资源的隔离，由于这些内容和进程管理关联不多，本文不会涉及。</p>
+<p>当创建一个Docker容器的时候，就会新建一个PID名空间。容器启动进程在该名空间内PID为1。当PID1进程结束之后，Docker会销毁对应的PID名空间，并向容器内所有其它的子进程发送SIGKILL。</p>
+<h5 id="如何指明容器PID1进程"><a href="#如何指明容器PID1进程" class="headerlink" title="如何指明容器PID1进程"></a>如何指明容器PID1进程</h5><p>在Docker容器中的初始化进程（PID1进程）在容器进程管理上具有特殊意义。它可以被Dockerfile中的 <em>ENTRYPOINT</em> 或 <em>CMD</em> 所指明；也可以被docker run命令的启动参数所覆盖。了解这些细节可以帮助我们更好地了解PID1进程的行为。</p>
+<p>关于ENTRYPOINT和CMD指令的不同，可以参见官方的Dockerfile说明和最佳实践</p>
+<p><a href="https://docs.docker.com/engine/reference/builder/#entrypoint" target="_blank" rel="external">https://docs.docker.com/engine/reference/builder/#entrypoint</a></p>
+<p><a href="https://docs.docker.com/engine/reference/builder/#cmd" target="_blank" rel="external">https://docs.docker.com/engine/reference/builder/#cmd</a></p>
+<p>值得注意的一点是：在ENTRYPOINT和CMD指令中，提供两种不同的进程执行方式 shell 和 exec。</p>
+<p>在shell方式中，CMD/ENTRYPOINT指令以如下方式定义：</p>
+<p><code>CMD executable param1 param2</code></p>
+<p>这种方式中的PID1进程是以<em>/bin/sh -c “executable param1 param2”</em>方式启动的</p>
+<p><code>CMD [&quot;executable&quot;,&quot;param1&quot;,&quot;param2&quot;]</code></p>
+<p>注意这里的可执行命令和参数是利用JSON字符串数组的格式定义的，这样PID1进程会以<em>executable param1 param2</em>方式启动的。另外，在<em>docker run</em>命令中指明的命令行参数也是以 exec 方式启动的。</p>
+<p>为了解释两种不同运行方式的区别，我们利用不同的Dockerfile分别创建两个Redis镜像</p>
+<p>“Dockerfile_shell”文件内容如下，会利用shell方式启动redis服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:18.04</div><div class="line">RUN apt-get update &amp;&amp; apt-get -y install redis-server &amp;&amp; rm -rf /var/lib/apt/lists/*</div><div class="line">EXPOSE 6379</div><div class="line">CMD &quot;/usr/bin/redis-server&quot;</div></pre></td></tr></table></figure>
+<p>“Dockerfile_exec”文件内容如下，会利用exec方式启动redis服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:18.04</div><div class="line">RUN apt-get update &amp;&amp; apt-get -y install redis-server &amp;&amp; rm -rf /var/lib/apt/lists/*</div><div class="line">EXPOSE 6379</div><div class="line">CMD [&quot;/usr/bin/redis-server&quot;]</div></pre></td></tr></table></figure>
+<p>然后给予他们构建两个镜像“myredis:shell”和“myredis:exec”</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">docker build -t myredis:shell -f Dockerfile_shell .</div><div class="line">docker build -t myredis:exec -f Dockerfile_exec .</div></pre></td></tr></table></figure>
+<p>运行”myredis:shell”镜像，我们可以发现它的启动进程(PID1)是/bin/sh -c “/usr/bin/redis-server”，并且它创建了一个子进程/usr/bin/redis-server *:6379。</p>
+<p>而运行“myredis:exec”镜像，我们可以发现它的启动进程是/usr/bin/redis-server *:6379，并没有其他子进程存在。</p>
+<p><img src="/assets/blogImg/docker_process_redis.png" alt="docker_process_redis"></p>
+<p>由此我们可以清楚的看到，以exec和shell方式执行命令可能会导致容器的PID1进程不同。然而这又有什么问题呢？</p>
+<p>原因在于：PID1进程对于操作系统而言具有特殊意义。操作系统的PID1进程是init进程，以守护进程方式运行，是所有其他进程的祖先，具有完整的进程生命周期管理能力。在Docker容器中，PID1进程是启动进程，它也会负责容器内部进程管理的工作。而这也将导致进程管理在Docker容器内部和完整操作系统上的不同。</p>
+<h5 id="进程信号处理"><a href="#进程信号处理" class="headerlink" title="进程信号处理"></a>进程信号处理</h5><p>信号是Unix/Linux中进程间异步通信机制。Docker提供了两个命令docker stop和docker kill来向容器中的PID1进程发送信号。</p>
+<p>当执行docker stop命令时，docker会首先向容器的PID1进程发送一个SIGTERM信号，用于容器内程序的退出。如果容器在收到SIGTERM后没有结束， 那么Docker Daemon会在等待一段时间（默认是10s）后，再向容器发送SIGKILL信号，将容器杀死变为退出状态。这种方式给Docker应用提供了一个优雅的退出(graceful stop)机制，允许应用在收到stop命令时清理和释放使用中的资源。而docker kill可以向容器内PID1进程发送任何信号，缺省是发送SIGKILL信号来强制退出应用。</p>
+<blockquote>
+<p>从Docker 1.9开始，Docker支持停止容器时向其发送自定义信号，开发者可以在Dockerfile使用STOPSIGNAL指令，或docker run命令中使用–stop-signal参数中指明，缺省是SIGTERM。</p>
+</blockquote>
+<p>我们来看看不同的PID1进程，对进程信号处理的不同之处。首先，我们使用docker stop命令停止由 exec 模式启动的“myredis2”容器，并检查其日志。</p>
+<p><img src="/assets/blogImg/docker_process_redis02.png" alt="docker_process_redis02"></p>
+<p>我们发现对“myredis2”容器的stop命令几乎立即生效；而且在容器日志中，我们看到了“Received SIGTERM scheduling shutdown”的内容，说明redis-server进程接收到了SIGTERM消息，并优雅地推出。</p>
+<p>我们再对利用shell模式启动的“myredis”容器发出停止操作，并检查其日志。</p>
+<p><img src="/assets/blogImg/docker_process_redis03.png" alt="docker_process_redis03"></p>
+<p>我们发现对”myredis”容器的stop命令暂停了一会儿才结束，而且在日志中我们没有看到任何收到SIGTERM信号的内容。原因其PID1进程sh没有对SIGTERM信号的处理逻辑，所以它忽略了所接收到的SIGTERM信号。当Docker等待stop命令执行10秒钟超时之后，Docker Daemon发送SIGKILL强制杀死sh进程，并销毁了它的PID名空间，其子进程redis-server也在收到SIGKILL信号后被强制终止。如果此时应用还有正在执行的事务或未持久化的数据，强制进程退出可能导致数据丢失或状态不一致。</p>
+<p>通过这个示例我们可以清楚的理解PID1进程在信号管理的重要作用。所以，</p>
+<ul>
+<li>容器的PID1进程需要能够正确的处理SIGTERM信号来支持优雅退出。</li>
+<li>如果容器中包含多个进程，需要PID1进程能够正确的传播SIGTERM信号来结束所有的子进程之后再推出。</li>
+<li>确保PID1进程是期望的进程。缺省sh/bash进程没有提供SIGTERM的处理，需要通过shell的脚本来设置正确的PID1进程，或捕获SIGTERM信号。</li>
+</ul>
+<p>另外需要注意的是：由于PID1进程的特殊性，Linux内核为他做了特殊处理。如果它没有提供某个信号的处理逻辑，那么与其在同一个PID名空间下的进程发送给它的该信号都会被屏蔽。这个功能的主要作用是防止init进程被误杀。我们可以验证在容器内部发出的SIGKILL信号无法杀死PID1进程.</p>
+<p><img src="/assets/blogImg/docker_process_redis04.png" alt="docker_process_redis04"></p>
+<h5 id="孤儿进程与僵尸进程管理"><a href="#孤儿进程与僵尸进程管理" class="headerlink" title="孤儿进程与僵尸进程管理"></a>孤儿进程与僵尸进程管理</h5><blockquote>
+<p>(新版本已优化僵尸进程回收)</p>
+</blockquote>
+<p>熟悉Unix/Linux进程管理的同学对多进程应用并不陌生。</p>
+<p>当一个子进程终止后，它首先会变成一个“失效(defunct)”的进程，也称为“僵尸（zombie）”进程，等待父进程或系统收回（reap）。在Linux内核中维护了关于“僵尸”进程的一组信息（PID，终止状态，资源使用信息），从而允许父进程能够获取有关子进程的信息。如果不能正确回收“僵尸”进程，那么他们的进程描述符仍然保存在系统中，系统资源会缓慢泄露。</p>
+<p>大多数设计良好的多进程应用可以正确的收回僵尸子进程，比如NGINX master进程可以收回已终止的worker子进程。如果需要自己实现，则可利用如下方法：</p>
+<ol>
+<li>利用操作系统的waitpid()函数等待子进程结束并清除它的僵尸进程。</li>
+<li>由于当子进程成为“defunct”进程时，父进程会收到一个SIGCHLD信号，所以我们可以在父进程中指定信号处理的函数来忽略SIGCHLD信号，或者自定义收回处理逻辑。</li>
+</ol>
+<p>下面这些文章详细介绍了对僵尸进程的处理方法</p>
+<ul>
+<li><a href="http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html" target="_blank" rel="external">http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html</a></li>
+<li><a href="http://lbolla.info/blog/2014/01/23/die-zombie-die" target="_blank" rel="external">http://lbolla.info/blog/2014/01/23/die-zombie-die</a></li>
+</ul>
+<p>如果父进程已经结束了，那些依然在运行中的子进程会成为“孤儿（orphaned）”进程。在Linux中Init进程(PID1)作为所有进程的父进程，会维护进程树的状态，一旦有某个子进程成为了“孤儿”进程后，init就会负责接管这个子进程。当一个子进程成为“僵尸”进程之后，如果其父进程已经结束，init会收割这些“僵尸”，释放PID资源。</p>
+<p>然而由于Docker容器的PID1进程是容器启动进程，它们会如何处理那些“孤儿”进程和“僵尸”进程？</p>
+<p>下面我们做几个试验来验证不同的PID1进程对僵尸进程不同的处理能力</p>
+<p>首先在myredis2容器中启动一个bash进程，并创建子进程“sleep 1000”</p>
+<p><img src="/assets/blogImg/docker_process_redis05.png" alt="docker_process_redis05"></p>
+<p>在另一个终端窗口，查看当前进程，我们可以发现一个sleep进程是bash进程的子进程。</p>
+<p><img src="/assets/blogImg/docker_process_redis06.png" alt="docker_process_redis06"></p>
+<p>我们杀死bash进程之后查看进程列表，这时候bash进程已经被杀死。这时候sleep进程(PID为49)，虽然已经结束，而且被PID1进程（redis-server）接管，但是其没有被父进程回收，成为僵尸状态。</p>
+<p>这是因为PID1进程“redis-server”没有考虑过作为init对僵尸子进程的回收的场景。</p>
+<hr>
+<p>同样的实验对myredis容器测试，发现“bash”和“sleep 1000”进程都已经被杀死和回收。这是因为sh/bash等应用可以自动清理僵尸进程。</p>
+<blockquote>
+<p>如果在容器中运行多个进程，PID1进程需要有能力接管“孤儿”进程并回收“僵尸”进程。Docker从1.13版本开始提供了 docker run –init 参数，可以运行一个init来启动容器，并且提供信号传播和进程回收的作用。</p>
+</blockquote>
+<h5 id="进程监控"><a href="#进程监控" class="headerlink" title="进程监控"></a>进程监控</h5><p>在Docker中，如果docker run命令中指明了<a href="https://docs.docker.com/engine/reference/run/?spm=a2c4e.11153940.blogcont5545.18.2e60417f3DjeS6#restart-policies-restart" target="_blank" rel="external">restart policy</a>,Docker daemon会监控PID1进程，并根据策略自动重启已结束的容器。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:center">Flannel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">no</td>
+<td style="text-align:center">不自动重启，缺省值。</td>
+</tr>
+<tr>
+<td style="text-align:left">on-failure[:max-retries]</td>
+<td style="text-align:center">当PID1进程退出值非0时，自动重启容器；可以指定最大重试次数。</td>
+</tr>
+<tr>
+<td style="text-align:left">always</td>
+<td style="text-align:center">永远自动重启容器；当Docker daemon启东市，会自动启动容器。</td>
+</tr>
+<tr>
+<td style="text-align:left">unless-stopped</td>
+<td style="text-align:center">永远自动重启容器；当Docker daemon启动时，如果之前容器不为stoped状态就自动启动容器。</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注意：为防止频繁重启故障应用导致系统过载，Docker会在每次重启过程中会延迟一段时间。Docker重启进程的延迟时间从100ms开始并每次加倍，如100ms，200ms，400ms等等。</p>
+</blockquote>
+<p>利用Docker内置的restart策略可以大大简化应用进程监控的负担。但是Docker Daemon只是监控PID1进程，如果容器在内包含多个进程，仍然需要开发人员来处理进程监控。</p>
+<p>还有大家熟悉的<a href="http://supervisord.org/introduction.html" target="_blank" rel="external">Supervisor</a>，<a href="https://mmonit.com/monit/" target="_blank" rel="external">Monit</a>等进程监控工具，它们可以方便的在容器内部实现进程监控。Docker提供了相应的<a href="https://docs.docker.com/engine/reference/run/" target="_blank" rel="external">文档</a>来介绍，网上也有很多资料。</p>
+<p>另外利用Supervisor等工具作为PID1进程是在容器中支持多进程管理的主要实现方式；和简单利用shell脚本fork子进程相比，采用Supervisor等工具有很多好处：</p>
+<ul>
+<li>一些传统的服务不能以PID1进程的方式执行，利用Supervisor可以方便的适配</li>
+<li>Supervisor这些监控工具大多提供了对SIGTERM的信号传播支持，可以支持子进程优雅的退出。</li>
+</ul>
+<p>然而值得注意的是：Supervisor这些监控工具大多没有完全提供Init支持的进程管理能力，如果需要支持子进程回收的场景需要配合正确的PID1进程来完成</p>
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>进程管理在Docker容器中和在完整的操作系统有一些不同之处。在每个容器的PID1进程，需要能够正确的处理SIGTERM信号来支持容器应用的优雅退出，同时要能正确的处理孤儿进程和僵尸进程。必要的时候使用Docker新提供的 docker run –init 参数可以解决相应问题。</p>
+<p>在Dockerfile中要注意shell模式和exec模式的不同。通常而言我们鼓励使用exec模式，这样可以避免由无意中选择错误PID1进程所引入的问题。</p>
+<p>在Docker中“一个容器一个进程的方式”并非绝对化的要求，然而在一个容器中实现对于多个进程的管理必须考虑更多的细节，比如子进程管理，进程监控等等。所以对于常见的需求，比如日志收集，性能监控，调试程序，我们依然建议采用多个容器组装的方式来实现。</p>
+<h4 id="Docker-security"><a href="#Docker-security" class="headerlink" title="Docker security"></a>Docker security</h4><p>主要从四块区域思考Docker安全：</p>
+<ul>
+<li>Linux内核层面的安全：namespace和cgroups</li>
+<li>Docker daemon的攻击面</li>
+<li>容器配置时的漏洞</li>
+<li>内核的安全强化功能，以及如何它们如何与容器交互</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/06/docker02/" class="archive-article-date">
+  	<time datetime="2019-03-05T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-06</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+  
+    <a href="/2019/03/04/continuous/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">持续交付实践</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="docker02" data-title="Docker 进阶" data-url="https://dingmingk.github.io/2019/03/06/docker02/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2019 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

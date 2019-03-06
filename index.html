@@ -137,6 +137,350 @@
       <div class="body-wrap">
         
   
+    <article id="post-docker02" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/06/docker02/">Docker 进阶</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（三）"><a href="#容器技术系列分享（三）" class="headerlink" title="容器技术系列分享（三）"></a>容器技术系列分享（三）</h1><h2 id="Docker-进阶"><a href="#Docker-进阶" class="headerlink" title="Docker 进阶"></a>Docker 进阶</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>Docker Image</li>
+<li>Docker Network</li>
+<li>Docker Volume</li>
+<li>Docker Process</li>
+<li>Docker security</li>
+</ul>
+<h4 id="Docker-Image"><a href="#Docker-Image" class="headerlink" title="Docker Image"></a>Docker Image</h4><p>Docker镜像应该是小而快的。假设你在BusyBox镜像中预编译Go二进制文件，他们就会变得又大又复杂。如果不能构建一个良好的Dockerfile来帮助你提高构建缓存命中率，那么你的镜像构建过程将会变得相当的缓慢。</p>
+<p>比如一个用于软件安装的bash脚本，里面堆砌着大量的curl、wget等命令语句，大家在写Dockerfile的时候通常就会像写这个bash脚本一样，将一系列的Docker命令堆砌在其中，这种Dockerfile在构建镜像的时候是比较低效和缓慢的。</p>
+<h5 id="秩序"><a href="#秩序" class="headerlink" title="秩序"></a>秩序</h5><p>有频率的改变Dockerfile中命令的排序，观察分析运行命令所耗费的时间及与其他镜像共享资源的方式。</p>
+<p>比如像WORKDIR、CMD、ENV这些命令应该在底部，而RUN apt-get -y update更新应该在上面，因为它需要更长时间来运行，也可以与所有的镜像共享。</p>
+<p>任何ADD（或其它缓存失效的命令）命令应该尽可能地在Dockerfile底部，在那里可以做出很多改变，后续命令缓存失效。</p>
+<h5 id="合适的基础镜像"><a href="#合适的基础镜像" class="headerlink" title="合适的基础镜像"></a>合适的基础镜像</h5><p>比如Ruby2运行Ruby应用程序，Python3运行Python应用程序，但这两个镜像使用不同的基础镜像，所以你需要下载和构建不同的基础镜像。然而，如果使用Ubuntu运行这两个程序，就只需要下载一次基础镜像。</p>
+<h5 id="优化层级"><a href="#优化层级" class="headerlink" title="优化层级"></a>优化层级</h5><p>在一个Dockerfile中每个命令都会在原来的基础上生成一层镜像，你可以使用三十多层命令，也可以通过组合RUN命令，并使用一行EXPOSE命令列出所有的开放端口，这样可以有效减少镜像的层数。</p>
+<p>通过将RUN命令分组，可以在容器间分享更多的层。当然如果有一组命令可以多个容器通用，那么应该创建一个独立的基础镜像，它包含所建立的所有镜像。</p>
+<p>对于每一层来说你都可以跨多个镜像分享，这样可以节省大量的磁盘空间。</p>
+<h5 id="容器体积"><a href="#容器体积" class="headerlink" title="容器体积"></a>容器体积</h5><p>在创建容器并考虑到体积问题的时候，不要为了节省空间去使用体积小的镜像，尽量使用你将要提供数据的应用程序打成的镜像。如果你这样做了，并且提交了磁盘数据，你不仅在容器中储存了你的数据，而且对实际应用程序的调试也非常有用。</p>
+<h5 id="消耗"><a href="#消耗" class="headerlink" title="消耗"></a>消耗</h5><p>当你已经构建了一个镜像，在运行它的时候发现有一个package缺少了，把它添加到Dockerfile的底部，而不是添加到顶部的run apt-get命令那里。这意味着你能尽快的重新构建这个镜像了。一旦你的镜像可以正常工作，你可以再提交源码之前重新优化整理Dockerfile。</p>
+<h5 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div></pre></td><td class="code"><pre><div class="line"># 1 - Common Header / Packages</div><div class="line">FROM ubuntu:trusty</div><div class="line">MAINTAINER Jin Dingming ”jindm@2345.com”</div><div class="line"></div><div class="line">RUN apt-get -yq update \</div><div class="line">&amp;&amp; apt-get -yqq install \</div><div class="line">wget \</div><div class="line">curl \</div><div class="line">git \</div><div class="line">software-properties-common</div><div class="line"></div><div class="line"># 2 - Python</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">python-dev \</div><div class="line">python-pip \</div><div class="line">python-pysqlite2 \</div><div class="line">python-mysqldb</div><div class="line"></div><div class="line"># 3 - Apache</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">apache2 \</div><div class="line">apache2-utils</div><div class="line"></div><div class="line"># 4 - Apache ENVs</div><div class="line">ENV APACHE_CONFDIR /etc/apache2</div><div class="line">ENV APACHE_ENVVARS $APACHE_CONFDIR/envvars</div><div class="line">ENV APACHE_RUN_USER www-data</div><div class="line">ENV APACHE_RUN_GROUP www-data</div><div class="line">ENV APACHE_RUN_DIR /var/run/apache2</div><div class="line">ENV APACHE_PID_FILE $APACHE_RUN_DIR/apache2.pid</div><div class="line">ENV APACHE_LOCK_DIR /var/lock/apache2</div><div class="line">ENV APACHE_LOG_DIR /var/log/apache2</div><div class="line"></div><div class="line"># 5 - Graphite and Deps</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">libapache2-mod-python \</div><div class="line">python-cairo \</div><div class="line">python-jinja2 \</div><div class="line">sqlite3</div><div class="line"></div><div class="line">RUN \</div><div class="line">pip install whisper \</div><div class="line">carbon \</div><div class="line">graphite-web \</div><div class="line">&apos;Twisted&lt;12.0&apos; \</div><div class="line">&apos;django&lt;1.6&apos; \</div><div class="line">django-tagging</div><div class="line"></div><div class="line"># 6 - Other</div><div class="line">EXPOSE 80 2003 2004 7002</div><div class="line"></div><div class="line">WORKDIR /app</div><div class="line"></div><div class="line">VOLUME /opt/graphite/data</div><div class="line"></div><div class="line"># Define default command.</div><div class="line">CMD [&quot;/app/bin/start_graphite&quot;]</div><div class="line"></div><div class="line"># 7 - First use of ADD</div><div class="line">ADD . /app</div><div class="line"></div><div class="line"># 8 - Final setup</div><div class="line">RUN mkdir -p /app/wsgi \</div><div class="line">&amp;&amp; useradd -d /app -c &apos;application&apos; -s &apos;/bin/false&apos; graphite \</div><div class="line">&amp;&amp; chmod +x /app/bin/* \</div><div class="line">&amp;&amp; chown -R graphite:graphite /app \</div><div class="line">&amp;&amp; chown -R graphite:graphite /opt/graphite \</div><div class="line">&amp;&amp; rm -f /etc/apache2/sites-enabled/* \</div><div class="line">&amp;&amp; mv /app/apache-graphite.conf /etc/apache2/sites-enabled/apache-graphite.conf</div></pre></td></tr></table></figure>
+<h5 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h5><ol>
+<li><p>Common Header/Packages</p>
+<p> 这是最常见的共享层，在同一个主机上运行所有镜像应该从它开始。可以看到这里添加了一些诸如curl和git的操作，他们不是必须的，但是对调试很有用，而且因为他们在分享层，所以不会占用太多空间。</p>
+</li>
+<li><p>Python</p>
+</li>
+<li><p>Apache</p>
+<p> 2-3是语言规范层。这里的python和apache，把谁放在前面并没有硬性规定，主要看业务契合度。</p>
+</li>
+<li><p>Apache Envs</p>
+<p> 在Apache安装好之后直接配置环境依赖，以便于其他镜像构建时尽量多应用缓存。</p>
+</li>
+<li><p>Graphite and Deps</p>
+<p> 这里包含一些特定的apt和pip资源包，利用&amp;&amp;符号连接多个单一命令能减少镜像层级数量。</p>
+</li>
+<li><p>Other</p>
+<p> 这部分配置镜像本身的属性，如端口映射、目录挂载等。</p>
+</li>
+<li><p>First ADD</p>
+<p> 最后，将需要的应用程序打包进镜像。</p>
+</li>
+<li><p>Final setup</p>
+<p> 容器的启动命令。</p>
+</li>
+</ol>
+<h4 id="Docker-Network"><a href="#Docker-Network" class="headerlink" title="Docker Network"></a>Docker Network</h4><p>Docker 网络为容器安全提供了隔离，不同的网络方案在效率和复杂度上也有区别，选择一个最合适的网络方案对应用性能和后期维护成本都有至关重要的影响。</p>
+<h5 id="默认网络（Default-Networks）"><a href="#默认网络（Default-Networks）" class="headerlink" title="默认网络（Default Networks）"></a>默认网络（Default Networks）</h5><p>当你安装好Docker后，它会自动创建三个网络，你可以使用<code>docker network ls</code>命令列举它们:</p>
+<p><img src="/assets/blogImg/docker_networks.png" alt="docker_networks"></p>
+<ul>
+<li>bridge 网络</li>
+</ul>
+<p>Docker安装好后都会提供默认的bridge网络即docker0网络。如果不指定<code>docker run --net=&lt;network&gt;</code>的话，Docker daemon会默认将容器连接到这个网络。在宿主机中可以看到这个网络。</p>
+<p><img src="/assets/blogImg/docker_network_bridge.png" alt="docker_network_bridge"></p>
+<ul>
+<li>none 网络</li>
+</ul>
+<p>none 网络会添加容器到一个容器自己的网络栈，但是并没有网络接口。</p>
+<p><img src="/assets/blogImg/docker_network_none.png" alt="docker_network_none"></p>
+<ul>
+<li>host 网络</li>
+</ul>
+<p>host 网络添加一个容器到宿主机的网络栈中，你会发现容器中的网络配置和宿主机一样。</p>
+<h5 id="自定义网络（User-defined-networks）"><a href="#自定义网络（User-defined-networks）" class="headerlink" title="自定义网络（User-defined networks）"></a>自定义网络（User-defined networks）</h5><p>除了Docker提供的默认网络，用户还可以创建自定义网络以便提供更好的容器网络隔离，Docker为创建自定义网络提供了一些默认的 network driver。你可以创建一个新的 bridge network 或者 overlay network，也可以创建一个network plugin或者remote network。</p>
+<p>用户也可以创建多个网络，把容器连接到不止一个网络中。容器仅可以同网络内的容器进行通信而不能跨网络通信。</p>
+<ul>
+<li>自定义bridge网络</li>
+</ul>
+<p>最简单的用户自定义网络就是创建一个bridge网络。</p>
+<p><img src="/assets/blogImg/docker_network_isolatedbridge.png" alt="docker_network_isolatedbridge"></p>
+<p>创建完之后，就可以指定新创建的容器运行在这个网络上。</p>
+<p><img src="/assets/blogImg/docker_network_isolatedbridgerun.png" alt="docker_network_isolatedbridgerun"></p>
+<h5 id="overlay网络（An-overlay-network）"><a href="#overlay网络（An-overlay-network）" class="headerlink" title="overlay网络（An overlay network）"></a>overlay网络（An overlay network）</h5><p>Docker的overlay网络驱动提供原生开箱即用（out-of-the-box）的跨主机网络。完成这个支持是基于 <em>libnetwork</em> 和 <em>libkv</em>，libnetwork是一个内置基于VXLAN overlay网络驱动的一个库。</p>
+<p>overlay网络需要一个可用的key-value存储服务，目前Docker的libkv支持Consul、Etcd、Zookeeper。</p>
+<p><img src="/assets/blogImg/docker_network_overlay.png" alt="docker_network_overlay"></p>
+<p><strong>overlay网络方案对比</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:center">Flannel</th>
+<th style="text-align:center">Calico</th>
+<th style="text-align:center">macvlan</th>
+<th style="text-align:center">Open vSwitch</th>
+<th style="text-align:right">route</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">方案特性</td>
+<td style="text-align:center">通过虚拟设备flannel0实现对docker0的管理</td>
+<td style="text-align:center">基于BGP协议的纯三层网路方案</td>
+<td style="text-align:center">基于Linux Kernel的macvlan技术</td>
+<td style="text-align:center">基于隧道的虚拟路由器技术</td>
+<td style="text-align:right">基于Linux Kernel的vRoute技术</td>
+</tr>
+<tr>
+<td style="text-align:left">网络要求</td>
+<td style="text-align:center">三层互通</td>
+<td style="text-align:center">三层互通</td>
+<td style="text-align:center">二层互通</td>
+<td style="text-align:center">三层互通</td>
+<td style="text-align:right">二层互通</td>
+</tr>
+<tr>
+<td style="text-align:left">配置难度</td>
+<td style="text-align:center">简单，基于Etcd。</td>
+<td style="text-align:center">简单，基于Etcd。</td>
+<td style="text-align:center">简单，直接使用宿主机网络，需要仔细规划IP范围。</td>
+<td style="text-align:center">复杂，需要手工配置各节点的bridge。</td>
+<td style="text-align:right">简单，使用宿主机vRoute功能，需要仔细规划每个Node的IP地址范围。</td>
+</tr>
+<tr>
+<td style="text-align:left">网络性能</td>
+<td style="text-align:center">host-gw&gt;VXLAN&gt;UDP</td>
+<td style="text-align:center">BGP模式性能损失小，IPIP模式较小</td>
+<td style="text-align:center">性能损失可忽略</td>
+<td style="text-align:center">性能损失较小</td>
+<td style="text-align:right">性能损失小</td>
+</tr>
+<tr>
+<td style="text-align:left">网络限制</td>
+<td style="text-align:center">无</td>
+<td style="text-align:center">在不支持BGP协议的网络下无法使用</td>
+<td style="text-align:center">基于macvlan的容器无法与宿主机网络通信</td>
+<td style="text-align:center">无</td>
+<td style="text-align:right">在无法实现大二层互通的网络环境下无法使用</td>
+</tr>
+</tbody>
+</table>
+<h5 id="自定义网络插件（Custom-network-plugin）"><a href="#自定义网络插件（Custom-network-plugin）" class="headerlink" title="自定义网络插件（Custom network plugin）"></a>自定义网络插件（Custom network plugin）</h5><p>你可以编写自己的网络驱动，驱动是和Docker daemon运行在同一台主机上的一个进程，并且由Docker plugin系统调用和使用。</p>
+<p>网络插件和其他的Docker插件一样受到一些限制和安装规则。所有的插件使用Plugin API，有自己的生命周期，包含：安装、启动、停止、激活。</p>
+<p>自定义的网络驱动安装好后，可以像使用内置的网络驱动一样使用它，例如：</p>
+<p><code>docker network create --driver weave mynet</code></p>
+<h5 id="Docker内置DNS服务器（Embedded-DNS-Server）"><a href="#Docker内置DNS服务器（Embedded-DNS-Server）" class="headerlink" title="Docker内置DNS服务器（Embedded DNS Server）"></a>Docker内置DNS服务器（Embedded DNS Server）</h5><p>Docker daemon会为每个连接到自定义网络的容器运行一个内置的DNS服务提供自动的服务发现。域名解析的请求会首先被内置的DNS服务器拦截，如果内置的DNS服务器不能解析这个请求，它才会被转发到外部的容器配置的DNS服务器。基于这个机制，容器的resolv.conf文件会将DNS服务器配置为127.0.0.1，即内置DNS服务器监听的地址。</p>
+<h4 id="Docker-Volume"><a href="#Docker-Volume" class="headerlink" title="Docker Volume"></a>Docker Volume</h4><p><img src="/assets/blogImg/docker_volume.jpeg" alt="docker_volume"></p>
+<p>Volume数据卷是Docker的一个重要概念。数据卷是可供一个或多个容器使用的特殊目录，可以为容器应用存储提供有价值的特性：</p>
+<ul>
+<li>持久化数据与容器的生命周期解耦：在容器删除之后数据卷中的内容可以保持。Docker 1.9之后引进的<em>named volume</em>可以更加方便地管理数据卷的生命周期，数据卷可以被独立地创建和删除。</li>
+<li>数据卷可以用于实现容器之间的数据共享</li>
+<li>可以支持不同类型的数据存储实现</li>
+</ul>
+<p>Docker缺省提供了对宿主机本地文件卷的支持，可以将宿主机的目录挂载到容器之中。由于没有容器分层文件系统带来的性能损失，本地文件卷非常适合一些需要高性能数据访问的场景，比如MySQL的数据库文件存储。</p>
+<p>同时Docker支持通过volume plugin实现不同类型的数据卷，可以更加灵活解决不同应用负载的存储需求。</p>
+<p>但是Docker数据卷的权限管理经常令人困惑，后面就结合实例介绍Docker数据卷权限管理中的常见问题和解决方法。</p>
+<h5 id="从Jenkins挂载本地数据卷错误谈起"><a href="#从Jenkins挂载本地数据卷错误谈起" class="headerlink" title="从Jenkins挂载本地数据卷错误谈起"></a>从Jenkins挂载本地数据卷错误谈起</h5><p>首先，我们使用Jenkins官方镜像启动一个容器，并检查日志。</p>
+<p>可以发现容器日志一切正常。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">docker run -d -p 8080:8080 -p 50000:50000 --name jenkins jenkins</div><div class="line">docker logs jenkins</div></pre></td></tr></table></figure>
+<p>但是，为了持久化Jenkins的数据，当我们把宿主机目录挂载到容器中时，问题出现了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">docker rm -f jenkins</div><div class="line">docker run -d -p 8080:8080 -p 50000:50000 -v $(pwd)/data:/var/jenkins_home --name jenkins jenkins</div><div class="line">docker logs jenkins</div></pre></td></tr></table></figure>
+<p>错误日志如下：</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins01.png" alt="docker_volume_jenkins01"></p>
+<p>不映射本地数据卷时，查看jenkins容器的当前用户是jenkins,且”/var/jenkins_home”目录权限归属于jenkins用户。</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins02.png" alt="docker_volume_jenkins02"></p>
+<p>而映射本地数据卷时，”/var/jenkins_home”目录的拥有者变成了root用户。</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins03.png" alt="docker_volume_jenkins03"></p>
+<p>这就解释了为什么当jenkins用户的进程访问“/var/jenkins_home“时，会出现Permission denied的问题。</p>
+<p>我们再检查一下宿主机上的数据卷目录，当前路径下“data”目录的拥有者是root，这是因为这个目录是Docker进程缺省创建出来的。</p>
+<p><img src="/assets/blogImg/docker_volume_jenkins04.png" alt="docker_volume_jenkins04"></p>
+<p>发现问题之后，相应的解决办法也很简单：把当前目录的拥有者赋值给 <em>uid 1000</em>，再启动jenkins容器就一切正常了。</p>
+<p>虽然问题解决了，但思考并没有结束。因为当使用本地数据卷时，jenkins容器会依赖宿主机目录权限的正确性，这会给自动化部署带来额外的工作。如何让jenkins容器为数据卷自动地设置正确的权限？这个问题对很多以non-root方式运行的应用也都有借鉴意义。</p>
+<h5 id="为-non-root-应用正确地挂载本地数据卷"><a href="#为-non-root-应用正确地挂载本地数据卷" class="headerlink" title="为 non-root 应用正确地挂载本地数据卷"></a>为 non-root 应用正确地挂载本地数据卷</h5><p>基本思路有两个：</p>
+<ul>
+<li>一个是利用Data Container的方法在容器见共享数据卷。这样就规避了解决宿主机上数据卷的权限问题。由于在1.9版本之后，Docker提供了named volume来取代纯数据容器，所以还需要真正地解决这个问题。</li>
+<li>另外一个思路就是让容器中进程以root用户启动，在容器启动脚本中利用chown命令来修正数据卷文件权限，之后切换到non-root用户来执行程序。</li>
+</ul>
+<p>参照第二个思路来解决之前jenkins的问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">FROM jenkins:latest</div><div class="line">USER root</div><div class="line">RUN GOSU_SHA=5ec5d23079e94aea5f7ed92ee8a1a34bbf64c2d4053dadf383992908a2f9dc8a \</div><div class="line">  &amp;&amp; curl -sSL -o /usr/local/bin/gosu &quot;https://github.com/tianon/gosu/releases/download/1.9/gosu-$(dpkg --print-architecture)&quot; \</div><div class="line">  &amp;&amp; chmod +x /usr/local/bin/gosu \</div><div class="line">  &amp;&amp; echo &quot;$GOSU_SHA  /usr/local/bin/gosu&quot; | sha256sum -c - </div><div class="line">COPY entrypoint.sh /entrypoint.sh</div><div class="line">ENTRYPOINT [&quot;/entrypoint.sh&quot;]</div></pre></td></tr></table></figure>
+<p>这是一个基于jenkins镜像的Dockerfile：它会切换到root用户并在镜像中添加<em>gosu</em>命令，和新的入口点”/entrypoint.sh”。</p>
+<blockquote>
+<p>gosu 是经常出现在官方Docker镜像中的一个小工具。它是su和sudo命令的轻量级替代品，并解决了它们在tty和信号传递中的一些问题。</p>
+</blockquote>
+<p>新入口点的entrypoint.sh内容如下：它会为JENKINS_HOME目录设置jenkins的拥有权限，并且再利用gosu命令切换到jenkins用户来执行jenkins应用。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#! /bin/bash</div><div class="line">set -e</div><div class="line">chown -R 1000 &quot;$JENKINS_HOME&quot;</div><div class="line">exec gosu jenkins /bin/tini -- /usr/local/bin/jenkins.sh</div></pre></td></tr></table></figure>
+<h4 id="Docker-Process"><a href="#Docker-Process" class="headerlink" title="Docker Process"></a>Docker Process</h4><p>Docker在进程管理上有一些特殊之处，如果不注意这些细节就会带来一些隐患。另外Docker鼓励“一个容器一个进程（one process per container)”的方式。这种方式非常适合以单进程为主的微服务架构的应用。然而由于一些传统的应用是由若干紧耦合的多个进程构成的，这些进程难以拆分到不同的容器中，所以在单个容器内运行多个进程便成了一种折衷方案；此外在一些场景中，用户期望利用Docker容器来作为轻量级的虚拟化方案，动态的安装配置应用，这也需要在容器中运行多个进程。而在Docker容器中正确运行多进程应用将会带来更多的挑战。</p>
+<h5 id="容器的PID-namespace"><a href="#容器的PID-namespace" class="headerlink" title="容器的PID namespace"></a>容器的PID namespace</h5><p>在Docker中，进程管理的基础就是Linux内核中的PID名空间技术。在不同PID名空间中，进程ID是独立的；即在两个不同名空间下的进程可以有相同的PID。</p>
+<p>Linux内核为所有的PID名空间维护了一个树状结构：最顶层的是系统初始化时创建的root namespace（根名空间），再创建的新PID namespace就称之为child namespace（子名空间），而原先的PID名空间就是新创建的PID名空间的parent namespace（父名空间）。通过这种方式，系统中的PID名空间会形成一个层级体系。父节点可以看到子节点中的进程，并可以通过信号等方式对子节点中的进程产生影响。反过来，子节点不能看到父节点名空间中的任何内容，也不可能通过kill或ptrace影响父节点或其他名空间中的进程。</p>
+<p>在Docker中，每个Container都是Docker Daemon的子进程，每个Container进程缺省都具有不同的PID名空间。通过名空间技术，Docker实现容器间的进程隔离。另外Docker Daemon也会利用PID名空间的树状结构，实现了对容器中的进程交互、监控和回收。注：Docker还利用了其他名空间（UTS，IPC，USER）等实现了各种系统资源的隔离，由于这些内容和进程管理关联不多，本文不会涉及。</p>
+<p>当创建一个Docker容器的时候，就会新建一个PID名空间。容器启动进程在该名空间内PID为1。当PID1进程结束之后，Docker会销毁对应的PID名空间，并向容器内所有其它的子进程发送SIGKILL。</p>
+<h5 id="如何指明容器PID1进程"><a href="#如何指明容器PID1进程" class="headerlink" title="如何指明容器PID1进程"></a>如何指明容器PID1进程</h5><p>在Docker容器中的初始化进程（PID1进程）在容器进程管理上具有特殊意义。它可以被Dockerfile中的 <em>ENTRYPOINT</em> 或 <em>CMD</em> 所指明；也可以被docker run命令的启动参数所覆盖。了解这些细节可以帮助我们更好地了解PID1进程的行为。</p>
+<p>关于ENTRYPOINT和CMD指令的不同，可以参见官方的Dockerfile说明和最佳实践</p>
+<p><a href="https://docs.docker.com/engine/reference/builder/#entrypoint" target="_blank" rel="external">https://docs.docker.com/engine/reference/builder/#entrypoint</a></p>
+<p><a href="https://docs.docker.com/engine/reference/builder/#cmd" target="_blank" rel="external">https://docs.docker.com/engine/reference/builder/#cmd</a></p>
+<p>值得注意的一点是：在ENTRYPOINT和CMD指令中，提供两种不同的进程执行方式 shell 和 exec。</p>
+<p>在shell方式中，CMD/ENTRYPOINT指令以如下方式定义：</p>
+<p><code>CMD executable param1 param2</code></p>
+<p>这种方式中的PID1进程是以<em>/bin/sh -c “executable param1 param2”</em>方式启动的</p>
+<p><code>CMD [&quot;executable&quot;,&quot;param1&quot;,&quot;param2&quot;]</code></p>
+<p>注意这里的可执行命令和参数是利用JSON字符串数组的格式定义的，这样PID1进程会以<em>executable param1 param2</em>方式启动的。另外，在<em>docker run</em>命令中指明的命令行参数也是以 exec 方式启动的。</p>
+<p>为了解释两种不同运行方式的区别，我们利用不同的Dockerfile分别创建两个Redis镜像</p>
+<p>“Dockerfile_shell”文件内容如下，会利用shell方式启动redis服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:18.04</div><div class="line">RUN apt-get update &amp;&amp; apt-get -y install redis-server &amp;&amp; rm -rf /var/lib/apt/lists/*</div><div class="line">EXPOSE 6379</div><div class="line">CMD &quot;/usr/bin/redis-server&quot;</div></pre></td></tr></table></figure>
+<p>“Dockerfile_exec”文件内容如下，会利用exec方式启动redis服务</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">FROM ubuntu:18.04</div><div class="line">RUN apt-get update &amp;&amp; apt-get -y install redis-server &amp;&amp; rm -rf /var/lib/apt/lists/*</div><div class="line">EXPOSE 6379</div><div class="line">CMD [&quot;/usr/bin/redis-server&quot;]</div></pre></td></tr></table></figure>
+<p>然后给予他们构建两个镜像“myredis:shell”和“myredis:exec”</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">docker build -t myredis:shell -f Dockerfile_shell .</div><div class="line">docker build -t myredis:exec -f Dockerfile_exec .</div></pre></td></tr></table></figure>
+<p>运行”myredis:shell”镜像，我们可以发现它的启动进程(PID1)是/bin/sh -c “/usr/bin/redis-server”，并且它创建了一个子进程/usr/bin/redis-server *:6379。</p>
+<p>而运行“myredis:exec”镜像，我们可以发现它的启动进程是/usr/bin/redis-server *:6379，并没有其他子进程存在。</p>
+<p><img src="/assets/blogImg/docker_process_redis.png" alt="docker_process_redis"></p>
+<p>由此我们可以清楚的看到，以exec和shell方式执行命令可能会导致容器的PID1进程不同。然而这又有什么问题呢？</p>
+<p>原因在于：PID1进程对于操作系统而言具有特殊意义。操作系统的PID1进程是init进程，以守护进程方式运行，是所有其他进程的祖先，具有完整的进程生命周期管理能力。在Docker容器中，PID1进程是启动进程，它也会负责容器内部进程管理的工作。而这也将导致进程管理在Docker容器内部和完整操作系统上的不同。</p>
+<h5 id="进程信号处理"><a href="#进程信号处理" class="headerlink" title="进程信号处理"></a>进程信号处理</h5><p>信号是Unix/Linux中进程间异步通信机制。Docker提供了两个命令docker stop和docker kill来向容器中的PID1进程发送信号。</p>
+<p>当执行docker stop命令时，docker会首先向容器的PID1进程发送一个SIGTERM信号，用于容器内程序的退出。如果容器在收到SIGTERM后没有结束， 那么Docker Daemon会在等待一段时间（默认是10s）后，再向容器发送SIGKILL信号，将容器杀死变为退出状态。这种方式给Docker应用提供了一个优雅的退出(graceful stop)机制，允许应用在收到stop命令时清理和释放使用中的资源。而docker kill可以向容器内PID1进程发送任何信号，缺省是发送SIGKILL信号来强制退出应用。</p>
+<blockquote>
+<p>从Docker 1.9开始，Docker支持停止容器时向其发送自定义信号，开发者可以在Dockerfile使用STOPSIGNAL指令，或docker run命令中使用–stop-signal参数中指明，缺省是SIGTERM。</p>
+</blockquote>
+<p>我们来看看不同的PID1进程，对进程信号处理的不同之处。首先，我们使用docker stop命令停止由 exec 模式启动的“myredis2”容器，并检查其日志。</p>
+<p><img src="/assets/blogImg/docker_process_redis02.png" alt="docker_process_redis02"></p>
+<p>我们发现对“myredis2”容器的stop命令几乎立即生效；而且在容器日志中，我们看到了“Received SIGTERM scheduling shutdown”的内容，说明redis-server进程接收到了SIGTERM消息，并优雅地推出。</p>
+<p>我们再对利用shell模式启动的“myredis”容器发出停止操作，并检查其日志。</p>
+<p><img src="/assets/blogImg/docker_process_redis03.png" alt="docker_process_redis03"></p>
+<p>我们发现对”myredis”容器的stop命令暂停了一会儿才结束，而且在日志中我们没有看到任何收到SIGTERM信号的内容。原因其PID1进程sh没有对SIGTERM信号的处理逻辑，所以它忽略了所接收到的SIGTERM信号。当Docker等待stop命令执行10秒钟超时之后，Docker Daemon发送SIGKILL强制杀死sh进程，并销毁了它的PID名空间，其子进程redis-server也在收到SIGKILL信号后被强制终止。如果此时应用还有正在执行的事务或未持久化的数据，强制进程退出可能导致数据丢失或状态不一致。</p>
+<p>通过这个示例我们可以清楚的理解PID1进程在信号管理的重要作用。所以，</p>
+<ul>
+<li>容器的PID1进程需要能够正确的处理SIGTERM信号来支持优雅退出。</li>
+<li>如果容器中包含多个进程，需要PID1进程能够正确的传播SIGTERM信号来结束所有的子进程之后再推出。</li>
+<li>确保PID1进程是期望的进程。缺省sh/bash进程没有提供SIGTERM的处理，需要通过shell的脚本来设置正确的PID1进程，或捕获SIGTERM信号。</li>
+</ul>
+<p>另外需要注意的是：由于PID1进程的特殊性，Linux内核为他做了特殊处理。如果它没有提供某个信号的处理逻辑，那么与其在同一个PID名空间下的进程发送给它的该信号都会被屏蔽。这个功能的主要作用是防止init进程被误杀。我们可以验证在容器内部发出的SIGKILL信号无法杀死PID1进程.</p>
+<p><img src="/assets/blogImg/docker_process_redis04.png" alt="docker_process_redis04"></p>
+<h5 id="孤儿进程与僵尸进程管理"><a href="#孤儿进程与僵尸进程管理" class="headerlink" title="孤儿进程与僵尸进程管理"></a>孤儿进程与僵尸进程管理</h5><blockquote>
+<p>(新版本已优化僵尸进程回收)</p>
+</blockquote>
+<p>熟悉Unix/Linux进程管理的同学对多进程应用并不陌生。</p>
+<p>当一个子进程终止后，它首先会变成一个“失效(defunct)”的进程，也称为“僵尸（zombie）”进程，等待父进程或系统收回（reap）。在Linux内核中维护了关于“僵尸”进程的一组信息（PID，终止状态，资源使用信息），从而允许父进程能够获取有关子进程的信息。如果不能正确回收“僵尸”进程，那么他们的进程描述符仍然保存在系统中，系统资源会缓慢泄露。</p>
+<p>大多数设计良好的多进程应用可以正确的收回僵尸子进程，比如NGINX master进程可以收回已终止的worker子进程。如果需要自己实现，则可利用如下方法：</p>
+<ol>
+<li>利用操作系统的waitpid()函数等待子进程结束并清除它的僵尸进程。</li>
+<li>由于当子进程成为“defunct”进程时，父进程会收到一个SIGCHLD信号，所以我们可以在父进程中指定信号处理的函数来忽略SIGCHLD信号，或者自定义收回处理逻辑。</li>
+</ol>
+<p>下面这些文章详细介绍了对僵尸进程的处理方法</p>
+<ul>
+<li><a href="http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html" target="_blank" rel="external">http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html</a></li>
+<li><a href="http://lbolla.info/blog/2014/01/23/die-zombie-die" target="_blank" rel="external">http://lbolla.info/blog/2014/01/23/die-zombie-die</a></li>
+</ul>
+<p>如果父进程已经结束了，那些依然在运行中的子进程会成为“孤儿（orphaned）”进程。在Linux中Init进程(PID1)作为所有进程的父进程，会维护进程树的状态，一旦有某个子进程成为了“孤儿”进程后，init就会负责接管这个子进程。当一个子进程成为“僵尸”进程之后，如果其父进程已经结束，init会收割这些“僵尸”，释放PID资源。</p>
+<p>然而由于Docker容器的PID1进程是容器启动进程，它们会如何处理那些“孤儿”进程和“僵尸”进程？</p>
+<p>下面我们做几个试验来验证不同的PID1进程对僵尸进程不同的处理能力</p>
+<p>首先在myredis2容器中启动一个bash进程，并创建子进程“sleep 1000”</p>
+<p><img src="/assets/blogImg/docker_process_redis05.png" alt="docker_process_redis05"></p>
+<p>在另一个终端窗口，查看当前进程，我们可以发现一个sleep进程是bash进程的子进程。</p>
+<p><img src="/assets/blogImg/docker_process_redis06.png" alt="docker_process_redis06"></p>
+<p>我们杀死bash进程之后查看进程列表，这时候bash进程已经被杀死。这时候sleep进程(PID为49)，虽然已经结束，而且被PID1进程（redis-server）接管，但是其没有被父进程回收，成为僵尸状态。</p>
+<p>这是因为PID1进程“redis-server”没有考虑过作为init对僵尸子进程的回收的场景。</p>
+<hr>
+<p>同样的实验对myredis容器测试，发现“bash”和“sleep 1000”进程都已经被杀死和回收。这是因为sh/bash等应用可以自动清理僵尸进程。</p>
+<blockquote>
+<p>如果在容器中运行多个进程，PID1进程需要有能力接管“孤儿”进程并回收“僵尸”进程。Docker从1.13版本开始提供了 docker run –init 参数，可以运行一个init来启动容器，并且提供信号传播和进程回收的作用。</p>
+</blockquote>
+<h5 id="进程监控"><a href="#进程监控" class="headerlink" title="进程监控"></a>进程监控</h5><p>在Docker中，如果docker run命令中指明了<a href="https://docs.docker.com/engine/reference/run/?spm=a2c4e.11153940.blogcont5545.18.2e60417f3DjeS6#restart-policies-restart" target="_blank" rel="external">restart policy</a>,Docker daemon会监控PID1进程，并根据策略自动重启已结束的容器。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:center">Flannel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">no</td>
+<td style="text-align:center">不自动重启，缺省值。</td>
+</tr>
+<tr>
+<td style="text-align:left">on-failure[:max-retries]</td>
+<td style="text-align:center">当PID1进程退出值非0时，自动重启容器；可以指定最大重试次数。</td>
+</tr>
+<tr>
+<td style="text-align:left">always</td>
+<td style="text-align:center">永远自动重启容器；当Docker daemon启东市，会自动启动容器。</td>
+</tr>
+<tr>
+<td style="text-align:left">unless-stopped</td>
+<td style="text-align:center">永远自动重启容器；当Docker daemon启动时，如果之前容器不为stoped状态就自动启动容器。</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>注意：为防止频繁重启故障应用导致系统过载，Docker会在每次重启过程中会延迟一段时间。Docker重启进程的延迟时间从100ms开始并每次加倍，如100ms，200ms，400ms等等。</p>
+</blockquote>
+<p>利用Docker内置的restart策略可以大大简化应用进程监控的负担。但是Docker Daemon只是监控PID1进程，如果容器在内包含多个进程，仍然需要开发人员来处理进程监控。</p>
+<p>还有大家熟悉的<a href="http://supervisord.org/introduction.html" target="_blank" rel="external">Supervisor</a>，<a href="https://mmonit.com/monit/" target="_blank" rel="external">Monit</a>等进程监控工具，它们可以方便的在容器内部实现进程监控。Docker提供了相应的<a href="https://docs.docker.com/engine/reference/run/" target="_blank" rel="external">文档</a>来介绍，网上也有很多资料。</p>
+<p>另外利用Supervisor等工具作为PID1进程是在容器中支持多进程管理的主要实现方式；和简单利用shell脚本fork子进程相比，采用Supervisor等工具有很多好处：</p>
+<ul>
+<li>一些传统的服务不能以PID1进程的方式执行，利用Supervisor可以方便的适配</li>
+<li>Supervisor这些监控工具大多提供了对SIGTERM的信号传播支持，可以支持子进程优雅的退出。</li>
+</ul>
+<p>然而值得注意的是：Supervisor这些监控工具大多没有完全提供Init支持的进程管理能力，如果需要支持子进程回收的场景需要配合正确的PID1进程来完成</p>
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>进程管理在Docker容器中和在完整的操作系统有一些不同之处。在每个容器的PID1进程，需要能够正确的处理SIGTERM信号来支持容器应用的优雅退出，同时要能正确的处理孤儿进程和僵尸进程。必要的时候使用Docker新提供的 docker run –init 参数可以解决相应问题。</p>
+<p>在Dockerfile中要注意shell模式和exec模式的不同。通常而言我们鼓励使用exec模式，这样可以避免由无意中选择错误PID1进程所引入的问题。</p>
+<p>在Docker中“一个容器一个进程的方式”并非绝对化的要求，然而在一个容器中实现对于多个进程的管理必须考虑更多的细节，比如子进程管理，进程监控等等。所以对于常见的需求，比如日志收集，性能监控，调试程序，我们依然建议采用多个容器组装的方式来实现。</p>
+<h4 id="Docker-security"><a href="#Docker-security" class="headerlink" title="Docker security"></a>Docker security</h4><p>主要从四块区域思考Docker安全：</p>
+<ul>
+<li>Linux内核层面的安全：namespace和cgroups</li>
+<li>Docker daemon的攻击面</li>
+<li>容器配置时的漏洞</li>
+<li>内核的安全强化功能，以及如何它们如何与容器交互</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/06/docker02/" class="archive-article-date">
+  	<time datetime="2019-03-05T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-06</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-continuous" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -989,95 +1333,6 @@
 
 
   
-    <article id="post-k8s_dns" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/30/k8s_dns/">Kubernetes DNS 服务配置案例</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。</p>
-<p>Kubernetes 提供的 DNS 由以下三个组件组成：</p>
-<ol>
-<li>etcd: DNS 存储</li>
-<li>kube2sky: 将 Kubernetes Master 中的 Service（服务）注册到 etcd。</li>
-<li>skyDNS: 提供 DNS 域名解析服务。</li>
-</ol>
-<p>这三个组件以 Pod 的方式启动和运行，所以在一个 Kubernetes 集群中，它们都可能被调度到任意一个 Node 节点上去。为了能够使它们之间网络互通，需要将各 Pod 之间的网络打通。</p>
-<h2 id="skydns-配置文件"><a href="#skydns-配置文件" class="headerlink" title="skydns 配置文件"></a>skydns 配置文件</h2><p>首先创建 DNS 服务的 ReplicationController 配置文件：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: kube-dns-v8</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">    kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: kube-dns</div><div class="line">        version: v8</div><div class="line">        kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: etcd</div><div class="line">        image: gcr.io/google_containers/etcd:2.0.9</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        command:</div><div class="line">        - /usr/local/bin/etcd</div><div class="line">        - -data-dir</div><div class="line">        - /var/etcd/data</div><div class="line">        - -listen-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -advertise-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -initial-cluster-token</div><div class="line">        - skydns-etcd</div><div class="line">        volumeMounts:</div><div class="line">        - name: etcd-storage</div><div class="line">          mountPath: /var/etcd/data</div><div class="line">      - name: kube2sky</div><div class="line">        image: gcr.io/google_containers/kube2sky:1.11</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /kube2sky &quot;</div><div class="line">        - --kube_master_url=http://192.168.1.128:8080</div><div class="line">        - -domain=cluster.local</div><div class="line">      - name: skydns</div><div class="line">        image: gcr.io/google_containers/skydns:2015-03-11-001</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /skydns &quot;</div><div class="line">        - -machines=http://localhost:4001</div><div class="line">        - -addr=0.0.0.0:53</div><div class="line">        - -domain=cluster.local</div><div class="line">        ports:</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns</div><div class="line">          protocol: UDP</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns-tcp</div><div class="line">          protocol: TCP</div><div class="line">      volumes:</div><div class="line">        - name: etcd-storage</div><div class="line">          emptyDir: &#123;&#125;</div><div class="line">      dnsPolicy: Default</div></pre></td></tr></table></figure>
-<p>需要修改的几个配置参数如下：</p>
-<ul>
-<li>kube2sky 容器需要访问 Kubernetes Master，需要配置 Master 所在物理主机的 IP 地址和端口号，本例中设置参数 –kube_master_url 的值为 <a href="http://192.168.1.128:8080。" target="_blank" rel="external">http://192.168.1.128:8080。</a></li>
-<li>kube2sky 容器和 skydns 容器的启动参数 -domain,设置 Kubernetes 集群中 Service 所属的域名，本例中为 cluster.local。启动后，kube2sky 会监听 Kubernetes，当有新的 Service 创建时，就会生成相应的记录并保存到 etcd 中。kube2sky 为每个 Service 生成两条记录：<ul>
-<li><service_name>.<namespace_name>.<domain>;</domain></namespace_name></service_name></li>
-<li><service_name>.<namespace_name>.svc.<domain>。</domain></namespace_name></service_name></li>
-</ul>
-</li>
-<li>skydns 的启动参数 -addr=0.0.0.0:53 表示使用本机 TCP 和 UDP 的 53 端口提供服务。</li>
-</ul>
-<p>创建 DNS 服务的 Service 配置文件如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: kube-dns</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-system</div><div class="line">    labels:</div><div class="line">      k8s-app: kube-dns</div><div class="line">      kubernetes.io/cluster-services: &quot; true &quot;</div><div class="line">      kubernetes.io/name: &quot; KubeDNS &quot;</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">  clusterIP: 20.1.0.100</div><div class="line">  ports:</div><div class="line">  - name: dns</div><div class="line">    port: 53</div><div class="line">    protocol: UDP</div><div class="line">  - name: dns-tcp</div><div class="line">    port: 53</div><div class="line">    protocol: TCP</div></pre></td></tr></table></figure>
-<p>注意，skydns 服务使用的 clusterIP 需要我们指定一个固定的 IP 地址，每个 Node 的 Kubernetes 进程都将使用这个 IP 地址，不能通过 Kubernetes 自动分配。</p>
-<p>另外，这个 IP 地址需要在 kube-apiserver 启动参数 –service-cluster-ip-range 指定的 IP 地址范围内。</p>
-<h2 id="修改每个-Node-上的-Kubelet-启动参数"><a href="#修改每个-Node-上的-Kubelet-启动参数" class="headerlink" title="修改每个 Node 上的 Kubelet 启动参数"></a>修改每个 Node 上的 Kubelet 启动参数</h2><p>修改每台 Node 上 Kubelet 的启动参数：</p>
-<ul>
-<li>–cluster_dns=20.1.0.100，为 DNS 服务的 ClusterIP 地址；</li>
-<li>–cluster_domain=cluster.local，为 DNS 服务中设置的域名。</li>
-</ul>
-<p>然后重启 Kubelet 服务。</p>
-<h2 id="创建-skydns-Pod-和服务"><a href="#创建-skydns-Pod-和服务" class="headerlink" title="创建 skydns Pod 和服务"></a>创建 skydns Pod 和服务</h2><p>通过 kubectl create 完成 RC 和 Service 的创建：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># kubectl create -f skydns-rc.yaml</div><div class="line"># kubectl create -f skydns-svc.yaml</div></pre></td></tr></table></figure>
-<p>创建完成后，可以查看系统创建的 RC、Pod、Service 是否创建成功：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># kubectl get rc|pods|services --namespace=kube-system</div></pre></td></tr></table></figure>
-<h2 id="DNS-服务的工作原理"><a href="#DNS-服务的工作原理" class="headerlink" title="DNS 服务的工作原理"></a>DNS 服务的工作原理</h2><p>让我们看看 DNS 服务背后的工作原理。</p>
-<p>kube2sky 容器应用通过调用 Kubernetes Master 的 API 获得集群中所有 Service 的信息，并持续监控新 Service 的生成，然后写入 etcd 中。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">查看 etcd 中存储的 Service 信息</div><div class="line"># kubectl exec kube-dns-v8-xxxxx -c etcd --namespace=kube-system etcdctl ls /skydns/local/cluster</div></pre></td></tr></table></figure>
-<p>根据 Kubelet 启动参数的设置（–cluster_dns），Kubelet 会在每个新创建的 Pod 中设置 DNS 域名解析配置文件 /etc/resolv.conf 文件，在其中增加了一条 nameserver 配置和一条 search 配置。</p>
-<p>最后，应用程序就能够像访问网站域名一样，仅仅通过服务的名字就能访问到服务了。</p>
-<p>通过 DNS 设置，对于其他 Service 的查询将可以不再依赖系统为每个 Pod 创建的环境变量，而是直接使用 Service 的名字就能对其进行访问，使得应用程序中的代码更加简洁。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/30/k8s_dns/" class="archive-article-date">
-  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
     <article id="post-k8s_network" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -1149,6 +1404,95 @@
     <div class="article-info article-info-index">
       
       <a href="/2016/03/30/k8s_network/" class="archive-article-date">
+  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_dns" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/30/k8s_dns/">Kubernetes DNS 服务配置案例</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。</p>
+<p>Kubernetes 提供的 DNS 由以下三个组件组成：</p>
+<ol>
+<li>etcd: DNS 存储</li>
+<li>kube2sky: 将 Kubernetes Master 中的 Service（服务）注册到 etcd。</li>
+<li>skyDNS: 提供 DNS 域名解析服务。</li>
+</ol>
+<p>这三个组件以 Pod 的方式启动和运行，所以在一个 Kubernetes 集群中，它们都可能被调度到任意一个 Node 节点上去。为了能够使它们之间网络互通，需要将各 Pod 之间的网络打通。</p>
+<h2 id="skydns-配置文件"><a href="#skydns-配置文件" class="headerlink" title="skydns 配置文件"></a>skydns 配置文件</h2><p>首先创建 DNS 服务的 ReplicationController 配置文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: kube-dns-v8</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">    kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: kube-dns</div><div class="line">        version: v8</div><div class="line">        kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: etcd</div><div class="line">        image: gcr.io/google_containers/etcd:2.0.9</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        command:</div><div class="line">        - /usr/local/bin/etcd</div><div class="line">        - -data-dir</div><div class="line">        - /var/etcd/data</div><div class="line">        - -listen-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -advertise-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -initial-cluster-token</div><div class="line">        - skydns-etcd</div><div class="line">        volumeMounts:</div><div class="line">        - name: etcd-storage</div><div class="line">          mountPath: /var/etcd/data</div><div class="line">      - name: kube2sky</div><div class="line">        image: gcr.io/google_containers/kube2sky:1.11</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /kube2sky &quot;</div><div class="line">        - --kube_master_url=http://192.168.1.128:8080</div><div class="line">        - -domain=cluster.local</div><div class="line">      - name: skydns</div><div class="line">        image: gcr.io/google_containers/skydns:2015-03-11-001</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /skydns &quot;</div><div class="line">        - -machines=http://localhost:4001</div><div class="line">        - -addr=0.0.0.0:53</div><div class="line">        - -domain=cluster.local</div><div class="line">        ports:</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns</div><div class="line">          protocol: UDP</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns-tcp</div><div class="line">          protocol: TCP</div><div class="line">      volumes:</div><div class="line">        - name: etcd-storage</div><div class="line">          emptyDir: &#123;&#125;</div><div class="line">      dnsPolicy: Default</div></pre></td></tr></table></figure>
+<p>需要修改的几个配置参数如下：</p>
+<ul>
+<li>kube2sky 容器需要访问 Kubernetes Master，需要配置 Master 所在物理主机的 IP 地址和端口号，本例中设置参数 –kube_master_url 的值为 <a href="http://192.168.1.128:8080。" target="_blank" rel="external">http://192.168.1.128:8080。</a></li>
+<li>kube2sky 容器和 skydns 容器的启动参数 -domain,设置 Kubernetes 集群中 Service 所属的域名，本例中为 cluster.local。启动后，kube2sky 会监听 Kubernetes，当有新的 Service 创建时，就会生成相应的记录并保存到 etcd 中。kube2sky 为每个 Service 生成两条记录：<ul>
+<li><service_name>.<namespace_name>.<domain>;</domain></namespace_name></service_name></li>
+<li><service_name>.<namespace_name>.svc.<domain>。</domain></namespace_name></service_name></li>
+</ul>
+</li>
+<li>skydns 的启动参数 -addr=0.0.0.0:53 表示使用本机 TCP 和 UDP 的 53 端口提供服务。</li>
+</ul>
+<p>创建 DNS 服务的 Service 配置文件如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: kube-dns</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-system</div><div class="line">    labels:</div><div class="line">      k8s-app: kube-dns</div><div class="line">      kubernetes.io/cluster-services: &quot; true &quot;</div><div class="line">      kubernetes.io/name: &quot; KubeDNS &quot;</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">  clusterIP: 20.1.0.100</div><div class="line">  ports:</div><div class="line">  - name: dns</div><div class="line">    port: 53</div><div class="line">    protocol: UDP</div><div class="line">  - name: dns-tcp</div><div class="line">    port: 53</div><div class="line">    protocol: TCP</div></pre></td></tr></table></figure>
+<p>注意，skydns 服务使用的 clusterIP 需要我们指定一个固定的 IP 地址，每个 Node 的 Kubernetes 进程都将使用这个 IP 地址，不能通过 Kubernetes 自动分配。</p>
+<p>另外，这个 IP 地址需要在 kube-apiserver 启动参数 –service-cluster-ip-range 指定的 IP 地址范围内。</p>
+<h2 id="修改每个-Node-上的-Kubelet-启动参数"><a href="#修改每个-Node-上的-Kubelet-启动参数" class="headerlink" title="修改每个 Node 上的 Kubelet 启动参数"></a>修改每个 Node 上的 Kubelet 启动参数</h2><p>修改每台 Node 上 Kubelet 的启动参数：</p>
+<ul>
+<li>–cluster_dns=20.1.0.100，为 DNS 服务的 ClusterIP 地址；</li>
+<li>–cluster_domain=cluster.local，为 DNS 服务中设置的域名。</li>
+</ul>
+<p>然后重启 Kubelet 服务。</p>
+<h2 id="创建-skydns-Pod-和服务"><a href="#创建-skydns-Pod-和服务" class="headerlink" title="创建 skydns Pod 和服务"></a>创建 skydns Pod 和服务</h2><p>通过 kubectl create 完成 RC 和 Service 的创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># kubectl create -f skydns-rc.yaml</div><div class="line"># kubectl create -f skydns-svc.yaml</div></pre></td></tr></table></figure>
+<p>创建完成后，可以查看系统创建的 RC、Pod、Service 是否创建成功：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># kubectl get rc|pods|services --namespace=kube-system</div></pre></td></tr></table></figure>
+<h2 id="DNS-服务的工作原理"><a href="#DNS-服务的工作原理" class="headerlink" title="DNS 服务的工作原理"></a>DNS 服务的工作原理</h2><p>让我们看看 DNS 服务背后的工作原理。</p>
+<p>kube2sky 容器应用通过调用 Kubernetes Master 的 API 获得集群中所有 Service 的信息，并持续监控新 Service 的生成，然后写入 etcd 中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">查看 etcd 中存储的 Service 信息</div><div class="line"># kubectl exec kube-dns-v8-xxxxx -c etcd --namespace=kube-system etcdctl ls /skydns/local/cluster</div></pre></td></tr></table></figure>
+<p>根据 Kubelet 启动参数的设置（–cluster_dns），Kubelet 会在每个新创建的 Pod 中设置 DNS 域名解析配置文件 /etc/resolv.conf 文件，在其中增加了一条 nameserver 配置和一条 search 配置。</p>
+<p>最后，应用程序就能够像访问网站域名一样，仅仅通过服务的名字就能访问到服务了。</p>
+<p>通过 DNS 设置，对于其他 Service 的查询将可以不再依赖系统为每个 Pod 创建的环境变量，而是直接使用 Service 的名字就能对其进行访问，使得应用程序中的代码更加简洁。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/30/k8s_dns/" class="archive-article-date">
   	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
 </a>
       
@@ -1250,110 +1594,6 @@
 
 
   
-    <article id="post-k8s_op_skills" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/25/k8s_op_skills/">Kubernetes 常用运维技巧</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>这篇文章对日常工作中常用的 Kubernetes 系统运维操作和技巧进行总结和详细说明。（不定期更新！）</p>
-<h2 id="Node-的隔离和恢复"><a href="#Node-的隔离和恢复" class="headerlink" title="Node 的隔离和恢复"></a>Node 的隔离和恢复</h2><p>在硬件升级、维护等情况下，我们需要将某些 Node 进行隔离，脱离 Kubernetes 集群的调度范围。 Kubernetes 提供了一种机制，既可以将 Node 纳入调度范围，也可以将 Node 脱离调度范围。</p>
-<p>创建配置文件 unschedule_node.yaml，在 spec 部分指定 unschedulable 为 true：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Node</div><div class="line">metadata:</div><div class="line">  name: kubernetes-minion1</div><div class="line">  labels:</div><div class="line">    kubernetes.io/hostname: kubernetes-minion1</div><div class="line">spec:</div><div class="line">  unschedulable: true</div></pre></td></tr></table></figure>
-<p>然后，通过<code>kubectl replace</code>命令完成对 Node 状态的修改：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl replace -f unschedule_node.yaml</div></pre></td></tr></table></figure>
-<p>查看 Node 状态，可以观察到在 Node 的状态中增加了一项 SchedulingDisabled。</p>
-<p>对于后续创建的 Pod，系统将不会再向该 Node 进行调度。</p>
-<p>另一种方法时不使用配置文件，直接使用<code>kubectl patch</code>命令完成：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl patch node kubernetes-minion1 -p &apos;&#123;&quot;spec&quot;: &#123;&quot;unschedulable&quot;: true&#125;&#125;&apos;</div></pre></td></tr></table></figure>
-<p>需要注意的是，将某个 Node 脱离调度范围时，在其上运行的 Pod 并不会自动停止，需要手动停止在该 Node 上运行的 Pod。。</p>
-<p>同样，如果需要将某个 Node 重新纳入集群调度范围，则将 unschedulable 设置为 false，再次执行<code>kubectl replace</code>或<code>kubectl patch</code>命令就能恢复系统对该 Node 的调度。</p>
-<h2 id="Node-的扩容"><a href="#Node-的扩容" class="headerlink" title="Node 的扩容"></a>Node 的扩容</h2><p>在实际生产系统中会经常遇到服务器容量不足的情况，这时就需要购买新的服务器，然后将应用系统进行水平扩展来完成对系统的扩容。</p>
-<p>在 Kubernetes 集群中，对于一个新 Node 的加入是非常简单的。可以在 Node 节点上安装 <code>Docker、Kubelet 和 kube-proxy</code>服务，然后将 Kubelet 和 kube-proxy 的启动参数中的 Master URL 指定为当前 Kubernets 集群 Master 的地址，最后启动这些服务。基于 Kubelet 的自动注册机制，新的 Node 将会自动加入现有的 Kubetnetes 集群中。</p>
-<p>Kubenetes Master 在接受了新 Node 的注册后，会自动将其纳入当前集群的调度范围内，在之后创建容器时，就可以向新的 Node 进行调度了。</p>
-<h2 id="Pod-动态扩容和缩放"><a href="#Pod-动态扩容和缩放" class="headerlink" title="Pod 动态扩容和缩放"></a>Pod 动态扩容和缩放</h2><p>在实际生产系统中，我们经常会遇到某个服务需要扩容的场景，也可能会遇到由于资源紧张或者工作负责降低需要减少服务实例数的场景。此时我们可以利用命令<code>kubectl scale rc</code>来完成这些任务。比如通过执行以下命令将 redis-slave RC 控制的 Pod 副本数量更新为 3:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl scale rc redis-slave --replicas=3</div></pre></td></tr></table></figure>
-<p>将 –replicas 设置为比当前 Pod 副本数量更小的数字，系统将会“杀掉”一些运行中的 Pod，即可实现应用集群缩容。</p>
-<h2 id="更新资源对象的-Label"><a href="#更新资源对象的-Label" class="headerlink" title="更新资源对象的 Label"></a>更新资源对象的 Label</h2><p>Label（标签）作为用户可灵活定义的对象属性，在已创建的对象上，仍然可以随时通过<code>kubectl label</code>命令对其进行增加、修改、删除等操作。</p>
-<p>例如，我们要给已创建的 Pod “redis-master-bobr0”添加一个标签 role=backend：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label pod redis-master-bobr0 role=backend</div></pre></td></tr></table></figure>
-<p>删除一个 Label，只需在命令后最后指定 Label 的 key 名并与一个减号相连即可：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label pod redis-master-bobr0 role-</div></pre></td></tr></table></figure>
-<p>修改一个 Label 的值，需要加上 –overwrite 参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl lable pod redis-master-bobr0 role=master --overwrite</div></pre></td></tr></table></figure>
-<h2 id="将-Pod-调度到指定的-Node"><a href="#将-Pod-调度到指定的-Node" class="headerlink" title="将 Pod 调度到指定的 Node"></a>将 Pod 调度到指定的 Node</h2><p>Kubernetes 的 Scheduler 服务（kube-scheduler 进程）负责实现 Pod 的调度，整个调度过程通过一系列复杂的算法最终为每个 Pod 计算出一个最佳的目标节点，这一过程是自动完成的，我们无法知道 Pod 最终会被调度到哪个节点上。有时我们可能需要将 Pod 调度到一个指定的 Node 上，此时，我们可以通过 Node 的标签（Label）和 Pod 的 nodeSelector 属性相匹配，来达到上述目的。</p>
-<p>首先，我们可以通过<code>kubectl label</code>命令给目标 Node 打上一个特定的标签，下面是此命令的完整用法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label nodes &lt;node-name&gt; &lt;label-key&gt;=&lt;label-value&gt;</div></pre></td></tr></table></figure>
-<p>这里，我们为 kubenetes-minion1 节点打上一个 zone=north 的标签，表明它是“北方”的一个节点：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label nodes kubernetes-minion1 zone=north</div></pre></td></tr></table></figure>
-<p>上述命令行操作也可以通过修改资源定义文件的方式，并执行<code>kubectl replace -f xxx.yaml</code>命令来完成。</p>
-<p>然后，在 Pod 的配置文件中加入 nodeSelector 定义，以 redis-master-controller.yaml 为例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: redis-master</div><div class="line">  labels:</div><div class="line">    name: redis-master</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: redis-master</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: redis-master</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: master</div><div class="line">        image: kubeguide/redis-master</div><div class="line">        ports:</div><div class="line">        - containerPort: 6379</div><div class="line">      nodeSelector:</div><div class="line">        zone: north</div></pre></td></tr></table></figure>
-<p>运行<code>kubectl create -f</code>命令创建 Pod，scheduler 就会将该 Pod 调度到拥有 zone=north 标签的 Node 上去。</p>
-<p>使用<code>kubectl get pods -o wide</code>命令可以验证 Pod 所在的 Node。</p>
-<p>如果我们给多个 Node 都定义了相同的标签，则 scheduler 将会根据调度算法从这组 Node 中挑选一个可用的 Node 进行 Pod 调度。</p>
-<p>这种基于 Node 标签的调度方式灵活性很高，比如我们可以把一组 Node 分别贴上“开发环境”“测试环境”“正式环境”这三组标签中的一种，此时一个 Kubernetes 集群就承载了 3 个环境，这将大大提高开发效率。</p>
-<p>需要注意的是，如果我们指定了 Pod 的 nodeSelector 条件，且集群中不存在包含相应标签的 Node 时，即使还有其他可供调度的 Node，这个 Pod 也最终会调度失败。</p>
-<h2 id="应用的滚动升级"><a href="#应用的滚动升级" class="headerlink" title="应用的滚动升级"></a>应用的滚动升级</h2><p>当集群中的某个服务需要升级时，我们需要停止目前与该服务相关的所有 Pod，然后重新拉取镜像并启动。如果集群规模比较大，则这个工作就变成了一个挑战，而且先全部停止然后逐步升级的方式会导致较长时间的服务不可用。Kubernetes 提供了 rolling-update(滚动升级)功能来解决上述问题。</p>
-<p>滚动升级通过执行<code>kubectl rolling-update</code>命令一键完成，该命令创建了一个新的 RC，然后自动控制旧的 RC 中的 Pod 副本数量逐渐减少到 0，同时新的 RC 中的 Pod 副本数量从 0 逐步增加到目标值，最终实现了 Pod 的升级。需要注意的是，系统要求新的 RC 需要与旧的 RC 在相同的命名空间（Namespace）内，即不能把别人的资产偷偷转移到自家名下。</p>
-<p>以 redis-master 为例，假设当前运行的 redis-master Pod 是 1.0 版本，则现在需要升级到 2.0 版本。</p>
-<p>创建 redis-master-controller-v2.yaml 的配置文件如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: redis-master-v2</div><div class="line">  version: v2</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: redis-master</div><div class="line">    version: v2</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: redis-master</div><div class="line">        version: v2</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: master</div><div class="line">        image: kubenetes/redis-master:2.0</div><div class="line">        ports:</div><div class="line">        - containerPort: 6379</div></pre></td></tr></table></figure>
-<p>在配置文件中有几处需要注意：</p>
-<ol>
-<li>RC 的名字（name）不能与旧的 RC 的名字相同；</li>
-<li>在 selector 中应至少有一个 Label 与旧的 RC 的 Label 不同，以标识其为新的 RC。本例中新增了一个名为 version 的 Label，以与旧的 RC 进行区分。</li>
-</ol>
-<p>运行<code>kubectl rolling-update</code>命令完成 Pod 的滚动升级：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl rolling-update redis-master -f redis-master-controller-v2.yaml</div></pre></td></tr></table></figure>
-<p>等所有新的 Pod 启动完成后，旧的 Pod 也被全部销毁，这样就完成了容器集群的更新。</p>
-<p>另一种方法是不使用配置文件，直接用<code>kubectl rolling-update</code>命令，加上<code>--image</code>参数指定新版镜像名称来完成 Pod 的滚动升级：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl rolling-update redis-master --image=redis-master:2.0</div></pre></td></tr></table></figure>
-<p>如果在更新过程中发现配置有误，则用户可以中断更新操作，并通过执行<code>kubectl rolling-update --rollback</code>完成 Pod 版本的回滚：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl rolling-update redis-master --image=redis-master:2.0 --rollback</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/25/k8s_op_skills/" class="archive-article-date">
-  	<time datetime="2016-03-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-25</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -1419,7 +1659,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

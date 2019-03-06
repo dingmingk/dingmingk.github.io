@@ -137,6 +137,104 @@
       <div class="body-wrap">
         
   
+    <article id="post-git_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/24/git_part3/">Git 和声</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="冲突解决"><a href="#冲突解决" class="headerlink" title="冲突解决"></a>冲突解决</h2><p>只要有合并就可能会有冲突。</p>
+<h3 id="自动合并"><a href="#自动合并" class="headerlink" title="自动合并"></a>自动合并</h3><h4 id="修改不同的文件"><a href="#修改不同的文件" class="headerlink" title="修改不同的文件"></a>修改不同的文件</h4><p>有时候我们在push代码到远程仓库时，会遇到一些小麻烦。</p>
+<p><img src="/assets/blogImg/git_part3_1.png" alt="git_part3_1.png"></p>
+<p>图为出现非快进式推送时的日志。</p>
+<p>这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。</p>
+<p><img src="/assets/blogImg/git_part3_2.png" alt="git_part3_2.png"></p>
+<blockquote>
+<p><strong>非快进式推送（nor-fast-forwardupdates）</strong> 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其他用户在当前用户版本库上次commit和本次commit之间向远程版本库执行了推送所致。</p>
+</blockquote>
+<p><strong>解决方法</strong></p>
+<ul>
+<li>先执行pull，再继续push，即合并后推送。这才是多成员协同工作推荐的方式。</li>
+<li>使用 <code>git push origin master --force</code>强制推送。这种方式存在覆盖掉其他人提交的危险，不推荐使用。</li>
+</ul>
+<h4 id="修改相同文件的不同区域"><a href="#修改相同文件的不同区域" class="headerlink" title="修改相同文件的不同区域"></a>修改相同文件的不同区域</h4><p>解决方法基本如上。但是如果追溯一下文件每一行的来源，可以看到分别是 dingmingk 和 root 用户更改的第一和最后的一行。</p>
+<p><img src="/assets/blogImg/git_part3_3.png" alt="git_part3_3.png"></p>
+<h4 id="同时更改文件名和文件内容"><a href="#同时更改文件名和文件内容" class="headerlink" title="同时更改文件名和文件内容"></a>同时更改文件名和文件内容</h4><p>解决方法如上。最新版本的文件名和内容都为修改后。</p>
+<h3 id="冲突解决-1"><a href="#冲突解决-1" class="headerlink" title="冲突解决"></a>冲突解决</h3><p>如果两个用户修改了同一文件的同一区域，则在合并的时候会遇到冲突而导致合并过程中端。这是因为 Git 并不能越俎代庖地替用户做出决定，而是把决定权交给用户。在这种情况下，Git 标识出合并冲突，等待用户对冲突做出抉择。</p>
+<p><img src="/assets/blogImg/git_part3_4.png" alt="git_part3_4.png"></p>
+<p>如图所示，特殊标识 &lt;&lt;&lt;&lt;&lt;&lt;&lt;（七个小于号）和 =======（七个等号）之间的内容是当前分支所更改的内容。特殊标识 =======（七个等号）和 &gt;&gt;&gt;&gt;&gt;&gt;&gt;（七个大于号）之间的内容是所合并的版本更改内容。</p>
+<p>冲突解决的实质就是通过编辑操作，将冲突标识符所标识的冲突内容替换为合适的内容，并去掉冲突标识符。编辑完后再重新提交即可。</p>
+<h2 id="里程碑"><a href="#里程碑" class="headerlink" title="里程碑"></a>里程碑</h2><p>里程碑即 Tag，是人为对提交进行的命名。相比于 Git 默认的提交ID，使用一个直观的表意的字符串会方便得多。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">git tag				&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -a			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -m &lt;msg&gt;	&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -s			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -u &lt;key-id&gt; &lt;tagname&gt; [&lt;commit&gt;]</div></pre></td></tr></table></figure>
+<ul>
+<li>第一种是创建轻量级里程碑。</li>
+<li>第二种和第三种想同，都是创建带说明的里程碑。其中第三种直接通过 -m 参数提供里程碑创建说明。</li>
+<li>第四种和第五种相同，都是创建带 GNUPG 签名的里程碑。其中第五种用 -u 参数选择指定的私钥进行签名。</li>
+<li>创建里程碑需要输入里程碑的名字（<tagname>）和一个可选的提交ID（<commit>）。如果没有提供提交ID，则基于头指针 HEAD 创建里程碑。</commit></tagname></li>
+</ul>
+<h3 id="轻量级里程碑"><a href="#轻量级里程碑" class="headerlink" title="轻量级里程碑"></a>轻量级里程碑</h3><h3 id="带说明的里程碑"><a href="#带说明的里程碑" class="headerlink" title="带说明的里程碑"></a>带说明的里程碑</h3><h3 id="带签名的里程碑"><a href="#带签名的里程碑" class="headerlink" title="带签名的里程碑"></a>带签名的里程碑</h3><h3 id="删除里程碑"><a href="#删除里程碑" class="headerlink" title="删除里程碑"></a>删除里程碑</h3><h3 id="里程碑命名规范"><a href="#里程碑命名规范" class="headerlink" title="里程碑命名规范"></a>里程碑命名规范</h3><h2 id="Git-分支"><a href="#Git-分支" class="headerlink" title="Git 分支"></a>Git 分支</h2><h3 id="分支命令"><a href="#分支命令" class="headerlink" title="分支命令"></a>分支命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">git branch</div><div class="line">git branch &lt;branchname&gt;</div><div class="line">git branch &lt;branchname&gt; &lt;start-point&gt;</div><div class="line">git branch -d &lt;branchname&gt;</div><div class="line">git branch -D &lt;branchname&gt;</div><div class="line">git branch -m &lt;oldbranch&gt; &lt;branchname&gt;</div><div class="line">git branch -M &lt;oldbranch&gt; &lt;newbranch&gt;</div></pre></td></tr></table></figure>
+<ul>
+<li>第一种用于显示本地分支列表。当前分支在输出中会显示为特别的颜色，并用星号“*”标识出来。</li>
+<li>第二种和第三种用于创建分支。用法2基于当前头指针（HEAD）指向的提价创建分支，新分支的分支名 <branchname>。第三种基于提交 <start-point> 创建新分支，新分支的分支名为 <branchname>。</branchname></start-point></branchname></li>
+<li>第四种和第五种用户删除分支。第四种在删除分支 <branchname> 时会检查所要删除的分支是否已经合并到其它分支种，否则拒绝删除。第五种会强制删除分支。</branchname></li>
+<li>第六种和第七种用于重命名分支。如果版本库中已经存在名为 <newbranch> 的分支，第六种会拒绝执行重命名，而第七种会强制执行。</newbranch></li>
+</ul>
+<h3 id="分支变基"><a href="#分支变基" class="headerlink" title="分支变基"></a>分支变基</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ git checkout develop</div><div class="line">$ git rebase master</div></pre></td></tr></table></figure>
+<p>这两条命令会把你的 develop 分支里的每个提交（commit）取消掉，并且把它们临时保存为补丁（这些patch放到 .git/rebase 目录中），然后把 develop 分支更新为最新的 master 分支，最后把保存的这些补丁应用到 develop 分支上。</p>
+<h2 id="远程版本库"><a href="#远程版本库" class="headerlink" title="远程版本库"></a>远程版本库</h2><h2 id="代码回滚"><a href="#代码回滚" class="headerlink" title="代码回滚"></a>代码回滚</h2><h3 id="本地代码库回滚"><a href="#本地代码库回滚" class="headerlink" title="本地代码库回滚"></a>本地代码库回滚</h3><p>git reset 命令回滚有三种方式：</p>
+<ul>
+<li>mixed: 默认方式。它回退到某个版本，只保留源码，回退commit和index信息。</li>
+<li>soft: 只回退commit信息，不会恢复index file一级。</li>
+<li>hard: 彻底回退到某个版本，本地的源码也会变为上一个版本的内容。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">* $ git reset --[hard|soft|mixed] &lt;commit&gt;	回滚所有内容到某个提交</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^		回滚所有内容到上一个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^^ xxx	回滚xxx这个文件到上两个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD~3	回滚所有内容到第三个版本</div><div class="line">* $ git reset --[hard|soft|mixed] origin/master	回滚到和远程一样</div></pre></td></tr></table></figure>
+<h3 id="远程代码库回滚"><a href="#远程代码库回滚" class="headerlink" title="远程代码库回滚"></a>远程代码库回滚</h3><p>远程代码库回滚比本地回滚要复杂一些，建议操作前先备份分支。</p>
+<p>操作步骤：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">1. $ git checkout &lt;branch&gt;			切换到分支</div><div class="line">2. $ git pull							拉取最新代码</div><div class="line">3. $ git branch &lt;branch&gt; &lt;branch_backup&gt;	备份分支</div><div class="line">4. $ git reset --hard &lt;commit&gt;	回滚本地代码库</div><div class="line">5. $ git push origin :&lt;branch&gt;	删除远程分支</div><div class="line">6. $ git push origin &lt;branch&gt;		将本地分支推送到远程</div><div class="line">7. $ git push origin :&lt;branch_backup&gt;	删除远程备份分支</div></pre></td></tr></table></figure>
+<h3 id="反转提交"><a href="#反转提交" class="headerlink" title="反转提交"></a>反转提交</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">* $ git revert &lt;commit&gt;				用一次新的反转提交来消除一个历史提交所做的任何修改</div><div class="line">$ git revert -m 1 &lt;commit&gt;			“-m 1”参数表示某次历史提交的父提交</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/24/git_part3/" class="archive-article-date">
+  	<time datetime="2015-12-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-24</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/">Git</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-saltUser" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -253,90 +351,6 @@
 
 
   
-    <article id="post-nginxgeo" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/12/04/nginxgeo/">Nginx geo 使用方法</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><code>geo</code>指令是<code>ngx_http_geo_module</code>模块提供的，默认情况下nginx有加载这个模块，除非手动<code>--without-http_geo_module</code>。</p>
-<p><code>ngx_http_geo_module</code>模块可以用来创建变量，其值依赖于客户端IP地址。</p>
-<blockquote>
-<p>语法: geo [$address] $variable {…}</p>
-<p>默认值: -</p>
-<p>配置段: http</p>
-</blockquote>
-<p>定义从指定的变量获取客户端的IP地址。默认情况下，nginx从<code>$remote_addr</code>变量取得客户端IP地址，但也可以从其它变量获得。如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">geo $remote_addr $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div><div class="line">geo $arg_dingmingk_com $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>如果该变量的值不能代表一个合法的IP地址，那么nginx将使用地址“255.255.255.255”。</p>
-<p>nginx通过CIDR或者地址段来描述地址，支持以下几个参数：</p>
-<ul>
-<li>delete: 删除指定的网络。</li>
-<li>default: 如果客户端地址不能匹配任意一个定义的地址，nginx将使用此值。如果使用CIDR，可以用“0.0.0.0/0”代替default。</li>
-<li>include: 包含一个定义地址和值的文件，可以包含多个。</li>
-<li>proxy: 定义可信地址。如果请求来自可信地址，nginx将使用其“X-Forwarded-For”头来获得地址。相对于普通地址，可信地址是顺序检测的。</li>
-<li>proxy_recursive: 开启递归查找地址。如果关闭递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中的最后一个地址来代替原始客户端地址。如果开启递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中最后一个与所有可信地址都不匹配的地址来代替原始客户端地址。</li>
-<li>ranges: 使用以地址段的形式定义地址，这个参数必须放在首位。为了加速装载地址库，地址应按升序定义。</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	default			ZZ;</div><div class="line">	include			conf/geo.conf;</div><div class="line">	delete 			127.0.0.0/16;</div><div class="line">	proxy				192.168.100.0/24;</div><div class="line">	proxy				2001:0db8::/32;</div><div class="line">	</div><div class="line">	127.0.0.0/24		US;</div><div class="line">	127.0.0.1/32		RU;</div><div class="line">	10.1.0.0/16		RU;</div><div class="line">	192.168.1.0/24	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$vim conf/geo.conf</div><div class="line"></div><div class="line">10.2.0.0/16			RU;</div><div class="line">192.168.2.0/24		RU;</div></pre></td></tr></table></figure>
-<p>地址段例子:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	ranges;</div><div class="line">	default						ZZ;</div><div class="line">	127.0.0.0-127.0.0.0			US;</div><div class="line">	127.0.0.1-127.0.0.1			RU;</div><div class="line">	127.0.0.1-127.0.0.255		US;</div><div class="line">	10.1.0.0-10.1.255.255		RU;</div><div class="line">	192.168.1.0-192.168.1.255	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p><strong>遵循最精确匹配原则，即nginx使用能最精确匹配客户端地址的值。</strong></p>
-<p>下面看几个适用实例以便理解该指令的用法。</p>
-<p>1.使用默认变量也就是<code>$remote_addr</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  #geo $remote_addr $dingmingk_com &#123;</div><div class="line">  geo $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name	test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type		text/plan;</div><div class="line">  					echo 				$dingmingk_com;					echo				$arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ curl 127.0.0.1/helo?boy=king</div><div class="line">1</div><div class="line">king</div></pre></td></tr></table></figure>
-<p>2.使用指定变量</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen				80;</div><div class="line">  			server_name		test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type text/plain;</div><div class="line">  					echo $dingmingk_com;</div><div class="line">  					echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=8.8.8.8</div><div class="line">2</div><div class="line">8.8.8.8</div></pre></td></tr></table></figure>
-<p>3.匹配原则</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1/24 24;</div><div class="line">  			127.0.0.1/32 32;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name  test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  							default_type text/plain;</div><div class="line">  							echo $dingmingk_com;</div><div class="line">  							echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.1</div><div class="line">32</div><div class="line">127.0.0.1</div><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.12</div><div class="line">23</div><div class="line">127.0.0.12</div></pre></td></tr></table></figure>
-<p><strong>geo指令主要是根据IP来对变量进行赋值的。因此geo模块下只能定义IP或网段，否则会报错“nginx:invalid network。”</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2015/12/04/nginxgeo/" class="archive-article-date">
-  	<time datetime="2015-12-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-04</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
     <article id="post-nginxmap" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -414,6 +428,90 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fleet/">Fleet</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-nginxgeo" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/12/04/nginxgeo/">Nginx geo 使用方法</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><code>geo</code>指令是<code>ngx_http_geo_module</code>模块提供的，默认情况下nginx有加载这个模块，除非手动<code>--without-http_geo_module</code>。</p>
+<p><code>ngx_http_geo_module</code>模块可以用来创建变量，其值依赖于客户端IP地址。</p>
+<blockquote>
+<p>语法: geo [$address] $variable {…}</p>
+<p>默认值: -</p>
+<p>配置段: http</p>
+</blockquote>
+<p>定义从指定的变量获取客户端的IP地址。默认情况下，nginx从<code>$remote_addr</code>变量取得客户端IP地址，但也可以从其它变量获得。如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">geo $remote_addr $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div><div class="line">geo $arg_dingmingk_com $geo &#123;</div><div class="line">	default 0;</div><div class="line">	127.0.0.1 1;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>如果该变量的值不能代表一个合法的IP地址，那么nginx将使用地址“255.255.255.255”。</p>
+<p>nginx通过CIDR或者地址段来描述地址，支持以下几个参数：</p>
+<ul>
+<li>delete: 删除指定的网络。</li>
+<li>default: 如果客户端地址不能匹配任意一个定义的地址，nginx将使用此值。如果使用CIDR，可以用“0.0.0.0/0”代替default。</li>
+<li>include: 包含一个定义地址和值的文件，可以包含多个。</li>
+<li>proxy: 定义可信地址。如果请求来自可信地址，nginx将使用其“X-Forwarded-For”头来获得地址。相对于普通地址，可信地址是顺序检测的。</li>
+<li>proxy_recursive: 开启递归查找地址。如果关闭递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中的最后一个地址来代替原始客户端地址。如果开启递归查找，在客户端地址与某个可信地址匹配时，nginx将使用“X-Forwarded-For”中最后一个与所有可信地址都不匹配的地址来代替原始客户端地址。</li>
+<li>ranges: 使用以地址段的形式定义地址，这个参数必须放在首位。为了加速装载地址库，地址应按升序定义。</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	default			ZZ;</div><div class="line">	include			conf/geo.conf;</div><div class="line">	delete 			127.0.0.0/16;</div><div class="line">	proxy				192.168.100.0/24;</div><div class="line">	proxy				2001:0db8::/32;</div><div class="line">	</div><div class="line">	127.0.0.0/24		US;</div><div class="line">	127.0.0.1/32		RU;</div><div class="line">	10.1.0.0/16		RU;</div><div class="line">	192.168.1.0/24	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$vim conf/geo.conf</div><div class="line"></div><div class="line">10.2.0.0/16			RU;</div><div class="line">192.168.2.0/24		RU;</div></pre></td></tr></table></figure>
+<p>地址段例子:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">geo $country &#123;</div><div class="line">	ranges;</div><div class="line">	default						ZZ;</div><div class="line">	127.0.0.0-127.0.0.0			US;</div><div class="line">	127.0.0.1-127.0.0.1			RU;</div><div class="line">	127.0.0.1-127.0.0.255		US;</div><div class="line">	10.1.0.0-10.1.255.255		RU;</div><div class="line">	192.168.1.0-192.168.1.255	UK;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><strong>遵循最精确匹配原则，即nginx使用能最精确匹配客户端地址的值。</strong></p>
+<p>下面看几个适用实例以便理解该指令的用法。</p>
+<p>1.使用默认变量也就是<code>$remote_addr</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  #geo $remote_addr $dingmingk_com &#123;</div><div class="line">  geo $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name	test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type		text/plan;</div><div class="line">  					echo 				$dingmingk_com;					echo				$arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ curl 127.0.0.1/helo?boy=king</div><div class="line">1</div><div class="line">king</div></pre></td></tr></table></figure>
+<p>2.使用指定变量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1 1;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen				80;</div><div class="line">  			server_name		test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  					default_type text/plain;</div><div class="line">  					echo $dingmingk_com;</div><div class="line">  					echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=8.8.8.8</div><div class="line">2</div><div class="line">8.8.8.8</div></pre></td></tr></table></figure>
+<p>3.匹配原则</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line">  geo $arg_boy $dingmingk_com &#123;</div><div class="line">  			default 0;</div><div class="line">  			127.0.0.1/24 24;</div><div class="line">  			127.0.0.1/32 32;</div><div class="line">  			8.8.8.8 2;</div><div class="line">  &#125;</div><div class="line">  server &#123;</div><div class="line">  			listen			80;</div><div class="line">  			server_name  test.dingmingk.com;</div><div class="line">  			</div><div class="line">  			location /hello &#123;</div><div class="line">  							default_type text/plain;</div><div class="line">  							echo $dingmingk_com;</div><div class="line">  							echo $arg_boy;</div><div class="line">  			&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.1</div><div class="line">32</div><div class="line">127.0.0.1</div><div class="line">$curl 127.0.0.1/hello?boy=127.0.0.12</div><div class="line">23</div><div class="line">127.0.0.12</div></pre></td></tr></table></figure>
+<p><strong>geo指令主要是根据IP来对变量进行赋值的。因此geo模块下只能定义IP或网段，否则会报错“nginx:invalid network。”</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2015/12/04/nginxgeo/" class="archive-article-date">
+  	<time datetime="2015-12-03T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-04</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/">Nginx</a></li></ul>
 	</div>
 
       
@@ -911,175 +1009,6 @@
 
 
   
-    <article id="post-ss" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/10/14/ss/">使用 ss 命令代替 netstat</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>ss是Socket Statistics的缩写。</p>
-</blockquote>
-<p>顾名思义， ss命令可以用来获取socket统计信息，它可以显示和netstat类似的内容。但ss的优势在于它能够显示更多更详细的有关TCP和连接状态的信息，而且比netstat更快速更高效。</p>
-<h4 id="为什么要告别netstat"><a href="#为什么要告别netstat" class="headerlink" title="为什么要告别netstat"></a>为什么要告别netstat</h4><p>当服务器的socket连接数非常大时，无论使用<code>netstat</code>还是<code>cat /proc/net/tcp</code>，执行速度都很慢。</p>
-<p><strong>天下武功唯快不破</strong>。ss的秘诀在于，它利用到了TCP协议栈中tcp_diag。</p>
-<p><em>tcp_diag</em>是一个用于分析统计的模块，可以获得linux内核中第一手信息，这就确保了ss的快捷高效。当然，如果你的系统中没有tcp_diag，ss也可以正常运行，只是效率会变得很慢（仍然比netstat快）。</p>
-<h4 id="性能对比"><a href="#性能对比" class="headerlink" title="性能对比"></a>性能对比</h4><p><em>TODO</em></p>
-<p>自己手头暂时没有适合测试的机器，网上有人测试过数据如下：</p>
-<p>(当服务器维持3w个socket链接时)</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">netstat -at | wc  耗时 15.60 秒</div><div class="line">ss -atr     | wc  耗时  5.40 秒（未利用tcp_diag）</div><div class="line">ss -atr     | wc  耗时  0.47 秒（利用tcp_diag）</div></pre></td></tr></table></figure>
-<h4 id="安装ss"><a href="#安装ss" class="headerlink" title="安装ss"></a>安装ss</h4><p>几乎所有的linux系统都会默认包含netstat命令，但并非所有系统都会默认包含ss命令。</p>
-<p>netstat命令是net-tools工具集中的一员：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$rpm -q netstat-tools</div><div class="line">net-tools-1.60-110.el6_2.x86_64</div></pre></td></tr></table></figure>
-<p>而ss命令是iproute工具集中的一员：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$rpm -q /usr/sbin/ss</div><div class="line">iproute-2.6.32-45.el6.x86_64</div><div class="line">$rpm -q iproute</div><div class="line">iproute-2.6.32-45.el6.x86_64</div></pre></td></tr></table></figure>
-<p>如果你无法使用ss命令，那么可能是缺少了iproute，需要安装一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">yum install iproute iproute-doc</div></pre></td></tr></table></figure>
-<h4 id="ss常见用法"><a href="#ss常见用法" class="headerlink" title="ss常见用法"></a>ss常见用法</h4><p><strong>当前服务器的网络连接统计</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ ss -s</div><div class="line">Total: 78 (kernel 85)</div><div class="line">TCP:   5 (estab 2, closed 0, orphaned 0, synrecv 0, timewait 0/0), ports 5</div><div class="line"></div><div class="line">Transport Total     IP        IPv6</div><div class="line">*         85        -         -</div><div class="line">RAW       0         0         0</div><div class="line">UDP       4         4         0</div><div class="line">TCP       5         5         0</div><div class="line">INET      9         9         0</div><div class="line">FRAG      0         0         0</div></pre></td></tr></table></figure>
-<p><strong>查看所有打开的网络接口以及对应的程序名称</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ ss -pl</div><div class="line">State       Recv-Q Send-Q                                 Local Address:Port                                     Peer Address:Port</div><div class="line">LISTEN      0      128                                                *:http                                                *:*</div><div class="line">users:((&quot;nginx&quot;,2591,6),(&quot;nginx&quot;,15272,6))</div><div class="line">LISTEN      0      10                                         127.0.0.1:15770                                               *:*</div><div class="line">users:((&quot;aegis_quartz&quot;,16616,8))</div><div class="line">LISTEN      0      128                                                *:22                                               *:*</div><div class="line">users:((&quot;sshd&quot;,24244,3))</div><div class="line">``` </div><div class="line">**查看所有socket连接**</div></pre></td></tr></table></figure>
-<p>$ ss -a<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">* 如果只想查看TCP sockets， 那么使用 `-ta` 选项</div><div class="line">* 如果只想查看UDP sockets， 那么使用 `-ua` 选项</div><div class="line">* 如果只想查看RAW sockets， 那么使用 `-wa` 选项</div><div class="line">* 如果只想查看UNIX sockets， 那么使用 `-xa` 选项</div><div class="line"></div><div class="line">#### 附录</div><div class="line">#####ss命令参数列表</div></pre></td></tr></table></figure></p>
-<pre><code>-h, --help
-       Show summary of options.
-
--V, --version
-       Output version information.
-
--n, --numeric
-       Do now try to resolve service names.
-
--r, --resolve
-       Try to resolve numeric address/ports.
-
--a, --all
-       Display all sockets.
-
--l, --listening
-       Display listening sockets.
-
--o, --options
-       Show timer information.
-
--e, --extended
-       Show detailed socket information
-
--m, --memory
-       Show socket memory usage.
-
--p, --processes
-       Show process using socket.
-
--i, --info
-       Show internal TCP information.
-
--s, --summary
-       Print  summary  statistics. This option does not parse socket lists obtaining summary from various sources.
-       It is useful when amount of sockets is so huge that parsing /proc/net/tcp is painful.
-
--4, --ipv4
-       Display only IP version 4 sockets (alias for -f inet).
-
--6, --ipv6
-       Display only IP version 6 sockets (alias for -f inet6).
-
--0, --packet
-       Display PACKET sockets.
-
--t, --tcp
-       Display only TCP sockets.
-</code></pre><p>```</p>
-<h5 id="iproute-amp-net-tools"><a href="#iproute-amp-net-tools" class="headerlink" title="iproute &amp; net-tools"></a>iproute &amp; net-tools</h5><p>从某种意义上来说，iproute工具集几乎可以替代掉net-tools工具集。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">用途</th>
-<th style="text-align:center">net-tools</th>
-<th style="text-align:center">iproute2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">地址和链路配置</td>
-<td style="text-align:center">ifconfig</td>
-<td style="text-align:center">ip addr, ip link</td>
-</tr>
-<tr>
-<td style="text-align:left">路由表</td>
-<td style="text-align:center">route</td>
-<td style="text-align:center">ip route</td>
-</tr>
-<tr>
-<td style="text-align:left">邻居</td>
-<td style="text-align:center">arp</td>
-<td style="text-align:center">ip neigh</td>
-</tr>
-<tr>
-<td style="text-align:left">VLAN</td>
-<td style="text-align:center">vconfig</td>
-<td style="text-align:center">ip link</td>
-</tr>
-<tr>
-<td style="text-align:left">隧道</td>
-<td style="text-align:center">iptunnel</td>
-<td style="text-align:center">ip tunnel</td>
-</tr>
-<tr>
-<td style="text-align:left">组播</td>
-<td style="text-align:center">ipmaddr</td>
-<td style="text-align:center">ip maddr</td>
-</tr>
-<tr>
-<td style="text-align:left">统计</td>
-<td style="text-align:center">netstat</td>
-<td style="text-align:center">ss</td>
-</tr>
-</tbody>
-</table>
-<p><img src="/assets/blogImg/netstat2iproute.png" alt="netstat2iproute"></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2015/10/14/ss/" class="archive-article-date">
-  	<time datetime="2015-10-13T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-10-14</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/4/">Next &raquo;</a>
@@ -1145,7 +1074,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

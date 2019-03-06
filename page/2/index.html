@@ -137,6 +137,110 @@
       <div class="body-wrap">
         
   
+    <article id="post-k8s_op_skills" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/25/k8s_op_skills/">Kubernetes 常用运维技巧</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇文章对日常工作中常用的 Kubernetes 系统运维操作和技巧进行总结和详细说明。（不定期更新！）</p>
+<h2 id="Node-的隔离和恢复"><a href="#Node-的隔离和恢复" class="headerlink" title="Node 的隔离和恢复"></a>Node 的隔离和恢复</h2><p>在硬件升级、维护等情况下，我们需要将某些 Node 进行隔离，脱离 Kubernetes 集群的调度范围。 Kubernetes 提供了一种机制，既可以将 Node 纳入调度范围，也可以将 Node 脱离调度范围。</p>
+<p>创建配置文件 unschedule_node.yaml，在 spec 部分指定 unschedulable 为 true：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Node</div><div class="line">metadata:</div><div class="line">  name: kubernetes-minion1</div><div class="line">  labels:</div><div class="line">    kubernetes.io/hostname: kubernetes-minion1</div><div class="line">spec:</div><div class="line">  unschedulable: true</div></pre></td></tr></table></figure>
+<p>然后，通过<code>kubectl replace</code>命令完成对 Node 状态的修改：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl replace -f unschedule_node.yaml</div></pre></td></tr></table></figure>
+<p>查看 Node 状态，可以观察到在 Node 的状态中增加了一项 SchedulingDisabled。</p>
+<p>对于后续创建的 Pod，系统将不会再向该 Node 进行调度。</p>
+<p>另一种方法时不使用配置文件，直接使用<code>kubectl patch</code>命令完成：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl patch node kubernetes-minion1 -p &apos;&#123;&quot;spec&quot;: &#123;&quot;unschedulable&quot;: true&#125;&#125;&apos;</div></pre></td></tr></table></figure>
+<p>需要注意的是，将某个 Node 脱离调度范围时，在其上运行的 Pod 并不会自动停止，需要手动停止在该 Node 上运行的 Pod。。</p>
+<p>同样，如果需要将某个 Node 重新纳入集群调度范围，则将 unschedulable 设置为 false，再次执行<code>kubectl replace</code>或<code>kubectl patch</code>命令就能恢复系统对该 Node 的调度。</p>
+<h2 id="Node-的扩容"><a href="#Node-的扩容" class="headerlink" title="Node 的扩容"></a>Node 的扩容</h2><p>在实际生产系统中会经常遇到服务器容量不足的情况，这时就需要购买新的服务器，然后将应用系统进行水平扩展来完成对系统的扩容。</p>
+<p>在 Kubernetes 集群中，对于一个新 Node 的加入是非常简单的。可以在 Node 节点上安装 <code>Docker、Kubelet 和 kube-proxy</code>服务，然后将 Kubelet 和 kube-proxy 的启动参数中的 Master URL 指定为当前 Kubernets 集群 Master 的地址，最后启动这些服务。基于 Kubelet 的自动注册机制，新的 Node 将会自动加入现有的 Kubetnetes 集群中。</p>
+<p>Kubenetes Master 在接受了新 Node 的注册后，会自动将其纳入当前集群的调度范围内，在之后创建容器时，就可以向新的 Node 进行调度了。</p>
+<h2 id="Pod-动态扩容和缩放"><a href="#Pod-动态扩容和缩放" class="headerlink" title="Pod 动态扩容和缩放"></a>Pod 动态扩容和缩放</h2><p>在实际生产系统中，我们经常会遇到某个服务需要扩容的场景，也可能会遇到由于资源紧张或者工作负责降低需要减少服务实例数的场景。此时我们可以利用命令<code>kubectl scale rc</code>来完成这些任务。比如通过执行以下命令将 redis-slave RC 控制的 Pod 副本数量更新为 3:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl scale rc redis-slave --replicas=3</div></pre></td></tr></table></figure>
+<p>将 –replicas 设置为比当前 Pod 副本数量更小的数字，系统将会“杀掉”一些运行中的 Pod，即可实现应用集群缩容。</p>
+<h2 id="更新资源对象的-Label"><a href="#更新资源对象的-Label" class="headerlink" title="更新资源对象的 Label"></a>更新资源对象的 Label</h2><p>Label（标签）作为用户可灵活定义的对象属性，在已创建的对象上，仍然可以随时通过<code>kubectl label</code>命令对其进行增加、修改、删除等操作。</p>
+<p>例如，我们要给已创建的 Pod “redis-master-bobr0”添加一个标签 role=backend：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label pod redis-master-bobr0 role=backend</div></pre></td></tr></table></figure>
+<p>删除一个 Label，只需在命令后最后指定 Label 的 key 名并与一个减号相连即可：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label pod redis-master-bobr0 role-</div></pre></td></tr></table></figure>
+<p>修改一个 Label 的值，需要加上 –overwrite 参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl lable pod redis-master-bobr0 role=master --overwrite</div></pre></td></tr></table></figure>
+<h2 id="将-Pod-调度到指定的-Node"><a href="#将-Pod-调度到指定的-Node" class="headerlink" title="将 Pod 调度到指定的 Node"></a>将 Pod 调度到指定的 Node</h2><p>Kubernetes 的 Scheduler 服务（kube-scheduler 进程）负责实现 Pod 的调度，整个调度过程通过一系列复杂的算法最终为每个 Pod 计算出一个最佳的目标节点，这一过程是自动完成的，我们无法知道 Pod 最终会被调度到哪个节点上。有时我们可能需要将 Pod 调度到一个指定的 Node 上，此时，我们可以通过 Node 的标签（Label）和 Pod 的 nodeSelector 属性相匹配，来达到上述目的。</p>
+<p>首先，我们可以通过<code>kubectl label</code>命令给目标 Node 打上一个特定的标签，下面是此命令的完整用法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label nodes &lt;node-name&gt; &lt;label-key&gt;=&lt;label-value&gt;</div></pre></td></tr></table></figure>
+<p>这里，我们为 kubenetes-minion1 节点打上一个 zone=north 的标签，表明它是“北方”的一个节点：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl label nodes kubernetes-minion1 zone=north</div></pre></td></tr></table></figure>
+<p>上述命令行操作也可以通过修改资源定义文件的方式，并执行<code>kubectl replace -f xxx.yaml</code>命令来完成。</p>
+<p>然后，在 Pod 的配置文件中加入 nodeSelector 定义，以 redis-master-controller.yaml 为例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: redis-master</div><div class="line">  labels:</div><div class="line">    name: redis-master</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: redis-master</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: redis-master</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: master</div><div class="line">        image: kubeguide/redis-master</div><div class="line">        ports:</div><div class="line">        - containerPort: 6379</div><div class="line">      nodeSelector:</div><div class="line">        zone: north</div></pre></td></tr></table></figure>
+<p>运行<code>kubectl create -f</code>命令创建 Pod，scheduler 就会将该 Pod 调度到拥有 zone=north 标签的 Node 上去。</p>
+<p>使用<code>kubectl get pods -o wide</code>命令可以验证 Pod 所在的 Node。</p>
+<p>如果我们给多个 Node 都定义了相同的标签，则 scheduler 将会根据调度算法从这组 Node 中挑选一个可用的 Node 进行 Pod 调度。</p>
+<p>这种基于 Node 标签的调度方式灵活性很高，比如我们可以把一组 Node 分别贴上“开发环境”“测试环境”“正式环境”这三组标签中的一种，此时一个 Kubernetes 集群就承载了 3 个环境，这将大大提高开发效率。</p>
+<p>需要注意的是，如果我们指定了 Pod 的 nodeSelector 条件，且集群中不存在包含相应标签的 Node 时，即使还有其他可供调度的 Node，这个 Pod 也最终会调度失败。</p>
+<h2 id="应用的滚动升级"><a href="#应用的滚动升级" class="headerlink" title="应用的滚动升级"></a>应用的滚动升级</h2><p>当集群中的某个服务需要升级时，我们需要停止目前与该服务相关的所有 Pod，然后重新拉取镜像并启动。如果集群规模比较大，则这个工作就变成了一个挑战，而且先全部停止然后逐步升级的方式会导致较长时间的服务不可用。Kubernetes 提供了 rolling-update(滚动升级)功能来解决上述问题。</p>
+<p>滚动升级通过执行<code>kubectl rolling-update</code>命令一键完成，该命令创建了一个新的 RC，然后自动控制旧的 RC 中的 Pod 副本数量逐渐减少到 0，同时新的 RC 中的 Pod 副本数量从 0 逐步增加到目标值，最终实现了 Pod 的升级。需要注意的是，系统要求新的 RC 需要与旧的 RC 在相同的命名空间（Namespace）内，即不能把别人的资产偷偷转移到自家名下。</p>
+<p>以 redis-master 为例，假设当前运行的 redis-master Pod 是 1.0 版本，则现在需要升级到 2.0 版本。</p>
+<p>创建 redis-master-controller-v2.yaml 的配置文件如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: redis-master-v2</div><div class="line">  version: v2</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: redis-master</div><div class="line">    version: v2</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: redis-master</div><div class="line">        version: v2</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: master</div><div class="line">        image: kubenetes/redis-master:2.0</div><div class="line">        ports:</div><div class="line">        - containerPort: 6379</div></pre></td></tr></table></figure>
+<p>在配置文件中有几处需要注意：</p>
+<ol>
+<li>RC 的名字（name）不能与旧的 RC 的名字相同；</li>
+<li>在 selector 中应至少有一个 Label 与旧的 RC 的 Label 不同，以标识其为新的 RC。本例中新增了一个名为 version 的 Label，以与旧的 RC 进行区分。</li>
+</ol>
+<p>运行<code>kubectl rolling-update</code>命令完成 Pod 的滚动升级：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl rolling-update redis-master -f redis-master-controller-v2.yaml</div></pre></td></tr></table></figure>
+<p>等所有新的 Pod 启动完成后，旧的 Pod 也被全部销毁，这样就完成了容器集群的更新。</p>
+<p>另一种方法是不使用配置文件，直接用<code>kubectl rolling-update</code>命令，加上<code>--image</code>参数指定新版镜像名称来完成 Pod 的滚动升级：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl rolling-update redis-master --image=redis-master:2.0</div></pre></td></tr></table></figure>
+<p>如果在更新过程中发现配置有误，则用户可以中断更新操作，并通过执行<code>kubectl rolling-update --rollback</code>完成 Pod 版本的回滚：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl rolling-update redis-master --image=redis-master:2.0 --rollback</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/25/k8s_op_skills/" class="archive-article-date">
+  	<time datetime="2016-03-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-25</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-k8s_object_files" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -754,257 +858,6 @@
 
 
   
-    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">命令</th>
-<th style="text-align:center">功能</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">systemctl</td>
-<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
-</tr>
-<tr>
-<td style="text-align:left">bootctl</td>
-<td style="text-align:center">用于查看和管理系统启动分区</td>
-</tr>
-<tr>
-<td style="text-align:left">hostnamectl</td>
-<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
-</tr>
-<tr>
-<td style="text-align:left">journalctl</td>
-<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
-</tr>
-<tr>
-<td style="text-align:left">localectl</td>
-<td style="text-align:center">用于查看和管理系统的地区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">loginctl</td>
-<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
-</tr>
-<tr>
-<td style="text-align:left">machinectl</td>
-<td style="text-align:center">用于操作 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">timedatectl</td>
-<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-analyze</td>
-<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-ask-password</td>
-<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cat</td>
-<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgls</td>
-<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgtop</td>
-<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-escape</td>
-<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-hwdb</td>
-<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-delta</td>
-<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-detect-virt</td>
-<td style="text-align:center">显示主机的虚拟化类型</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-inhibit</td>
-<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-machine-id-setup</td>
-<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-notify</td>
-<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-nspawn</td>
-<td style="text-align:center">用于创建 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-path</td>
-<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-run</td>
-<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-stdio-bridge</td>
-<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tmpfiles</td>
-<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tty-ask-password-agent</td>
-<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
-</tr>
-</tbody>
-</table>
-<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
-<p>hostnamectl        显示主机名</p>
-<p>hostnamectl set-hostname xxx        设置主机名</p>
-<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
-</blockquote>
-<p><em>timedatectl 和 localectl 作用类似</em>。</p>
-<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
-<p>systemctl poweroff | halt        关机</p>
-<p>systemctl reboot        重启</p>
-<p>systemctl suspend        待机</p>
-<p>systemctl hibernate        休眠</p>
-</blockquote>
-<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
-<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
-<p>systemd-analyze blame | head      按启动耗时长短排序</p>
-<p>systemd-analyze plot        生成详细 SVG 图</p>
-<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
-<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
-<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
-<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
-</blockquote>
-<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
-<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
-<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
-<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
-<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
-<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
-<p>集群节点配置 DNS 记录或 hosts。</p>
-<p><strong>TODO</strong> </p>
-<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
-<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
-<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
-<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
-<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
-<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
-<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
-<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
     <article id="post-systemd_part2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -1266,6 +1119,257 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">命令</th>
+<th style="text-align:center">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">systemctl</td>
+<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
+</tr>
+<tr>
+<td style="text-align:left">bootctl</td>
+<td style="text-align:center">用于查看和管理系统启动分区</td>
+</tr>
+<tr>
+<td style="text-align:left">hostnamectl</td>
+<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
+</tr>
+<tr>
+<td style="text-align:left">journalctl</td>
+<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
+</tr>
+<tr>
+<td style="text-align:left">localectl</td>
+<td style="text-align:center">用于查看和管理系统的地区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">loginctl</td>
+<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
+</tr>
+<tr>
+<td style="text-align:left">machinectl</td>
+<td style="text-align:center">用于操作 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">timedatectl</td>
+<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-analyze</td>
+<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-ask-password</td>
+<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cat</td>
+<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgls</td>
+<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgtop</td>
+<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-escape</td>
+<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-hwdb</td>
+<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-delta</td>
+<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-detect-virt</td>
+<td style="text-align:center">显示主机的虚拟化类型</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-inhibit</td>
+<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-machine-id-setup</td>
+<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-notify</td>
+<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-nspawn</td>
+<td style="text-align:center">用于创建 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-path</td>
+<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-run</td>
+<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-stdio-bridge</td>
+<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tmpfiles</td>
+<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tty-ask-password-agent</td>
+<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
+</tr>
+</tbody>
+</table>
+<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
+<p>hostnamectl        显示主机名</p>
+<p>hostnamectl set-hostname xxx        设置主机名</p>
+<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
+</blockquote>
+<p><em>timedatectl 和 localectl 作用类似</em>。</p>
+<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
+<p>systemctl poweroff | halt        关机</p>
+<p>systemctl reboot        重启</p>
+<p>systemctl suspend        待机</p>
+<p>systemctl hibernate        休眠</p>
+</blockquote>
+<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
+<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
+<p>systemd-analyze blame | head      按启动耗时长短排序</p>
+<p>systemd-analyze plot        生成详细 SVG 图</p>
+<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
+<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
+<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
+<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
+</blockquote>
+<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
+<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
+<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
+<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
+<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
+<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
+<p>集群节点配置 DNS 记录或 hosts。</p>
+<p><strong>TODO</strong> </p>
+<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
+<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
+<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
+<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
+<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
+<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
+<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
+<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
 	</div>
 
       
@@ -1917,104 +2021,6 @@
 
 
   
-    <article id="post-git_part3" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/12/24/git_part3/">Git 和声</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="冲突解决"><a href="#冲突解决" class="headerlink" title="冲突解决"></a>冲突解决</h2><p>只要有合并就可能会有冲突。</p>
-<h3 id="自动合并"><a href="#自动合并" class="headerlink" title="自动合并"></a>自动合并</h3><h4 id="修改不同的文件"><a href="#修改不同的文件" class="headerlink" title="修改不同的文件"></a>修改不同的文件</h4><p>有时候我们在push代码到远程仓库时，会遇到一些小麻烦。</p>
-<p><img src="/assets/blogImg/git_part3_1.png" alt="git_part3_1.png"></p>
-<p>图为出现非快进式推送时的日志。</p>
-<p>这时我们查看当前版本库和远程版本库的commit哈希值，可以发现二者的不同，即出现了非快进式推送。</p>
-<p><img src="/assets/blogImg/git_part3_2.png" alt="git_part3_2.png"></p>
-<blockquote>
-<p><strong>非快进式推送（nor-fast-forwardupdates）</strong> 在远程版本库和当前版本库内容不一致时推送所致，引起原因一般为在多成员协同工作下，其他用户在当前用户版本库上次commit和本次commit之间向远程版本库执行了推送所致。</p>
-</blockquote>
-<p><strong>解决方法</strong></p>
-<ul>
-<li>先执行pull，再继续push，即合并后推送。这才是多成员协同工作推荐的方式。</li>
-<li>使用 <code>git push origin master --force</code>强制推送。这种方式存在覆盖掉其他人提交的危险，不推荐使用。</li>
-</ul>
-<h4 id="修改相同文件的不同区域"><a href="#修改相同文件的不同区域" class="headerlink" title="修改相同文件的不同区域"></a>修改相同文件的不同区域</h4><p>解决方法基本如上。但是如果追溯一下文件每一行的来源，可以看到分别是 dingmingk 和 root 用户更改的第一和最后的一行。</p>
-<p><img src="/assets/blogImg/git_part3_3.png" alt="git_part3_3.png"></p>
-<h4 id="同时更改文件名和文件内容"><a href="#同时更改文件名和文件内容" class="headerlink" title="同时更改文件名和文件内容"></a>同时更改文件名和文件内容</h4><p>解决方法如上。最新版本的文件名和内容都为修改后。</p>
-<h3 id="冲突解决-1"><a href="#冲突解决-1" class="headerlink" title="冲突解决"></a>冲突解决</h3><p>如果两个用户修改了同一文件的同一区域，则在合并的时候会遇到冲突而导致合并过程中端。这是因为 Git 并不能越俎代庖地替用户做出决定，而是把决定权交给用户。在这种情况下，Git 标识出合并冲突，等待用户对冲突做出抉择。</p>
-<p><img src="/assets/blogImg/git_part3_4.png" alt="git_part3_4.png"></p>
-<p>如图所示，特殊标识 &lt;&lt;&lt;&lt;&lt;&lt;&lt;（七个小于号）和 =======（七个等号）之间的内容是当前分支所更改的内容。特殊标识 =======（七个等号）和 &gt;&gt;&gt;&gt;&gt;&gt;&gt;（七个大于号）之间的内容是所合并的版本更改内容。</p>
-<p>冲突解决的实质就是通过编辑操作，将冲突标识符所标识的冲突内容替换为合适的内容，并去掉冲突标识符。编辑完后再重新提交即可。</p>
-<h2 id="里程碑"><a href="#里程碑" class="headerlink" title="里程碑"></a>里程碑</h2><p>里程碑即 Tag，是人为对提交进行的命名。相比于 Git 默认的提交ID，使用一个直观的表意的字符串会方便得多。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">git tag				&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -a			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -m &lt;msg&gt;	&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -s			&lt;tagname&gt; [&lt;commit&gt;]</div><div class="line">git tag -u &lt;key-id&gt; &lt;tagname&gt; [&lt;commit&gt;]</div></pre></td></tr></table></figure>
-<ul>
-<li>第一种是创建轻量级里程碑。</li>
-<li>第二种和第三种想同，都是创建带说明的里程碑。其中第三种直接通过 -m 参数提供里程碑创建说明。</li>
-<li>第四种和第五种相同，都是创建带 GNUPG 签名的里程碑。其中第五种用 -u 参数选择指定的私钥进行签名。</li>
-<li>创建里程碑需要输入里程碑的名字（<tagname>）和一个可选的提交ID（<commit>）。如果没有提供提交ID，则基于头指针 HEAD 创建里程碑。</commit></tagname></li>
-</ul>
-<h3 id="轻量级里程碑"><a href="#轻量级里程碑" class="headerlink" title="轻量级里程碑"></a>轻量级里程碑</h3><h3 id="带说明的里程碑"><a href="#带说明的里程碑" class="headerlink" title="带说明的里程碑"></a>带说明的里程碑</h3><h3 id="带签名的里程碑"><a href="#带签名的里程碑" class="headerlink" title="带签名的里程碑"></a>带签名的里程碑</h3><h3 id="删除里程碑"><a href="#删除里程碑" class="headerlink" title="删除里程碑"></a>删除里程碑</h3><h3 id="里程碑命名规范"><a href="#里程碑命名规范" class="headerlink" title="里程碑命名规范"></a>里程碑命名规范</h3><h2 id="Git-分支"><a href="#Git-分支" class="headerlink" title="Git 分支"></a>Git 分支</h2><h3 id="分支命令"><a href="#分支命令" class="headerlink" title="分支命令"></a>分支命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">git branch</div><div class="line">git branch &lt;branchname&gt;</div><div class="line">git branch &lt;branchname&gt; &lt;start-point&gt;</div><div class="line">git branch -d &lt;branchname&gt;</div><div class="line">git branch -D &lt;branchname&gt;</div><div class="line">git branch -m &lt;oldbranch&gt; &lt;branchname&gt;</div><div class="line">git branch -M &lt;oldbranch&gt; &lt;newbranch&gt;</div></pre></td></tr></table></figure>
-<ul>
-<li>第一种用于显示本地分支列表。当前分支在输出中会显示为特别的颜色，并用星号“*”标识出来。</li>
-<li>第二种和第三种用于创建分支。用法2基于当前头指针（HEAD）指向的提价创建分支，新分支的分支名 <branchname>。第三种基于提交 <start-point> 创建新分支，新分支的分支名为 <branchname>。</branchname></start-point></branchname></li>
-<li>第四种和第五种用户删除分支。第四种在删除分支 <branchname> 时会检查所要删除的分支是否已经合并到其它分支种，否则拒绝删除。第五种会强制删除分支。</branchname></li>
-<li>第六种和第七种用于重命名分支。如果版本库中已经存在名为 <newbranch> 的分支，第六种会拒绝执行重命名，而第七种会强制执行。</newbranch></li>
-</ul>
-<h3 id="分支变基"><a href="#分支变基" class="headerlink" title="分支变基"></a>分支变基</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ git checkout develop</div><div class="line">$ git rebase master</div></pre></td></tr></table></figure>
-<p>这两条命令会把你的 develop 分支里的每个提交（commit）取消掉，并且把它们临时保存为补丁（这些patch放到 .git/rebase 目录中），然后把 develop 分支更新为最新的 master 分支，最后把保存的这些补丁应用到 develop 分支上。</p>
-<h2 id="远程版本库"><a href="#远程版本库" class="headerlink" title="远程版本库"></a>远程版本库</h2><h2 id="代码回滚"><a href="#代码回滚" class="headerlink" title="代码回滚"></a>代码回滚</h2><h3 id="本地代码库回滚"><a href="#本地代码库回滚" class="headerlink" title="本地代码库回滚"></a>本地代码库回滚</h3><p>git reset 命令回滚有三种方式：</p>
-<ul>
-<li>mixed: 默认方式。它回退到某个版本，只保留源码，回退commit和index信息。</li>
-<li>soft: 只回退commit信息，不会恢复index file一级。</li>
-<li>hard: 彻底回退到某个版本，本地的源码也会变为上一个版本的内容。</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">* $ git reset --[hard|soft|mixed] &lt;commit&gt;	回滚所有内容到某个提交</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^		回滚所有内容到上一个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD^^ xxx	回滚xxx这个文件到上两个版本</div><div class="line">* $ git reset --[hard|soft|mixed] HEAD~3	回滚所有内容到第三个版本</div><div class="line">* $ git reset --[hard|soft|mixed] origin/master	回滚到和远程一样</div></pre></td></tr></table></figure>
-<h3 id="远程代码库回滚"><a href="#远程代码库回滚" class="headerlink" title="远程代码库回滚"></a>远程代码库回滚</h3><p>远程代码库回滚比本地回滚要复杂一些，建议操作前先备份分支。</p>
-<p>操作步骤：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">1. $ git checkout &lt;branch&gt;			切换到分支</div><div class="line">2. $ git pull							拉取最新代码</div><div class="line">3. $ git branch &lt;branch&gt; &lt;branch_backup&gt;	备份分支</div><div class="line">4. $ git reset --hard &lt;commit&gt;	回滚本地代码库</div><div class="line">5. $ git push origin :&lt;branch&gt;	删除远程分支</div><div class="line">6. $ git push origin &lt;branch&gt;		将本地分支推送到远程</div><div class="line">7. $ git push origin :&lt;branch_backup&gt;	删除远程备份分支</div></pre></td></tr></table></figure>
-<h3 id="反转提交"><a href="#反转提交" class="headerlink" title="反转提交"></a>反转提交</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">* $ git revert &lt;commit&gt;				用一次新的反转提交来消除一个历史提交所做的任何修改</div><div class="line">$ git revert -m 1 &lt;commit&gt;			“-m 1”参数表示某次历史提交的父提交</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2015/12/24/git_part3/" class="archive-article-date">
-  	<time datetime="2015-12-23T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2015-12-24</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Git/">Git</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
@@ -2080,7 +2086,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 10px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     
