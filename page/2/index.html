@@ -137,6 +137,437 @@
       <div class="body-wrap">
         
   
+    <article id="post-k8s_security" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/31/k8s_security/">Kubernetes 安全机制</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Kubernetes 通过一系列机制来实现集群的安全控制，其中包括 API Server 的认证授权、准入控制机制及保护敏感信息的 Secret 机制等。集群的安全性必须考虑如下几个目标：</p>
+<ol>
+<li>保证容器与其所在的宿主机的隔离；</li>
+<li>限制容器给基础设施及其他容器带来消极影响的能力；</li>
+<li>最小权限原则————合理限制所有组件的权限，确保组件只执行它被授权的行为，通过限制单个组件的能力来限制它所能到达的权限范围；</li>
+<li>明确组件间边界的划分；</li>
+<li>划分普通用户和管理员的角色；</li>
+<li>在必要的时候允许将管理员权限赋给普通用户；</li>
+<li>允许拥有“Secret”数据（Keys、Certs、Passwords）的应用在集群中运行。</li>
+</ol>
+<p>下面分别从 Authentication、Authorization、Admission Control、Secret 和 Service Account 六个方面来说明集群的安全机制。</p>
+<h2 id="Authentication-认证"><a href="#Authentication-认证" class="headerlink" title="Authentication 认证"></a>Authentication 认证</h2><p>Kubernetes 对 API 调用使用 CA（Client Authentication）、Token 和 HTTP Base 方式实现用户认证。</p>
+<p>使用 CA 认证的应用需包含一个 CA 认证机构给服务器端下发的根证书、服务端证书和私钥文件。因此 API Server 的三个参数“–client-ca-file”“–tls-cert-file”和“–tls-private-key-file”分别指向根证书文件、服务端证书文件和私钥文件。API Server 客户端应用的三个启动参数（例如 Kubectl 的三个参数 “certificate-authority”“client-certificate”和“client-key”），或客户端应用的 kubeconfig 配置文件中的配置项“certificate-authority”“client-certificate”和“client-key”分别指向根证书文件、客户端证书文件和私钥文件。</p>
+<p>Kubernetes 的 CA 认证方式通过添加 API Server 的启动参数“–client-ca-file=SOMEFILE”实现，其中“SOMEFILE”为认证授权文件，该文件包含一个或多个证书颁发机构（CA Certificates Authorities）。</p>
+<p>Token 认证方式通过添加 API Server 的启动参数“–token_auth_file=SOMEFILE”实现，其中“SOMEFILE”指的是 Token 文件。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">例如 Token 文件内容为：</div><div class="line">lkjqweroiuuou,Thomas,8x7d1kklzseertyywx</div><div class="line">用 CURL 去访问该 API Server：</div><div class="line">curl $APISERVER/api --header &quot;Authorization: Bearer lkjqweroiuuou&quot; --insecure</div><div class="line">&#123;</div><div class="line">  &quot;version&quot; : [</div><div class="line">    &quot;v1&quot;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>基本认证方式是通过添加 API Server 的启动参数“–basic_auth_file=SOMEFILE”实现的，其中“SOMEFILE”指的是用于存储用户和密码信息的基本认证文件。</p>
+<p>当使用基本认证方式从 HTTP 客户端访问 API Server 时，HTTP 请求头中的 Authorization 域必须包含“Basic BASE64ENCODEDUSER:PASSWORD”的值。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">tmp=`base64 &quot;dingmingk:passwd&quot;`</div><div class="line">curl $APISERVER/api --header &quot;Authorization: Basic $tmp&quot; --insecure</div><div class="line">&#123;</div><div class="line">  &quot;version&quot;:[</div><div class="line">    &quot;v1&quot;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="Authorization-授权"><a href="#Authorization-授权" class="headerlink" title="Authorization 授权"></a>Authorization 授权</h2><p>在 Kubernetes 中，授权（Authorization）是认证（Authenticaiton）后的一个独立步骤，作用于 API Server 主要端口的所有 HTTP 访问。授权流程不作用于只读端口，在计划中只读端口在不久之后将被删除。授权流程通过访问策略比较请求上下文的属性（例如用户名、资源和 Namespace）。在通过 API 访问资源之前，必须通过访问策略进行校验。访问策略通过 API Server 的启动参数 –authorization_mode 配置，该参数包含如下三个值：</p>
+<ul>
+<li>–authorization_mode=AlwaysDeny</li>
+<li>–authorization_mode=AlwaysAllow</li>
+<li>–authorization_mode=ABAC</li>
+</ul>
+<p>其中，“AlwaysDeny”表示拒绝所有的请求，该配置一般用于测试；“AlwaysAllow”表示接受所有请求，如果集群不需要授权流程，则可以采用该策略；“ABAC”表示使用用户配置的授权策略去管理访问 API Server 的请求，ABAC（Attribute-Based Access Control）为基于属性的访问控制。</p>
+<p>在 Kubernetes 中，一个 HTTP 请求包含如下 4 个能被授权进程识别的属性：</p>
+<ul>
+<li>用户名（代表一个已经被认证的用户的字符型用户名）；</li>
+<li>是否是只读请求（REST 的 GET 操作是只读的）；</li>
+<li>被访问的是哪一类资源，例如访问 Pod 资源/api/v1/namespaces/defaults/pods；</li>
+<li>被访问对象所属的 Namespace，如果这被访问的资源不支持 Namespace，则是空字符串。</li>
+</ul>
+<p>如果选用 ABAC 模式，那么需要通过设置 API Server 的“–authorization_policy_file=SOME_FILENAME”参数来指定授权策略文件，其中“SOME_FILENAME”为授权策略文件。授权策略文件的每一行都是一个 JSON 对象，该 JSON 对象是一个 Map，这个 Map 内不包含 List 和 Map。每行都是一个“策略对象”。策略对象包含下面 4 个属性：</p>
+<ul>
+<li>user（用户名），为字符串类型，该字符串类型的用户名来源于 Token 文件或基本认证文件中的用户名字段的值；</li>
+<li>readonly（只读标识），为布尔类型，当它的值为 true 时，表明该策略允许 GET 请求通过；</li>
+<li>resource（资源），为字符串类型，来自于 URL 的资源，例如“Pods”；</li>
+<li>namespace（命名空间），为字符串类型，表明该策略允许访问某个 Namespace 的资源。</li>
+</ul>
+<p>没被设置的属性，将被等同于根据值的类型设置成零值（例如为字符串类型属性设置一个空字符串；为布尔值属性设置 false；为数值类型属性设置 0）。</p>
+<p>授权策略文件中的策略对象的一个未设置属性，表示匹配 HTTP 请求中该属性的任何值。对请求的 4 个属性值和授权策略文件中的所有策略对象逐个匹配，如果至少有一个策略对象被匹配上，则该请求将被授权通过。</p>
+<p>例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">允许用户 alice 做任何事情：&#123;&quot;user&quot;:&quot;alice&quot;&#125;。</div><div class="line">用户 Kubelet 指定读取资源 Pods：&#123;&quot;user&quot;:&quot;kubelet&quot;,&quot;resource&quot;:&quot;pods&quot;,&quot;readonly&quot;:true&#125;。</div><div class="line">用户 Kubelet 能读和写资源 events：&#123;&quot;user&quot;:&quot;kubelet&quot;,&quot;resource&quot;:&quot;events&quot;&#125;</div><div class="line">用户 bob 只能读取 Namespace &quot;myNamespace&quot; 中的资源 Pods：&#123;&quot;user&quot;:&quot;bob&quot;,&quot;resource&quot;:&quot;pods&quot;,&quot;readonly&quot;:true,&quot;ns&quot;:&quot;myNamespace&quot;&#125;</div></pre></td></tr></table></figure>
+<h2 id="Admission-Control-准入控制"><a href="#Admission-Control-准入控制" class="headerlink" title="Admission Control 准入控制"></a>Admission Control 准入控制</h2><p>Admission Control 是用于拦截所有经过认证和鉴权后的访问 API Server 请求的可插入代码（或插件）。这些可插入代码运行于 API Server 进程中，在被调用前必须被编译成二进制文件。在请求被 API Server 接收前，每个 Admission Control 插件按配置顺序执行。如果其中的任意一个插件拒绝该请求，就意味着这个请求被 API Server 拒绝，同时 API Server 反馈一个错误信息给请求发起方。</p>
+<p>在某些情况下，Admission Control 插件会使用系统配置的默认值取改变进入集群对象的内容。此外，Admission Control 插件可能会改变请求处理所使用的配额，比如增加请求处理的资源配额。</p>
+<p>通过配置 API Server 的启动参数“admission_control”，在该参数中加入需要的 Admission Control 插件列表，各插件的名称之间用逗号隔开。例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">--admission_control=NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota</div></pre></td></tr></table></figure>
+<p>Admission Control 的插件列表如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">名称</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">AlwaysAdmit</td>
+<td style="text-align:left">允许所有请求通过</td>
+</tr>
+<tr>
+<td style="text-align:center">AlwaysDeny</td>
+<td style="text-align:left">拒绝所有请求，一般用于测试</td>
+</tr>
+<tr>
+<td style="text-align:center">DenyExecOnPrivileged</td>
+<td style="text-align:left">拦截所有带有 SecurityContext 属性的 Pod 的请求，拒绝在一个特权容器中执行命令</td>
+</tr>
+<tr>
+<td style="text-align:center">ServiceAccount</td>
+<td style="text-align:left">配合 Service Account Controller 使用，为设定了 Service Account 的 Pod 自动管理 Secret，使得 Pod 能够使用相应的 Secret 下载 Image 和访问 API Server</td>
+</tr>
+<tr>
+<td style="text-align:center">SecurityContextDeny</td>
+<td style="text-align:left">不允许带有 SecurityContext 属性的 Pod 存在，SecurityContext 属性用于创建特权容器</td>
+</tr>
+<tr>
+<td style="text-align:center">ResourceQuota</td>
+<td style="text-align:left">在 Namespace 中做资源配额限制</td>
+</tr>
+<tr>
+<td style="text-align:center">LimitRanger</td>
+<td style="text-align:left">限制 Namespace 中的 Pod 和 Container 的 CPU 和 内存配额</td>
+</tr>
+<tr>
+<td style="text-align:center">NamespaceExists</td>
+<td style="text-align:left">读区请求中的 Namespace 属性，如果该 Namespace 不存在，则拒绝该请求</td>
+</tr>
+<tr>
+<td style="text-align:center">NamespaceAutoProvision(deprecated)</td>
+<td style="text-align:left">读取请求中的 Namespace 属性，如果该 Namespace 不存在，则尝试创建该 Namespace</td>
+</tr>
+<tr>
+<td style="text-align:center">NamespaceLifecycle</td>
+<td style="text-align:left">该插件限制访问处于中止状态的 Namespace，禁止在该 Namespace 中创建新的内容。当 NamespaceLifecycle 和 NamespaceExists 能够合并成一个插件后，NamespaceAutoProvision 就会变成 deprecated</td>
+</tr>
+</tbody>
+</table>
+<h2 id="Secret-私密凭据"><a href="#Secret-私密凭据" class="headerlink" title="Secret 私密凭据"></a>Secret 私密凭据</h2><p>Secret 的主要作用是保管私密数据，比如密码、OAuth Tokens、SSH Keys 等信息。将这些私密信息放在 Secret 对象中比直接放在 Pod 或 Docker Image 中更安全，也更便于使用。</p>
+<p>Kubernetes 在 Pod 创建时，如果该 Pod 指定了 Service Account，那么为该 Pod 自动添加包含凭证信息的 Secrets，用于访问 API Server 和下载 Image。该功能可以通过 Admission Control 添加或失效，然而如果需要以安全的方式去访问 API Server，则建议开启该功能。</p>
+<p>下面的例子用于创建一个 Secret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ kubectl namespace myspace</div><div class="line">$ cat &lt;&lt;EOF &gt; secrets.yaml</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysecret</div><div class="line">type: Opaque</div><div class="line">data:</div><div class="line">  password: dmFsdWUtMgOK</div><div class="line">  username: dmFsdWUtMQOK</div><div class="line">$ kubectl create -f secrets.yaml</div></pre></td></tr></table></figure>
+<p>在上面的例子中，data域的各子域的值必须为 base64 编码值，其中 password 域和 username 域 base64 编码前的值分别为“value-1” 和“value-2”。</p>
+<p>一旦 Secret 被创建，则可以通过下面的三种方式使用它：</p>
+<ol>
+<li>在创建 Pod 时，通过为 Pod 指定 Service Account 来自动使用该 Secret；</li>
+<li>通过挂载该 Secret 到 Pod 来使用它；</li>
+<li>在创建 Pod 时，指定 Pod 的 spc.ImagePullSecrets 来引用它。</li>
+</ol>
+<p>将一个 Secret 通过挂载的方式添加到 Pod 的 Volume 中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: myPod</div><div class="line">  namespace: myns</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    name: mycontainer</div><div class="line">    image: redis</div><div class="line">    volumeMounts:</div><div class="line">    - name: foo</div><div class="line">      mountPath: /etc/foo</div><div class="line">      readOnly: true</div><div class="line">  volumes:</div><div class="line">  - name: foo</div><div class="line">    secret:</div><div class="line">      secretNmae: mysecret</div></pre></td></tr></table></figure>
+<p>手动使用 imagePullSecret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">$ docker login localhost:1180</div><div class="line"></div><div class="line">用 base64 编码 dockercfg 的内容</div><div class="line">$ cat ~/.dockercfg | base64</div><div class="line"></div><div class="line">将上一步命令的输出结果作为 Secret 的“data.dockercfg” 域的内容，由此来创建一个 Secret</div><div class="line">$ cat &gt; image-pull-secret.yaml &lt;&lt;EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: myregistrykey</div><div class="line">data:</div><div class="line">  .dockercfg: xxxxxxxxxxxxxxxxxxxxx</div><div class="line">type: kubernetes.io/dockercfg</div><div class="line">EOF</div><div class="line">$ kubectl create -f image-pull-secret.yaml</div><div class="line"></div><div class="line">在创建 Pod 时，引用该 Secret</div><div class="line">$ cat &gt; pods.yaml &lt;&lt; EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: mypod2</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: foo</div><div class="line">      image: janedoe/awesomeapp:v1</div><div class="line">  imagePullSecrets:</div><div class="line">    - name: myregistrykey</div><div class="line">EOF</div><div class="line"></div><div class="line">$ kubectl create -f pods.yaml</div></pre></td></tr></table></figure>
+<p>Pod 创建时会验证所挂载的 Secret 是否真的指向一个 Secret 对象，因此 Secret 必须在任何引用它的 Pod 之前被创建。Secret 对象属于 Namespace，它们只能被同一个 NameSpace 中的 Pod 所引用。</p>
+<p>Secret 包含三种类型：Opaque、ServiceAccount 和 Dockercfg。前面举例介绍了如何创建 Opaque 和 Dockercfg 类型的 Secret。下面的例子为创建一个 Service Account Secret：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysecret</div><div class="line">  annotations:</div><div class="line">    kubernetes.io/service-account.name: myserviceaccount</div><div class="line">type: kubernetes.io/service-account-token</div></pre></td></tr></table></figure>
+<h2 id="Service-Account"><a href="#Service-Account" class="headerlink" title="Service Account"></a>Service Account</h2><p>Service Account 是多个 Secret 的集合。它包含两类 Secret：一类为普通 Secret，用于访问 API Server，也被称为 Service Account Secret；另一类为 imagePullSecret，用于下载容器镜像。如果镜像库运行在 Insecure 模式下，则该 Service Account 可以不包含 imagePullSecret。在下面的例子中创建了一个名为 build-robot 的 Service Account，并查询该 Service Account 的信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">$ cat &gt; serviceaccount.yaml &lt;&lt; EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: ServiceAccount</div><div class="line">metadata:</div><div class="line">  name: myserviceaccount</div><div class="line">secrets:</div><div class="line">  - name: mysecret</div><div class="line">    kind: Secret</div><div class="line">    apiVersion: v1</div><div class="line">  - name: mysecret1</div><div class="line">    kind: Secret</div><div class="line">    apiVersion: v1</div><div class="line">imagePullSecrets:</div><div class="line">  - name: mysecret2</div><div class="line">EOF</div><div class="line">$ kubectl create -f serviceaccount.yaml</div><div class="line">$ kubectl get serviceaccounts build-robot -o yaml</div></pre></td></tr></table></figure>
+<p>在 Pod 的创建过程中指定“spec.serviceAccountName”的值为相应的 Service Account 的名称：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: mypod</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: mycontainer</div><div class="line">      image: nginx</div><div class="line">  serviceAccountName: myserviceaccount</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/31/k8s_security/" class="archive-article-date">
+  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_dns" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/30/k8s_dns/">Kubernetes DNS 服务配置案例</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。</p>
+<p>Kubernetes 提供的 DNS 由以下三个组件组成：</p>
+<ol>
+<li>etcd: DNS 存储</li>
+<li>kube2sky: 将 Kubernetes Master 中的 Service（服务）注册到 etcd。</li>
+<li>skyDNS: 提供 DNS 域名解析服务。</li>
+</ol>
+<p>这三个组件以 Pod 的方式启动和运行，所以在一个 Kubernetes 集群中，它们都可能被调度到任意一个 Node 节点上去。为了能够使它们之间网络互通，需要将各 Pod 之间的网络打通。</p>
+<h2 id="skydns-配置文件"><a href="#skydns-配置文件" class="headerlink" title="skydns 配置文件"></a>skydns 配置文件</h2><p>首先创建 DNS 服务的 ReplicationController 配置文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: kube-dns-v8</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">    kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: kube-dns</div><div class="line">        version: v8</div><div class="line">        kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: etcd</div><div class="line">        image: gcr.io/google_containers/etcd:2.0.9</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        command:</div><div class="line">        - /usr/local/bin/etcd</div><div class="line">        - -data-dir</div><div class="line">        - /var/etcd/data</div><div class="line">        - -listen-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -advertise-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -initial-cluster-token</div><div class="line">        - skydns-etcd</div><div class="line">        volumeMounts:</div><div class="line">        - name: etcd-storage</div><div class="line">          mountPath: /var/etcd/data</div><div class="line">      - name: kube2sky</div><div class="line">        image: gcr.io/google_containers/kube2sky:1.11</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /kube2sky &quot;</div><div class="line">        - --kube_master_url=http://192.168.1.128:8080</div><div class="line">        - -domain=cluster.local</div><div class="line">      - name: skydns</div><div class="line">        image: gcr.io/google_containers/skydns:2015-03-11-001</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /skydns &quot;</div><div class="line">        - -machines=http://localhost:4001</div><div class="line">        - -addr=0.0.0.0:53</div><div class="line">        - -domain=cluster.local</div><div class="line">        ports:</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns</div><div class="line">          protocol: UDP</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns-tcp</div><div class="line">          protocol: TCP</div><div class="line">      volumes:</div><div class="line">        - name: etcd-storage</div><div class="line">          emptyDir: &#123;&#125;</div><div class="line">      dnsPolicy: Default</div></pre></td></tr></table></figure>
+<p>需要修改的几个配置参数如下：</p>
+<ul>
+<li>kube2sky 容器需要访问 Kubernetes Master，需要配置 Master 所在物理主机的 IP 地址和端口号，本例中设置参数 –kube_master_url 的值为 <a href="http://192.168.1.128:8080。" target="_blank" rel="external">http://192.168.1.128:8080。</a></li>
+<li>kube2sky 容器和 skydns 容器的启动参数 -domain,设置 Kubernetes 集群中 Service 所属的域名，本例中为 cluster.local。启动后，kube2sky 会监听 Kubernetes，当有新的 Service 创建时，就会生成相应的记录并保存到 etcd 中。kube2sky 为每个 Service 生成两条记录：<ul>
+<li><service_name>.<namespace_name>.<domain>;</domain></namespace_name></service_name></li>
+<li><service_name>.<namespace_name>.svc.<domain>。</domain></namespace_name></service_name></li>
+</ul>
+</li>
+<li>skydns 的启动参数 -addr=0.0.0.0:53 表示使用本机 TCP 和 UDP 的 53 端口提供服务。</li>
+</ul>
+<p>创建 DNS 服务的 Service 配置文件如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: kube-dns</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-system</div><div class="line">    labels:</div><div class="line">      k8s-app: kube-dns</div><div class="line">      kubernetes.io/cluster-services: &quot; true &quot;</div><div class="line">      kubernetes.io/name: &quot; KubeDNS &quot;</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">  clusterIP: 20.1.0.100</div><div class="line">  ports:</div><div class="line">  - name: dns</div><div class="line">    port: 53</div><div class="line">    protocol: UDP</div><div class="line">  - name: dns-tcp</div><div class="line">    port: 53</div><div class="line">    protocol: TCP</div></pre></td></tr></table></figure>
+<p>注意，skydns 服务使用的 clusterIP 需要我们指定一个固定的 IP 地址，每个 Node 的 Kubernetes 进程都将使用这个 IP 地址，不能通过 Kubernetes 自动分配。</p>
+<p>另外，这个 IP 地址需要在 kube-apiserver 启动参数 –service-cluster-ip-range 指定的 IP 地址范围内。</p>
+<h2 id="修改每个-Node-上的-Kubelet-启动参数"><a href="#修改每个-Node-上的-Kubelet-启动参数" class="headerlink" title="修改每个 Node 上的 Kubelet 启动参数"></a>修改每个 Node 上的 Kubelet 启动参数</h2><p>修改每台 Node 上 Kubelet 的启动参数：</p>
+<ul>
+<li>–cluster_dns=20.1.0.100，为 DNS 服务的 ClusterIP 地址；</li>
+<li>–cluster_domain=cluster.local，为 DNS 服务中设置的域名。</li>
+</ul>
+<p>然后重启 Kubelet 服务。</p>
+<h2 id="创建-skydns-Pod-和服务"><a href="#创建-skydns-Pod-和服务" class="headerlink" title="创建 skydns Pod 和服务"></a>创建 skydns Pod 和服务</h2><p>通过 kubectl create 完成 RC 和 Service 的创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># kubectl create -f skydns-rc.yaml</div><div class="line"># kubectl create -f skydns-svc.yaml</div></pre></td></tr></table></figure>
+<p>创建完成后，可以查看系统创建的 RC、Pod、Service 是否创建成功：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># kubectl get rc|pods|services --namespace=kube-system</div></pre></td></tr></table></figure>
+<h2 id="DNS-服务的工作原理"><a href="#DNS-服务的工作原理" class="headerlink" title="DNS 服务的工作原理"></a>DNS 服务的工作原理</h2><p>让我们看看 DNS 服务背后的工作原理。</p>
+<p>kube2sky 容器应用通过调用 Kubernetes Master 的 API 获得集群中所有 Service 的信息，并持续监控新 Service 的生成，然后写入 etcd 中。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">查看 etcd 中存储的 Service 信息</div><div class="line"># kubectl exec kube-dns-v8-xxxxx -c etcd --namespace=kube-system etcdctl ls /skydns/local/cluster</div></pre></td></tr></table></figure>
+<p>根据 Kubelet 启动参数的设置（–cluster_dns），Kubelet 会在每个新创建的 Pod 中设置 DNS 域名解析配置文件 /etc/resolv.conf 文件，在其中增加了一条 nameserver 配置和一条 search 配置。</p>
+<p>最后，应用程序就能够像访问网站域名一样，仅仅通过服务的名字就能访问到服务了。</p>
+<p>通过 DNS 设置，对于其他 Service 的查询将可以不再依赖系统为每个 Pod 创建的环境变量，而是直接使用 Service 的名字就能对其进行访问，使得应用程序中的代码更加简洁。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/30/k8s_dns/" class="archive-article-date">
+  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_network" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/30/k8s_network/">Kubernetes 网络配置方案</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。</p>
+<h2 id="直接路由"><a href="#直接路由" class="headerlink" title="直接路由"></a>直接路由</h2><p>通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。</p>
+<p>例如 Pod1 所在 docker0 网桥的 IP 子网是 10.1.10.0，Node 地址为 192.168.1.128；而 Pod2 所在 docker0 网桥的 IP 子网是 10.1.20.0，Node 地址为 192.168.1.129.</p>
+<p>在 Node1 上增加一条到 Node2 上 docker0 的静态路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.20.0 netmask 255.255.255.0 gw 192.168.1.129</div></pre></td></tr></table></figure>
+<p>同样，在 Node2 上增加一条到 Node1 上 docker0 的静态路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.10.0 netmask 255.255.255.0 gw 192.168.1.128</div></pre></td></tr></table></figure>
+<p>我们的集群中机器数量通常很多。假设有 100 台服务器，那么就需要在每台服务器上手工添加到另外 99 台服务器 docker0 的路由规则。为了减少手工操作，可以使用 Quagga 软件来实现路由规则的动态添加。</p>
+<p>除了在每台服务器上安装 Quagga 软件并启动，还可以使用互联网上的一个 Quagga 容器来运行，在这里使用 index.alauda.cn/georce/router 镜像启动 Quagga。在每台 Node 上下载该 Docker 镜像：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker pull index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
+<p>在运行 Quagga 路由器之前，需要确保每个 Node 上 docker0 网桥的子网地址不能重叠，也不能与物理机所在的网络重叠，这需要网络管理员仔细规划。</p>
+<p>下面以 3 个 Node 为例，使用 ifconfig 命令修改 docker0 网桥的地址和子网（假设 Node 所在的物理网络不是 10.1.X.X地址段）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Node 1: # ifconfig docker0 10.1.10.1/24</div><div class="line">Node 2: # ifconfig docker0 10.1.20.1/24</div><div class="line">Node 3: # ifconfig docker0 10.1.30.1/24</div></pre></td></tr></table></figure>
+<p>然后在每个 Node 上启动 Quagga 容器。需要说明的是，Quagga 需要以 –privileged 特权模式运行，并且指定 –net=host，表示直接使用物理机的网络：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -itd --name=router --privileged --net=host index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
+<p>启动成功后，Quagga 会相互学习来完成到其他机器的 docker0 路由的添加。</p>
+<h2 id="使用-flannel-叠加网络"><a href="#使用-flannel-叠加网络" class="headerlink" title="使用 flannel 叠加网络"></a>使用 flannel 叠加网络</h2><p>falnnel 采用叠加网络（Overlay Network）模型来完成网络的打通。</p>
+<h4 id="安装-etcd"><a href="#安装-etcd" class="headerlink" title="安装 etcd"></a>安装 etcd</h4><p>由于 flannel 使用 etcd 作为数据库，所以需要预先安装好 etcd。</p>
+<h4 id="安装-flannel"><a href="#安装-flannel" class="headerlink" title="安装 flannel"></a>安装 flannel</h4><p>需要在每台 Node 上都安装 flannel。flannel 软件的下载地址为 (<a href="https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件" target="_blank" rel="external">https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件</a> flanneld 和 mk-docker-opts.sh 复制到 /usr/bin（或其他 PATH 环境变量中的目录），即可完成对 flannel 的安装。</p>
+<h4 id="配置-flannel"><a href="#配置-flannel" class="headerlink" title="配置 flannel"></a>配置 flannel</h4><p>此处以使用 systemd 系统为例对 flanneld 服务进行配置。编辑服务配置文件 /etc/systemd/system/flanneld.service：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Flanneld overlay address etcd agent</div><div class="line">After=network.target</div><div class="line">Before=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">Type=notify</div><div class="line">EnvironmentFile=/etc/sysconfig/flanneld</div><div class="line">EnvironmentFile=-/etc/sysconfig/docker-network</div><div class="line">ExecStart=/usr/bin/flanneld -etcd-endpoints=$&#123;FLANNEL_ETCD&#125; $FLANNEL_OPTIONS</div><div class="line"></div><div class="line">[Install]</div><div class="line">RequiredBy=docker.service</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
+<p>编辑配置文件/etc/sysconfig/flannel，设置 etcd 的 URL 地址：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># Flanneld configuration options</div><div class="line"># etcd url location. Point this to the server where etcd runs</div><div class="line">FLANNEL_ETCD=&quot;http://192.168.1.128:2379&quot;</div><div class="line"></div><div class="line"># etcd config key. THis is the configuration key that flannel queries</div><div class="line"># For address range assignment</div><div class="line">FLANNEL_ETCD_KEY=&quot;/coreos.com/network&quot;</div><div class="line"></div><div class="line"># Any additional options that you want to pass</div><div class="line">#FLANNEL_OPTIONS=&quot; &quot;</div></pre></td></tr></table></figure>
+<p>在启动 flannel 之前，需要在 etcd 中添加一条网络配置记录，这个配置将用于 flannel 分配给每个 Docker 的虚拟 IP 地址段：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># etcdctl set /coreos.com/network/config &apos;&#123; &quot;Network&quot; : &quot; 10.1.0.0/16 &quot; &#125;&apos;</div></pre></td></tr></table></figure>
+<h4 id="由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。"><a href="#由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。" class="headerlink" title="由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。"></a>由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。</h4><h4 id="启动-flanneld-服务"><a href="#启动-flanneld-服务" class="headerlink" title="启动 flanneld 服务"></a>启动 flanneld 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart flanneld</div></pre></td></tr></table></figure>
+<h4 id="在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置："><a href="#在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置：" class="headerlink" title="在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置："></a>在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mk-docker-opts.sh -i</div><div class="line"># source /run/flannel/subnet.env</div><div class="line"># ifconfig docker0 $&#123;FLANNEL_SUBNET&#125;</div></pre></td></tr></table></figure>
+<h4 id="重新启动-Docker-服务"><a href="#重新启动-Docker-服务" class="headerlink" title="重新启动 Docker 服务"></a>重新启动 Docker 服务</h4><h2 id="使用-Open-vSwitch"><a href="#使用-Open-vSwitch" class="headerlink" title="使用 Open vSwitch"></a>使用 Open vSwitch</h2><p>以两个 Node 为例，首先确保节点 192.168.18.128 的 Docker0 采用 172.17.43.0／24 网段，而 192.168.18.131 的 Docker0 采用 172.17.42.0/24 网段，对应参数为 DockerDaemon 进程里的 bip 参数。</p>
+<h4 id="安装-ovs"><a href="#安装-ovs" class="headerlink" title="安装 ovs"></a>安装 ovs</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install openvswitch-x.x.x-x.x86_64.rpm</div></pre></td></tr></table></figure>
+<p>禁止 SELINUX 功能，配置后重启机器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># vi /etc/selinux/config</div><div class="line">SELINUX=disabled</div></pre></td></tr></table></figure>
+<p>查看 Open vSwitch 的服务状态，应该启动两个进程：ovsdb-server 与 ovs-vswitchd。</p>
+<h4 id="创建网桥和-GRE-隧道"><a href="#创建网桥和-GRE-隧道" class="headerlink" title="创建网桥和 GRE 隧道"></a>创建网桥和 GRE 隧道</h4><p>接下来需要在每个 Node 上建立 ovs 的网桥 br0，然后在网桥上创建一个 GRE 隧道连接对端网桥，最后把 ovs 的网桥 br0 作为一个端口连接到 docker0 这个 Linux 网桥上。这样以来，两个节点上的 docker0 网段就能互通了。</p>
+<p>创建网桥</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-br br0</div></pre></td></tr></table></figure>
+<p>创建 GRE 隧道连接对端，remote_ip 为对端 eth0 的网卡地址</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-port br0 grel -- set interface grel type=gre option:remote_ip=192.168.18.128</div></pre></td></tr></table></figure>
+<p>添加 br0 到本地 docker0，使得容器流量通过 OVS 流经 tunnel</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># brctl addif docker0 br0</div></pre></td></tr></table></figure>
+<p>启动 br0 与 docker0 网桥</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># ip link set dev br0 up</div><div class="line"># ip link set dev docker0 up</div></pre></td></tr></table></figure>
+<p>添加路由规则。由于 192.168.18.128 与 192.168.18.131 的 docker0 网段分别为 172.17.43.0/24 与 172.17.42.0／24，这两个网段的路由都需要经过本机的 docker0 网桥路由，其中一个 24 网段是通过 OVS 的 GRE 隧道到达对端的，因此需要在每个 Node 上添加通过 docker0 网桥转发的 172.17.0.0/16 段的路由规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ip route add 172.17.0.0/16 dev docker0</div></pre></td></tr></table></figure>
+<p>清空 Docker 自带的 iptables 规则及 Linux 的规则 ，后者存在拒绝 icmp 报文通过防火墙的规则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># iptables -t nat -F; iptables -F</div></pre></td></tr></table></figure>
+<p>在 192.168.18.131 上完成上述步骤后，在 192.168.18.128 节点执行同样的操作。注意，GRE 隧道里的 IP 地址药改为对端节点（192.168.18.131）的 IP 地址。</p>
+<h4 id="Node-上容器之间的互通测试"><a href="#Node-上容器之间的互通测试" class="headerlink" title="Node 上容器之间的互通测试"></a>Node 上容器之间的互通测试</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># tshark -i br0 -R ip proto great</div></pre></td></tr></table></figure>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/30/k8s_network/" class="archive-article-date">
+  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_quota" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/29/k8s_quota/">Kubernetes 资源配额管理</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>资源的配额管理功能主要用于对集群中可用的资源进行分配和限制。为了开启配额管理，需要设置 kube-apiserver 的 –admission_control 参数，使之家在这两个准入控制器。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kube-apiserver ... --admission_control=LimitRanger,ResourceQuota...</div></pre></td></tr></table></figure>
+<h2 id="指定容器配额"><a href="#指定容器配额" class="headerlink" title="指定容器配额"></a>指定容器配额</h2><p>对指定容器实施配额管理非常简单，只要在 Pod 或 ReplicationController 的定义文件中设定 resources 属性即可为某个容器指定配额。目前容器支持 CPU 和 Memory 两类资源的配额限制。</p>
+<p>在下面这个 RC 定义文件中增加了 redis-master 的资源配额声明:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: redis-master</div><div class="line">  labels:</div><div class="line">    name: redis-master</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: redis-master</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: redis-master</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: master</div><div class="line">        image: kubenetes/redis-master</div><div class="line">        ports:</div><div class="line">        - containerPort: 6379</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 0.5</div><div class="line">            memory: 128Mi</div></pre></td></tr></table></figure>
+<p>以上配置表示，系统将对名为 master 的容器限制 CPU 为 0.5（也可以写为500m），可用内存限制为 128MiB字节。</p>
+<blockquote>
+<p>1 KB(kilobyte) = 1000 bytes = 8000 bits</p>
+<p>1 KiB(kibibyte) = 2^10 bytes = 1024 bytes = 8192 bits</p>
+</blockquote>
+<h2 id="全局默认配额"><a href="#全局默认配额" class="headerlink" title="全局默认配额"></a>全局默认配额</h2><p>除了可以直接在容器（或 RC）的定义文件中给指定的容器增加资源配额参数，我们还可以通过创建 LimitRange 对象来定义一个全局默认配额模版。这个默认配额模版会加载到集群中的每个 Pod 及容器上，这样就不用为每个 Pod 和容器重复设置了。</p>
+<p>我们定义一个名为 limit-range-1 的 LimitRange：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: LimitRange</div><div class="line">metadata:</div><div class="line">  name: limit-range-1</div><div class="line">spec:</div><div class="line">  limits:</div><div class="line">    - type: &quot; Pod &quot; </div><div class="line">      max:</div><div class="line">        cpu: &quot; 2 &quot;</div><div class="line">        memory: 1Gi</div><div class="line">      min:</div><div class="line">        cpu: 250m</div><div class="line">        memory: 32Mi</div><div class="line">    - type: &quot; Container &quot;</div><div class="line">      max:</div><div class="line">        cpu: &quot; 2 &quot;</div><div class="line">        memory: 1Gi</div><div class="line">      min:</div><div class="line">        cpu: 250m</div><div class="line">        memory: 32Mi</div><div class="line">      default:</div><div class="line">        cpu: 250m</div><div class="line">        memory: 64Mi</div></pre></td></tr></table></figure>
+<p>上述设置表明：</p>
+<ul>
+<li>任意 Pod 内所有容器的 CPU 使用限制在 0.25～2；</li>
+<li>任意 Pod 内所有容器的内存使用限制在 32Mi～1Gi；</li>
+<li>任意容器的 CPU 使用限制在 0.25～2，默认值为 0.25；</li>
+<li>任意容器的内存使用限制在 32Mi～1Gi，默认值为 64Mi。</li>
+</ul>
+<h2 id="多租户配额管理"><a href="#多租户配额管理" class="headerlink" title="多租户配额管理"></a>多租户配额管理</h2><p>多租户在 Kubernetes 中以 Namespace 来体现，这里的多租户可以是多个租户、多个业务系统或者相互隔离的多种作业环境。一个集群中的资源总是有限的，当这个集群被多个租户的应用同时使用时，为了更好地使用这种有限的共有资源，我们需要将资源配额的管理单元提升到租户级别，只需要在不同租户对应的 Namespace 上加载对应的 ResourceQuota 配置即可达到目的。</p>
+<p>假设我们集群拥有的总资源为：CPU 共有 128core；内存总量为 1024GiB；有两个租户，分别是开发组和测试组，开发组的资源配额为 32core CPU 及 256GiB 内存，测试组的资源配额为 96core CPU 及 768GiB 内存。</p>
+<p>首先，创建开发组对应的命名空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
+<p>接着，创建用于限定开发组的 ResourceQuota 对象，注意 metadata.namespace 属性被设定为开发组的命名空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ResourceQuota</div><div class="line">metadata:</div><div class="line">  name: quota-development</div><div class="line">  namespace: development</div><div class="line">spec:</div><div class="line">  hard:</div><div class="line">    cpu: &quot; 32 &quot;</div><div class="line">    memory: 256Gi</div><div class="line">    persistentvolumeclaims: &quot; 10 &quot;</div><div class="line">    pods: &quot; 100 &quot;</div><div class="line">    replicationcontrollers: &quot; 50 &quot;</div><div class="line">    resourcequotas: &quot; 1 &quot;</div><div class="line">    secrets: &quot; 20 &quot;</div><div class="line">    services: &quot; 50 &quot;</div></pre></td></tr></table></figure>
+<p>测试组相应的 namespace 与 ResourceQuota 同上，略。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/29/k8s_quota/" class="archive-article-date">
+  	<time datetime="2016-03-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-29</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-k8s_op_skills" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -858,6 +1289,257 @@
 
 
   
+    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">命令</th>
+<th style="text-align:center">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">systemctl</td>
+<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
+</tr>
+<tr>
+<td style="text-align:left">bootctl</td>
+<td style="text-align:center">用于查看和管理系统启动分区</td>
+</tr>
+<tr>
+<td style="text-align:left">hostnamectl</td>
+<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
+</tr>
+<tr>
+<td style="text-align:left">journalctl</td>
+<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
+</tr>
+<tr>
+<td style="text-align:left">localectl</td>
+<td style="text-align:center">用于查看和管理系统的地区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">loginctl</td>
+<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
+</tr>
+<tr>
+<td style="text-align:left">machinectl</td>
+<td style="text-align:center">用于操作 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">timedatectl</td>
+<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-analyze</td>
+<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-ask-password</td>
+<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cat</td>
+<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgls</td>
+<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-cgtop</td>
+<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-escape</td>
+<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-hwdb</td>
+<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-delta</td>
+<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-detect-virt</td>
+<td style="text-align:center">显示主机的虚拟化类型</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-inhibit</td>
+<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-machine-id-setup</td>
+<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-notify</td>
+<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-nspawn</td>
+<td style="text-align:center">用于创建 Systemd 容器</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-path</td>
+<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-run</td>
+<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-stdio-bridge</td>
+<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tmpfiles</td>
+<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
+</tr>
+<tr>
+<td style="text-align:left">systemd-tty-ask-password-agent</td>
+<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
+</tr>
+</tbody>
+</table>
+<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
+<p>hostnamectl        显示主机名</p>
+<p>hostnamectl set-hostname xxx        设置主机名</p>
+<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
+</blockquote>
+<p><em>timedatectl 和 localectl 作用类似</em>。</p>
+<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
+<p>systemctl poweroff | halt        关机</p>
+<p>systemctl reboot        重启</p>
+<p>systemctl suspend        待机</p>
+<p>systemctl hibernate        休眠</p>
+</blockquote>
+<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
+<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
+<p>systemd-analyze blame | head      按启动耗时长短排序</p>
+<p>systemd-analyze plot        生成详细 SVG 图</p>
+<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
+<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
+<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
+<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
+</blockquote>
+<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
+<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
+<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
+<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
+<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
+<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
+<p>集群节点配置 DNS 记录或 hosts。</p>
+<p><strong>TODO</strong> </p>
+<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
+<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
+<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
+<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
+<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
+<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
+<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
+<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
+  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-systemd_part2" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -1138,889 +1820,6 @@
 
 
   
-    <article id="post-systemd_part3" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/systemd_part3/">Systemd 工具集</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>除了整齐划一的 Unit 文件，Systemd 的魔力还体现在它自带的一套犹如百宝箱一样的工具集上。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">命令</th>
-<th style="text-align:center">功能</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">systemctl</td>
-<td style="text-align:center">用于检查和控制各种系统服务和资源的状态</td>
-</tr>
-<tr>
-<td style="text-align:left">bootctl</td>
-<td style="text-align:center">用于查看和管理系统启动分区</td>
-</tr>
-<tr>
-<td style="text-align:left">hostnamectl</td>
-<td style="text-align:center">用于查看和修改系统的主机名和主机信息</td>
-</tr>
-<tr>
-<td style="text-align:left">journalctl</td>
-<td style="text-align:center">用于查看系统日志和各类应用服务日志</td>
-</tr>
-<tr>
-<td style="text-align:left">localectl</td>
-<td style="text-align:center">用于查看和管理系统的地区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">loginctl</td>
-<td style="text-align:center">用于管理系统已登录用户和 Session 信息</td>
-</tr>
-<tr>
-<td style="text-align:left">machinectl</td>
-<td style="text-align:center">用于操作 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">timedatectl</td>
-<td style="text-align:center">用于查看和管理系统的时间和时区信息</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-analyze</td>
-<td style="text-align:center">显示此次系统启动时运行每个服务所消耗的时间，可以用于分析系统启动过程中的性能瓶颈</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-ask-password</td>
-<td style="text-align:center">辅助性工具，用幸好遮障用户的任意输入，然后返回实际输入的内容</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cat</td>
-<td style="text-align:center">用于将其它命令的输出重定向到系统日志</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgls</td>
-<td style="text-align:center">递归地显示指定 CGroup 的继承链</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-cgtop</td>
-<td style="text-align:center">显示系统当前最耗资源的 CGroup 单元</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-escape</td>
-<td style="text-align:center">辅助性工具，用于去除指定字符串中不能作为 Unit 文件名的字符</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-hwdb</td>
-<td style="text-align:center">Systemd 的内部工具，用于更新硬件数据库</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-delta</td>
-<td style="text-align:center">对比当前系统配置与默认系统配置的差异</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-detect-virt</td>
-<td style="text-align:center">显示主机的虚拟化类型</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-inhibit</td>
-<td style="text-align:center">用于强制延迟或禁止系统的关闭、睡眠和待机时间</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-machine-id-setup</td>
-<td style="text-align:center">Systemd 的内部工具，用于给 Systemd 容器生成 ID</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-notify</td>
-<td style="text-align:center">Systemd 的内部工具，用于通知服务的状态变化</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-nspawn</td>
-<td style="text-align:center">用于创建 Systemd 容器</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-path</td>
-<td style="text-align:center">Systemd 的内部工具，用于显示系统上下文中的各种路径配置</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-run</td>
-<td style="text-align:center">用于将任意指定的命令包装成一个临时的后台服务运行</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-stdio-bridge</td>
-<td style="text-align:center">Systemd 的内部工具 ，用于将程序的标准输入输出重定向到系统总线</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tmpfiles</td>
-<td style="text-align:center">Systemd 的内部工具，用于创建和管理临时文件</td>
-</tr>
-<tr>
-<td style="text-align:left">systemd-tty-ask-password-agent</td>
-<td style="text-align:center">用于响应后台服务进程发出的输入密码请求</td>
-</tr>
-</tbody>
-</table>
-<h4 id="主机名、时间、地区信息管理"><a href="#主机名、时间、地区信息管理" class="headerlink" title="主机名、时间、地区信息管理"></a>主机名、时间、地区信息管理</h4><blockquote>
-<p>hostnamectl        显示主机名</p>
-<p>hostnamectl set-hostname xxx        设置主机名</p>
-<p>–host 和 –machine 参数可以远程查看和修改另一个主机或容器。 </p>
-</blockquote>
-<p><em>timedatectl 和 localectl 作用类似</em>。</p>
-<h4 id="电源管理"><a href="#电源管理" class="headerlink" title="电源管理"></a>电源管理</h4><blockquote>
-<p>systemctl poweroff | halt        关机</p>
-<p>systemctl reboot        重启</p>
-<p>systemctl suspend        待机</p>
-<p>systemctl hibernate        休眠</p>
-</blockquote>
-<h4 id="启动时间和运行状态分析"><a href="#启动时间和运行状态分析" class="headerlink" title="启动时间和运行状态分析"></a>启动时间和运行状态分析</h4><blockquote>
-<p>systemd-analyze time        打印最近一次启动消耗的时间</p>
-<p>systemd-analyze blame | head      按启动耗时长短排序</p>
-<p>systemd-analyze plot        生成详细 SVG 图</p>
-<p>systemd-analyze dump      打印当前所有 Unit 状态</p>
-<p>systemd-analyze dot      生成系统中所有 Unit 的依赖关系图</p>
-<p>systemd-anylyze set-log-level emerg | alert | crit | err | warning | notice | info | debug</p>
-<p>systemd-analyze verify xxx      检测 Unit 文件格式正确性</p>
-</blockquote>
-<h4 id="辅助性命令工具"><a href="#辅助性命令工具" class="headerlink" title="辅助性命令工具"></a>辅助性命令工具</h4><h6 id="systemd-ask-password"><a href="#systemd-ask-password" class="headerlink" title="systemd-ask-password"></a>systemd-ask-password</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ PASSWORD=$(systemd-ask-password &quot;Hint test here:&quot;)</div><div class="line">Hint test here: ***</div><div class="line">$ echo $(PASSWORD)</div><div class="line">abc</div></pre></td></tr></table></figure>
-<h6 id="systemd-run"><a href="#systemd-run" class="headerlink" title="systemd-run"></a>systemd-run</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ sudo systemd-run --uid=root --gid=root du -sh /*</div></pre></td></tr></table></figure>
-<p>当服务正常结束后（返回值为 0）会自动从 Systemd 的记录中消失，但其留下的日志仍然可以通过 journalctl 查看到。反之，如果服务异常结束（返回值非 0），则这个服务的记录会继续留在 Systemd 中，可以通过 “systemctl list-units”命令查看到。</p>
-<p><code>$ sudo systemd-run --on-active=30 --time-property=AccuracySec=100ms /bin/touch/tmp/time-up</code>生成临时定时器。</p>
-<p>此时系统创建了两个临时的 Unit 文件。需要注意一点，其中的服务 Unit 文件会在定时器时间到时，且响应的任务顺利完成后自动删除。然后，定时器的 Unit 文件并不会随着任务的完成而自动消失，需要手工执行“systemctl stop”命令来移除。</p>
-<p><code>systemctl reset-failed</code>命令可以用来清理失败的临时服务。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/systemd_part3/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-rabbitmq_cluster" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/01/rabbitmq_cluster/">RabbitMQ 集群</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="集群部署"><a href="#集群部署" class="headerlink" title="集群部署"></a>集群部署</h2><p>我们准备三台服务器配置集群，其中两台RabbitMQ为内存（RAM）节点，单台为磁盘节点。</p>
-<p>集群节点配置 DNS 记录或 hosts。</p>
-<p><strong>TODO</strong> </p>
-<h4 id="启动集群节点"><a href="#启动集群节点" class="headerlink" title="启动集群节点"></a>启动集群节点</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit1$ rabbitmq-server -detached</div><div class="line">rabbit2$ rabbitmq-server -detached</div><div class="line">rabbit3$ rabbitmq-server -detached</div></pre></td></tr></table></figure>
-<h4 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rabbit2$ rabbitmqctl stop_app</div><div class="line">rabbit2$ rabbitmqctl join_cluster --ram rabbit@rabbit1</div><div class="line">rabbit2$ rabbitmqctl start_app</div></pre></td></tr></table></figure>
-<p><em>rabbit3 同上，也可以加入rabbit2</em></p>
-<h4 id="分离集群"><a href="#分离集群" class="headerlink" title="分离集群"></a>分离集群</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">rabbit3$ rabbitmqctl stop_app</div><div class="line">rabbit3$ rabbitmqctl reset</div><div class="line"></div><div class="line">rabbit1$ rabbitmqctl forget_cluster_node rabbit@rabbit3</div></pre></td></tr></table></figure>
-<h4 id="集群备注"><a href="#集群备注" class="headerlink" title="集群备注"></a>集群备注</h4><p><code>rabbitmqctl cluster_status</code> 查看集群状态</p>
-<p><code>rabbitmqctl stop</code> 和 <code>rabbitmqctl stop_app</code> 的区别是后者只停止应用，前者还会停止节点。</p>
-<p><code>rabbitmqctl change_cluster_node_type ram|disc</code> 可以更改节点类型（需要先停止应用）。</p>
-<h2 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h2><p><strong>TODO</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/01/rabbitmq_cluster/" class="archive-article-date">
-  	<time datetime="2016-02-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RabbitMQ/">RabbitMQ</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-cgroup_part2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/29/cgroup_part2/">使用 Cgroup</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Cgconfig服务"><a href="#Cgconfig服务" class="headerlink" title="Cgconfig服务"></a>Cgconfig服务</h2><p>要使用 cgroup，首先要确认系统中已安装 <code>libcgroup</code>软件包。（RedHat系）</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install libcgroup</div></pre></td></tr></table></figure>
-<h4 id="cgconfig-conf文件"><a href="#cgconfig-conf文件" class="headerlink" title="cgconfig.conf文件"></a>cgconfig.conf文件</h4><p>cgconfig.conf 文件包含两个主要类型的条目 ——— mount 和 group。挂载条目生成并挂载层级并将其作为虚拟文件系统，同时将子系统附加到那些层级中</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"># cat /etc/cgconfig.conf</div><div class="line"></div><div class="line">mount &#123;</div><div class="line">        cpuset  = /cgroup/cpuset;</div><div class="line">        cpu     = /cgroup/cpu;</div><div class="line">        cpuacct = /cgroup/cpuacct;</div><div class="line">        memory  = /cgroup/memory;</div><div class="line">        devices = /cgroup/devices;</div><div class="line">        freezer = /cgroup/freezer;</div><div class="line">        net_cls = /cgroup/net_cls;</div><div class="line">        blkio   = /cgroup/blkio;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>挂载子系统的备选方法是使用 shell 命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># mkdir /cgroup/cpu</div><div class="line"># mount -t cgroup -o cpu cpu /cgroup/cpu</div></pre></td></tr></table></figure>
-<p>组群条目使用一下语法设定子系统参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">group &lt;name&gt;</div><div class="line">	[&lt;permissions&gt;]</div><div class="line">	&lt;controller&gt; &#123;</div><div class="line">		&lt;param name&gt; = &lt;param value&gt;;</div><div class="line">		...</div><div class="line">	&#125;</div><div class="line">	...</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h4 id="e-g-为-sql-守护进程创建-cgroup，可为-sqladmin-组群中的用户在-cgroup-中添加任务，并让-root-用户修改子系统参数："><a href="#e-g-为-sql-守护进程创建-cgroup，可为-sqladmin-组群中的用户在-cgroup-中添加任务，并让-root-用户修改子系统参数：" class="headerlink" title="e.g. 为 sql 守护进程创建 cgroup，可为 sqladmin 组群中的用户在 cgroup 中添加任务，并让 root 用户修改子系统参数："></a>e.g. 为 sql 守护进程创建 cgroup，可为 sqladmin 组群中的用户在 cgroup 中添加任务，并让 root 用户修改子系统参数：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">group daemons/sql &#123;</div><div class="line">	perm &#123;</div><div class="line">		task &#123;</div><div class="line">			uid = root;</div><div class="line">			gid = sqladmin;</div><div class="line">		&#125; admin &#123;</div><div class="line">			uid = root;</div><div class="line">			gid =root;</div><div class="line">		&#125;</div><div class="line">	&#125; cpu &#123;</div><div class="line">		cpu.shares = 100;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>以上配置对等的 shell 命令为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"># mkdir -p /cgroup/cpu/daemons/sql</div><div class="line"># chown root:root /cgroup/cpu/daemons/sql/*</div><div class="line"># chown root:sqladmin /cgfroup/cpu/daemons/sql/tasks</div><div class="line"># echo 100 &gt; /cgroup/cpu/daemons/sql/cpu.shares</div></pre></td></tr></table></figure>
-<h2 id="在现有层级中附加或删除子系统"><a href="#在现有层级中附加或删除子系统" class="headerlink" title="在现有层级中附加或删除子系统"></a>在现有层级中附加或删除子系统</h2><p>要在现有层级中添加子系统，从现有层级中取消层级或者将其移动到不同的层级中，请作为 root 编辑 /etc/cgconfig.conf 文件的 mount 部分，当 cgconfig 下次重启时，它会根据您指定的层级识别那些子系统。</p>
-<p>使用 mount 命令挂载时加上 remount 参数，并列出新的子系统列表即可。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mount -t cgroup -o remount,cpu,cpuset,... cpu_and_mem</div></pre></td></tr></table></figure>
-<h2 id="卸载层级"><a href="#卸载层级" class="headerlink" title="卸载层级"></a>卸载层级</h2><p>直接使用 umount 即可卸载层级。不过需要注意的是：如果该层级目前为空（即它只包含 root cgroup），则在卸载它时会取消激活该层级。如果该层级包含任意其他 cgroup，该层级在内核中仍保持活跃，即使不再挂载它也是如此。</p>
-<p>要删除层级，请确定您在卸载该层级前删除所有子 cgroup，或者使用 cgclear命令，它可在层级非空时也可取消激活层级。</p>
-<h2 id="cgroup操作"><a href="#cgroup操作" class="headerlink" title="cgroup操作"></a>cgroup操作</h2><h4 id="cgcreate"><a href="#cgcreate" class="headerlink" title="cgcreate"></a>cgcreate</h4><blockquote>
-<p>语法： cgcreate -t uid:gid -a uid:gid -g subsystems:path</p>
-</blockquote>
-<ul>
-<li>-t（可选）：指定用户（使用用户 ID，uid）和组群（使用组群 ID，gid）以便让这个 cgroup 拥有 tasks 伪文件。这个用户可在该 cgroup 中添加任务。</li>
-<li>-a（可选）：指定用户（使用用户ID，uid）和组群（使用组群ID，gid）以便这个 cgroup 拥有 tasks 外的所有伪文件。这个用户可修改这个 cgroup 中的任务对系统资源的访问。</li>
-<li>-g：指定在其中创建 cgroup 的层级，格式为与那些层级关联的用逗号分开的 subsystems 列表。如果这个列表中的子系统在不同的层级中，则要在每个层级中都创建该组群。层级列表后是一个冒号，然后是与该层级有关的子组群 path。不要在该 path 中包含层级挂载点。</li>
-</ul>
-<p><em>e.g.</em> 在 cpu_and_mem 层级中一同挂载 cpu 和 memory 子系统的系统，并将 net_cls 控制器挂载到名为 net 的另一个层级中。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># cgcreate -g cpu,net_cls:/test-subgroup</div></pre></td></tr></table></figure>
-<p><em>备用方法</em>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mkdir /cgroup/hierarchy/name/child_name</div></pre></td></tr></table></figure>
-<h4 id="cgdelete"><a href="#cgdelete" class="headerlink" title="cgdelete"></a>cgdelete</h4><p>使用 cgdelete 删除 cgroup，其语法与 cgcreate 类似。</p>
-<blockquote>
-<p>cgdelete subsystems:path</p>
-<p>-r 递归删除所有子组群</p>
-</blockquote>
-<p><em>e.g.</em> </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># cgdelete cpu,net_cls:/test-subgroup</div></pre></td></tr></table></figure>
-<h4 id="cgset"><a href="#cgset" class="headerlink" title="cgset"></a>cgset</h4><p>在可修改相关的 cgroup 的用户账户中 运行 cgset 命令设置子系统参数。</p>
-<blockquote>
-<p>cgset -r parameter=value path_to_cgroup</p>
-<p>parameter： 是要设定的参数，该参数与给定 cgroup 的目录中的文件对应。</p>
-<p>value： 是为参数设定的值</p>
-<p>path_to_cgroup： 是到相对该层级 root 的 cgroup 路径。</p>
-<p>–copy-from path_to_source_cgroup path_to_target_cgroup： 将一个 cgroup 中的参数复制到另一个现有 cgroup 中。</p>
-</blockquote>
-<p><em>备用方法</em></p>
-<p>要直接在 cgroup 中设置参数，可使用 echo 命令将值插入相关子系统伪文件中。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># echo 0-1 &gt; /cgroup/cpuset/group1/cpuset.cpus</div></pre></td></tr></table></figure>
-<h2 id="cgclassify"><a href="#cgclassify" class="headerlink" title="cgclassify"></a>cgclassify</h2><blockquote>
-<p>cgclassify -g subsystems:path_to_cgroup pidlist</p>
-<p>subsystems： 是用逗号分开的子系统列表，或者 ＊ 启动与所有可用子系统关联的层级中的进程。</p>
-<p>path_to_cgroup： 是到其层级中的 cgroup 的路径。</p>
-<p>pidlist： 是用空格分开的进程识别符（PID）列表。 </p>
-</blockquote>
-<p><em>e.g.</em> 将 PID 为 1701 和 1138 的进程移动到 cgorup 中的 group1/：<code># cgclassify -g cpu,memory:group1 1701 1138</code></p>
-<p><em>备用方法</em></p>
-<p><code># echo 1701 &gt; /cgroup/lab1/group/tasks</code></p>
-<h2 id="cgred"><a href="#cgred" class="headerlink" title="cgred"></a>cgred</h2><p>Cgred 是一个守护进程，它可根据在 <code>/etc/cgrules.conf</code> 中设定的参数将任务移动到 cgroup 中，条目可以使用以下两种格式之一：</p>
-<ul>
-<li>user hierarchies control_group</li>
-<li>user:command hierarchies control_group</li>
-</ul>
-<p><em>e.g.</em> </p>
-<p><code>maria        devices        /usergroup/staff</code></p>
-<p>这个条目指定任何属于名为 maria 用户的进程根据在 /usergroup/staff cgroup 中指定的参数访问设备子系统。</p>
-<p><code>maria:ftp    devices    /usergroup/staff/ftp</code></p>
-<p>该条目现在指定核实名为 maria 的用户使用 ftp 命令 ，自动将该进程移动到包含 devices 子系统的层级中的 /usergroup/staff/ftp cgroup 中。</p>
-<h4 id="etc-cgrules-conf"><a href="#etc-cgrules-conf" class="headerlink" title="/etc/cgrules.conf"></a>/etc/cgrules.conf</h4><blockquote>
-<p>@：当在 user 使用前缀时，代表是一个组群而不是一个单独用户。例如： @admins 是 admins 组群中的所有用户。</p>
-<p>*： 代表“所有”。</p>
-<p>%： 代表与以上行中项目相同的项目。</p>
-</blockquote>
-<h2 id="cgexec"><a href="#cgexec" class="headerlink" title="cgexec"></a>cgexec</h2><blockquote>
-<p>cgexec -g subsystems:path_to_cgroup command arguments</p>
-<p>subsystems：是用逗号分开的子系统列表或者 * 启动与所有可用子系统关联的层级的进程。</p>
-<p>path_to_cgroup：是到与该层级相关的 cgroup 的路径。</p>
-<p>commond：是要运行的命令。</p>
-<p>arguments：是该命令所有参数。</p>
-<p>–sticky：将所有子进程放在同一 cgroup 中。</p>
-</blockquote>
-<p><em>备用方法</em></p>
-<p><code># echo $$ &gt; /cgroup/lab1/group1/tasks</code></p>
-<p>请注意：**退出用户后，现有 shell 中仍在 group1 cgroup 中。因此更好的方法应为：</p>
-<p><code># sh -c &quot;echo \$$ &gt; /cgroup/lab1/group1/tasks &amp;&amp; USER</code></p>
-<h4 id="在控制组群中启动服务"><a href="#在控制组群中启动服务" class="headerlink" title="在控制组群中启动服务"></a>在控制组群中启动服务</h4><p>您可在某个 cgroup 中启动某些服务。在 cgroup 中启动的服务必须：</p>
-<ul>
-<li>使用 /etc/sysconfig/servicename 文件</li>
-<li>使用 /etc/init.d/functions 的 daemon()功能启动该服务</li>
-</ul>
-<p>要在某个 cgroup 中启动合格服务，请在 /etc/sysconfig 中编辑其文件，使该文件包含如下条目：<strong>CGROUP_DAEMON=”subsystem:control_group”</strong></p>
-<p><em>e.g.</em> <code>CGROUP_DAEMON=&quot;cpuset:daemons/sql&quot;</code></p>
-<h2 id="获得有关控制组群的信息"><a href="#获得有关控制组群的信息" class="headerlink" title="获得有关控制组群的信息"></a>获得有关控制组群的信息</h2><h4 id="查找某个进程"><a href="#查找某个进程" class="headerlink" title="查找某个进程"></a>查找某个进程</h4><p><code>$ ps -O cgroup</code></p>
-<p><code>$ cat /proc/PID/cgroup</code></p>
-<h4 id="查找子系统"><a href="#查找子系统" class="headerlink" title="查找子系统"></a>查找子系统</h4><p><code>$ cat /proc/cgroups</code></p>
-<p><code>$ lssubsys -m subsystems</code></p>
-<h4 id="查找层级"><a href="#查找层级" class="headerlink" title="查找层级"></a>查找层级</h4><p><code>$ tree /cgroup/</code></p>
-<h4 id="查找控制组群"><a href="#查找控制组群" class="headerlink" title="查找控制组群"></a>查找控制组群</h4><p><code>$ lscgroup</code></p>
-<p><code>$ lscgroup cpuset:adminusers</code></p>
-<h4 id="显示控制组群的参数"><a href="#显示控制组群的参数" class="headerlink" title="显示控制组群的参数"></a>显示控制组群的参数</h4><p><code>$ cgget -r parameter list_of_cgroups</code></p>
-<p>其中 parameter 是包含子系统值的伪文件，list_of_cgroups 是用空格分开的 cgorup 列表。</p>
-<h2 id="cgclear"><a href="#cgclear" class="headerlink" title="cgclear"></a>cgclear</h2><p><strong>cgclear 命令将破坏所有层级中的所有 cgroup。如果没有在配置文件中保存这些层级，将无法再次构建它们。</strong></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/02/29/cgroup_part2/" class="archive-article-date">
-  	<time datetime="2016-02-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-29</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cgroup/">Cgroup</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-systemd_part1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/27/systemd_part1/">Systemd 的服务管理模型</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Systemd 是 CoreOS 采用的服务进程和系统资源管理工具。它最初的设计目标主要是克服传统 Linux 主流启动程序 SysV-init 的固有设计缺陷，提高系统的启动速度。 Systemd 的设计思路借鉴了 Mac OSX 系统的启动程序 Launchd，相比其他的 SysV-init 替代方案，例如 Ubuntu 的 Upstart，Systemd 的设计更加前卫。</p>
-<p>事实上，Systemd 是一系列系统工具的集合，其作用也远远不仅是启动操作系统，它还接管了后台服务启动、结束、状态查询，以及日志归档、设备管理、电源管理、定时任务等许多指责，并支持通过特定事件（如插入特定 USB 设备）和特定端口数据触发的 On-demand 任务。在 CoreOS 的世界里，几乎所有与应用程序打交道的工作，都会交由 Systemd 进行管理，包括运行在容器中的服务。</p>
-<h2 id="Systemd的设计理念"><a href="#Systemd的设计理念" class="headerlink" title="Systemd的设计理念"></a>Systemd的设计理念</h2><ul>
-<li>尽可能启动更少的进程</li>
-<li>尽可能将更多的进程并行启动</li>
-<li>采用 CGroup 跟踪和管理进程的生命周期</li>
-<li>统一管理服务日志</li>
-</ul>
-<h2 id="Systemd的服务管理"><a href="#Systemd的服务管理" class="headerlink" title="Systemd的服务管理"></a>Systemd的服务管理</h2><h4 id="Unit"><a href="#Unit" class="headerlink" title="Unit"></a>Unit</h4><p>Unit 是 Systemd 管理服务的基本单元，可以认为每个服务就是一个 Unit，并使用一个 Unit 文件定义。在 Unit 文件中需要包含相应服务的描述、属性以及需要运行的命令。</p>
-<p>在 CoreOS 中运行服务的命令通常是一系列的容器操作，而将具体的服务进程封装在容器中。</p>
-<h4 id="Target"><a href="#Target" class="headerlink" title="Target"></a>Target</h4><p>Target 是 Systemd 中用于指定服务启动组的方式，相当于 SysV-init 中的“运行级别”。每次系统启动时都会运行与当前系统具有相同级别 Target 关联的所有服务，如果服务不需要跟随系统自动启动，则完全可以忽略这个 Target 的内容。</p>
-<p>通常来说，大多数 Linux 用户平时使用的都是“多用户模式”这个级别，对应的 Target 值为 “multi-user.target”，它有一个等效的可用值是“default.target”。</p>
-<h2 id="Hello-Systemd"><a href="#Hello-Systemd" class="headerlink" title="Hello Systemd"></a>Hello Systemd</h2><p>在 CoreOS 中，用户的自定义服务配置文件通常放在 <code>/etc/systemd/system</code>目录中。进入这个目录，新建一个名为“hello.service”的文件，内容如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">[Unit］</div><div class="line">Description=Hello Systemd</div><div class="line">After=docker.service</div><div class="line">Requires=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartPre=-/usr/bin/docker kill busybox1</div><div class="line">ExecStartPre=-/usr/bin/docker rm busybox1</div><div class="line">ExecStartPre=/usr/bin/docker pull busybox</div><div class="line">ExecStart=/usr/bin/docker run --name busybox1 busybox /bin/sh -c &quot;while true; do echo Hello Systemd; sleep 1; done&quot;</div><div class="line">ExecStop=/usr/bin/docker stop busybox1</div><div class="line">ExecStopPost=/usr/bin/docker rm busybox1</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
-<p>这里需要注意两个地方：</p>
-<ol>
-<li>ExecStart 属性只能包含一条主要命令，而在这个属性的前后可以分别使用 ExecStartPre 和 ExecStartPost 指定更多的辅助命令；ExecStop同理。</li>
-<li>有些辅助命令会加上一个减号（-），表示忽略这些命令的出错。</li>
-</ol>
-<h2 id="日志管理"><a href="#日志管理" class="headerlink" title="日志管理"></a>日志管理</h2><p>Systemd 通过其标准日志服务 Journald 将其管理的所有后台进程打印到 std:out（即控制台）的输出重定向到了日志文件。</p>
-<p>日志文件是二进制格式的，必须使用 Journald 提供的配套程序 journalctl 来查看。 </p>
-<h4 id="Journalctl"><a href="#Journalctl" class="headerlink" title="Journalctl"></a>Journalctl</h4><p>Journalctl 的使用非常简单，默认不带任何参数时会输出系统和所有后台进程的混合日志，可以通过一些参数选择性地过滤所需的内容。</p>
-<ul>
-<li>–dmesg：内核输出的日志</li>
-<li>–system：各类系统服务的控制台输出</li>
-<li>–unit xxx.service：用户指定的服务日志</li>
-</ul>
-<p>高级用法：</p>
-<ul>
-<li>–follow：实时跟踪日志输出</li>
-<li>–since和–unit：指定显示的日志时间区间（e.g. –since “2015-07-20 12:00:00” –until “2015-07-20 12:30:00”）,–since=today可以直接打印当天输出的日志。</li>
-<li>–reverse：反向输出日志</li>
-<li>–lines：查看最新的N行日志（e.g. –lines n）</li>
-<li>–output：改变输出日志的格式（e.g. –output json-pretty）</li>
-</ul>
-<p>另外，除了使用 –unit 参数指定 Unit 名称外，还可以指定程序名称和指定进程 PID。</p>
-<ul>
-<li>$ journalctl /usr/lib/systemd/systemd </li>
-<li>$ journalctl _PID=1</li>
-</ul>
-<h4 id="日志大小限制"><a href="#日志大小限制" class="headerlink" title="日志大小限制"></a>日志大小限制</h4><p>默认日志最大限制为所在文件系统容量的 10％。即：如果<code>/var/log/journal</code>存储在 50GB 的根分区中，那么日志最多存储 5GB 数据。</p>
-<p>可以通过修改 <code>/etc/systemd/journald.conf</code>中的 <code>SystemMaxUse</code>来指定该最大限制。比如<code>SystemMaxUse=50M</code>。</p>
-<h2 id="服务的生命周期"><a href="#服务的生命周期" class="headerlink" title="服务的生命周期"></a>服务的生命周期</h2><ol>
-<li>当一个新的 Unit 文件被放入 <code>/etc/systemd/system/</code>或<code>/usr/lib/systemd/system/</code>目录中时，它是不会被 Systemd 识别到的；（$ systemctl list-unit-files）</li>
-<li>systemctl start|enable 激活；($ systemctl list-units <unit>)</unit></li>
-<li>使用 systemctl start 命令可以启动指定的服务，启动时会一次执行定义在 Unit 文件中的 ExecStartPre、ExecStart、ExecStartPost命令</li>
-<li>使用 ststmectl stop 命令可以结束指定的服务，结束时会依次执行定义在 Unit 文件中的 ExecStopPre、ExecStop、ExecStopPost命令；</li>
-<li>systemctl restart 命令相当于先结束指定的服务，然后立即重新启动它；</li>
-<li>systemctl kill命令会立即杀死服务，而不会执行 Unit 中指定的结束命令；</li>
-<li>systemctl enable xxx.service 设置开机启动；</li>
-<li>systmectl disable xxx.service 取消开机启动；</li>
-<li>systemctl daemon-reload 重新加载 Unit 文件；</li>
-<li>systemctl reset-failed 移除已经被标记为丢失的 Unit 文件。</li>
-</ol>
-<h2 id="服务的Unit文件"><a href="#服务的Unit文件" class="headerlink" title="服务的Unit文件"></a>服务的Unit文件</h2><p>服务的 Unit 文件可以分为三个配置区段，其中 Unit 段和 Install 段是所有 Unit 文件通用的，用于配置服务（或其他系统资源）的描述、依赖和随系统启动方式，而 Service 段则是服务类型的 Unit 文件（后缀为.service）特有的，用于定义服务的具体管理和操作方法。</p>
-<h4 id="配置区段的常用参数"><a href="#配置区段的常用参数" class="headerlink" title="配置区段的常用参数"></a>配置区段的常用参数</h4><ul>
-<li>Unit <ul>
-<li>Description: 一段描述这个 Unit 文件的文字。</li>
-<li>Documentation: 指定服务的文档，可以是一个或多个文档的路径。</li>
-<li>Requires: 依赖的其他 Unit 列表，依赖服务启动失败会导致这个服务被终止。</li>
-<li>Wants: 与 Requires 相似，但不考虑依赖服务是否启动成功。</li>
-<li>After: 与 Requires 相似，但是在列出的服务都启动完成后才会启动当前服务。</li>
-<li>Before: 与 After 相反。</li>
-<li>BindsTo: 与 Requires 相似，但是关联性更强。</li>
-<li>Part Of: 这是一个 BindTo 作用的子集，仅在列出的任何模块失败或重启时，终止或重启当前服务，而不会随列出的模块的启动而启动。</li>
-<li>OnFailure: 当这个模块启动失败时，就会自动启动列出的每个模块。</li>
-<li>Conflicts: 与这个模块有冲突的模块，如果列出的模块中有已经在运行的，这个服务就不能启动；反之亦然。</li>
-</ul>
-</li>
-<li>Install <ul>
-<li>WantedBy: 和前面的 Wants 相似，只是后面列出的不是服务所依赖的模块，而是依赖当前服务的模块。</li>
-<li>RequiredBy: 和前面的 Requires 相似，只是后面列出的不是服务所依赖的模块，而是依赖当前服务的模块。</li>
-<li>Also: 当这个服务被 enable/disable 时，将自动 enable/disable 后面列出的每个模块。</li>
-</ul>
-</li>
-<li>Service<ul>
-<li>Type: 服务的类型，常用的有 simple 和 forking。</li>
-<li>RemainAfterExix: 值为 true 或 false（也可以写为 yes 或 no），默认为 false。当配置值为 true 时，Systemd 只会负责启动服务进程，之后即便服务进程退出了，Systemd也仍然会认为这个服务还在运行中。这个配置主要是提供给一些并非常驻内存，而是启动注册后立即退出，燃火等待消息按需启动的特许类型服务使用的。</li>
-<li>ExecStart: 这个参数是疾呼每个”.service”文件都会有的，指定服务启动的主要命令，在每个配置文件中只能使用一次。</li>
-<li>ExecStartPre: 指定在启动执行 ExecStart 命令前的准备工作，在同一个配置文件中可以有多个。</li>
-<li>ExecStartPost: 指定在启动执行 ExecStart 命令后的首位工作，在同一个配置文件中可以有多个。</li>
-<li>TimeoutStartSec: 启动服务时的超时时间。Docker 第一次运行时可能会需要从网络上下载服务的镜像文件，因此造成比较严重的延时，建议将值指定为 0，从而关闭检测。</li>
-<li>ExecStop: 停止服务所需要执行的主要命令，在每个配置文件中只能有一个。</li>
-<li>ExecStopPost: 指定在 ExecStop 命令执行后的收尾工作，在同一个配置文件中可以有多个。</li>
-<li>TimeoutStopSec: 停止服务时的超时时间。</li>
-<li>Restart: 这个值用语指定在什么情况下需要重启服务进程。常用的值有 no、on-success、on-failure、on-abnormal、on-abort 和 always。默认值为 no。如下表格表示分别在哪些情况下，服务会被重新启动。</li>
-<li>RestartSec: 如果服务需要被重启，这个参数的值为服务被重启前的等待秒数。</li>
-<li>ExecReload: 重新加载服务所需执行的主要命令。</li>
-<li>Environment: 为服务添加环境变量。</li>
-<li>EnviromentFile: 指定加载一个包含服务所需的环境变量列表的文件，文件中的每一行都是一个环境变量的定义。</li>
-<li>Nice: 服务的进程优先级，值越小优先级越高，默认为0。其中-20 为最高优先级，19为最低优先级。</li>
-<li>WorkingDirectory: 指定服务的工作目录。</li>
-<li>RootDirectory: 指定服务进程的根目录。如果配置了这个参数，服务将无法访问指定目录以外的任何文件。</li>
-<li>User: 指定运行服务的用户，会影响服务对本地文件系统的访问权限。</li>
-<li>Group: 指定运行服务的用户组，会影响服务对本地文件系统的访问权限。</li>
-<li>MountFlags: 之歌值其实是服务的 Mount Namespace 的配置，会影响服务进程上下文中挂载点的信息，即服务是否会继承主机上已有的挂载点，以及如果服务运行时执行了挂载或卸载设备的操作，是否会真实地在主机上产生效果。可选值是 shared、slava 或 private。</li>
-<li>LimitCPU／LimitSTACK／LimitNOFILE／LimitNPROC 等，限制特定服务可用的系统资源量。</li>
-</ul>
-</li>
-</ul>
-<h4 id="Systemd-中用于兼容-SysV-init-运行级别的目标-Unit-文件"><a href="#Systemd-中用于兼容-SysV-init-运行级别的目标-Unit-文件" class="headerlink" title="Systemd 中用于兼容 SysV-init 运行级别的目标 Unit 文件"></a>Systemd 中用于兼容 SysV-init 运行级别的目标 Unit 文件</h4><table>
-<thead>
-<tr>
-<th style="text-align:left">SysV-init 运行级别</th>
-<th style="text-align:center">Systemd 运行目标</th>
-<th style="text-align:center">注释</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">0</td>
-<td style="text-align:center">runlevel0.target, poweroff.target</td>
-<td style="text-align:center">关闭系统</td>
-</tr>
-<tr>
-<td style="text-align:left">1</td>
-<td style="text-align:center">runlevel1.target, rescue.target</td>
-<td style="text-align:center">单用户模式</td>
-</tr>
-<tr>
-<td style="text-align:left">2</td>
-<td style="text-align:center">runlevel2.target, multi-user.target</td>
-<td style="text-align:center">用于定义／域特定运行级别。默认等同于级别 3</td>
-</tr>
-<tr>
-<td style="text-align:left">3</td>
-<td style="text-align:center">runlevel3.target, multi-user.target</td>
-<td style="text-align:center">多用户，无图形界面，用户可以通过终端或网络登录</td>
-</tr>
-<tr>
-<td style="text-align:left">4</td>
-<td style="text-align:center">runlevel4.target, multi-user.target</td>
-<td style="text-align:center">用于定义／域特定运行级别。默认等同于级别 3</td>
-</tr>
-<tr>
-<td style="text-align:left">5</td>
-<td style="text-align:center">runlevel5.target, graphical.target</td>
-<td style="text-align:center">多用户，图形界面，通常为所有运行级别 3 的服务并启动图形界面服务</td>
-</tr>
-<tr>
-<td style="text-align:left">6</td>
-<td style="text-align:center">runlevel6.target, reboot.target</td>
-<td style="text-align:center">重启</td>
-</tr>
-<tr>
-<td style="text-align:left">emergency</td>
-<td style="text-align:center">emergency.target</td>
-<td style="text-align:center">急救模式（Emergency shell）</td>
-</tr>
-</tbody>
-</table>
-<h4 id="Service-段的-Restart-属性"><a href="#Service-段的-Restart-属性" class="headerlink" title="Service 段的 Restart 属性"></a>Service 段的 Restart 属性</h4><table>
-<thead>
-<tr>
-<th style="text-align:left">服务退出原因</th>
-<th style="text-align:center">no</th>
-<th style="text-align:center">always</th>
-<th style="text-align:center">on-failure</th>
-<th style="text-align:center">on-abnormal</th>
-<th style="text-align:center">on-abort</th>
-<th style="text-align:center">on-success</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">正常退出</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">√</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center">√</td>
-</tr>
-<tr>
-<td style="text-align:left">异常退出</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">√</td>
-<td style="text-align:center">√</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">启动／停止超时</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">√</td>
-<td style="text-align:center">√</td>
-<td style="text-align:center">√</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-</tr>
-<tr>
-<td style="text-align:left">被异常杀死</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">√</td>
-<td style="text-align:center">√</td>
-<td style="text-align:center">√</td>
-<td style="text-align:center">√</td>
-</tr>
-</tbody>
-</table>
-<h2 id="Unit-文件占位符"><a href="#Unit-文件占位符" class="headerlink" title="Unit 文件占位符"></a>Unit 文件占位符</h2><p>在 Unit 文件中，有时会需要使用到一些与运行环境有关的信息，例如节点 ID、运行服务的用户等。这些信息可以使用占位符来表示，然后在实际运行时被动态地替换为实际的值。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">占位符</th>
-<th style="text-align:center">作用</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">%n</td>
-<td style="text-align:center">完整的 Unit 文件名，包括 .service  后缀名</td>
-</tr>
-<tr>
-<td style="text-align:left">%p</td>
-<td style="text-align:center">Unit 模版文件名中在 @ 符号之前的部分，不包括 @ 符号</td>
-</tr>
-<tr>
-<td style="text-align:left">%i</td>
-<td style="text-align:center">Unit 模版文件名中在 @ 符号之后的部分，不包括 @ 符号和 .service 后缀名</td>
-</tr>
-<tr>
-<td style="text-align:left">%t</td>
-<td style="text-align:center">存放系统运行时文件的目录，通常都是 “/run”</td>
-</tr>
-<tr>
-<td style="text-align:left">%u</td>
-<td style="text-align:center">运行服务的用户们，如果 Unit 文件中没有指定，则默认为 root</td>
-</tr>
-<tr>
-<td style="text-align:left">%U</td>
-<td style="text-align:center">运行服务的用户 ID</td>
-</tr>
-<tr>
-<td style="text-align:left">%h</td>
-<td style="text-align:center">运行服务的用户 Home 目录，即 ${HOME} 环境变量的值</td>
-</tr>
-<tr>
-<td style="text-align:left">%s</td>
-<td style="text-align:center">运行服务的用户默认 Shell 类型，即 ${SHELL} 环境变量</td>
-</tr>
-<tr>
-<td style="text-align:left">%m</td>
-<td style="text-align:center">实际运行的节点的 Machine ID，对于运行位置敏感的服务比较有用</td>
-</tr>
-<tr>
-<td style="text-align:left">%b</td>
-<td style="text-align:center">Boot ID，这是一个随机数值，每个节点各不相同，并且每次节点重启时都会改变</td>
-</tr>
-<tr>
-<td style="text-align:left">%H</td>
-<td style="text-align:center">实际运行节点的主机名</td>
-</tr>
-<tr>
-<td style="text-align:left">%v</td>
-<td style="text-align:center">内核版本，即 “uname -r”命令输出的内容</td>
-</tr>
-<tr>
-<td style="text-align:left">%%</td>
-<td style="text-align:center">在 Unit 模版文件中表示一个普通的百分号</td>
-</tr>
-</tbody>
-</table>
-<h2 id="Unit-模版"><a href="#Unit-模版" class="headerlink" title="Unit 模版"></a>Unit 模版</h2><p>在现实中国年，往往有一些应用需要被复制多份运行，Systemd 定义了一种特殊的服务 Unit 文件，称之为 “Unit 模版”。</p>
-<p>Unit 模版文件的写法与普通的服务 Unit 文件几本相同，不过 Unit 模版的文件名是以 @ 符号结尾的。通过模版启动服务实例时，需要在其文件名的 @ 字符后面添加一个参数字符串。</p>
-<h4 id="apache-service"><a href="#apache-service" class="headerlink" title="apache@.service"></a>apache@.service</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=My Advanced Service Template</div><div class="line">After=etcd.service docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">TimeoutStartSec=0</div><div class="line">ExecStartpre=-/usr/bin/docker kill apache%i</div><div class="line">ExecStartPre=-/usr/bin/docker rm apache%i</div><div class="line">ExecStart=/usr/bin/docker run --name apache%i -p %i:80 coreos/apache /usr/sbin/apache2ctl -D FOREGROUND</div><div class="line">ExecStartPost=/usr/bin/etcdctl set /domains/example.com/%H:%i running</div><div class="line">ExecStop=/usr/bin/docker stop apache1</div><div class="line">ExecStopPost=/usr/bin/docker rm apache1</div><div class="line">ExecStopPost=/usr/bin/etcdctl rm /domains/example.com/%H:%i</div><div class="line"></div><div class="line">[Install]</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
-<p>模版服务的启动也与普通的托管于 Systemd 的服务大致相同。</p>
-<p><code>$ sudo systemctl start apache@8080.service</code></p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/02/27/systemd_part1/" class="archive-article-date">
-  	<time datetime="2016-02-26T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-27</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Systemd/">Systemd</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-cgroup_part1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/25/cgroup_part1/">Cgroup 简介</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><code>Cgroup</code>是<code>control group</code>的缩写，是Linux内核提供的一种可以限制、记录、隔离进程组（process group）所使用的物理资源（如：cpu，memory，IO等等）。</p>
-<p>使用 cgroup，系统管理员可耕具体地控制对系统资源的分配、优先顺序、拒绝、管理和监控。可更好地根据任务和拥护分配硬件资源，提高总体效率。</p>
-<p>Cgroup 最初由google的工程师提出，后来被整合进Linux内核。Cgroup 也是LXC（Linux container）为实现虚拟化所使用的资源管理工具。最初的 Docker 版本其实就是在LXC上集成一些工具集，后来才重新设计自己的虚拟化层，发布了<code>libcontainer</code>。</p>
-<h2 id="如何管理cgroup"><a href="#如何管理cgroup" class="headerlink" title="如何管理cgroup"></a>如何管理cgroup</h2><p>Cgroup 是分层管理的，类似进程，且子 cgroup 会继承其上级 cgroup 的一些属性。但这两个模式也有不同。</p>
-<h4 id="Linux-进程模式"><a href="#Linux-进程模式" class="headerlink" title="Linux 进程模式"></a>Linux 进程模式</h4><p>Linux 系统中的所有进程都是通用父进程 <code>init</code> 的子进程 ，该进程在引导时由内核执行并启动其它进程（这些进程会按顺序启动其子进程）。因为所有进程都归结到一个父进程，所以 Linux 进程模式是一个单一层级结构，或者树结构。</p>
-<p>另外，init 之外的每个 Linux 进程都会继承其父进程的环境（比如 PATH 变量）和某些属性（比如打开文件描述符）。</p>
-<h4 id="Cgroup-模式"><a href="#Cgroup-模式" class="headerlink" title="Cgroup 模式"></a>Cgroup 模式</h4><p>Cgroup 与进程在以下方面类似：</p>
-<ul>
-<li>它们是分级的</li>
-<li>子 cgroup 会集成其 cgroup 的某些属性</li>
-</ul>
-<p>根本的不同是在某个系统中可同时存在不同的分级 cgroup。如果 Linux 进程模式是进程的单一树模式，那么 cgroup 模式是一个或者更多任务的独立、未连接树（例如：进程）。</p>
-<p>需要多个独立 cgroup 分级，因为每个分级都会附加到一个或者多个子系统中。</p>
-<h4 id="子系统"><a href="#子系统" class="headerlink" title="子系统"></a>子系统</h4><p>以 RedHat6 为例，系统提供9个 cgroup 子系统，根据名称和功能列出如下。</p>
-<ul>
-<li>blkio: 这个子系统为块设备设定输入／输出限制，比如物理设备（磁盘，固态硬盘，USB等等）。</li>
-<li>cpu: 这个子系统使用调度程序提供对 CPU 的 cgroup 任务访问。</li>
-<li>cpuacct: 这个子系统自动生成 cgroup 中任务所使用的 CPU 报告。 </li>
-<li>cpuset: 这个子系统为 cgroup 中的任务分配独立 CPU（在多核系统）和内存节点。</li>
-<li>devices: 这个子系统可允许或者拒绝 cgroup 中的任务访问设备。</li>
-<li>freezer: 这个子系统挂起或者恢复 cgroup 中的任务。</li>
-<li>memory: 这个子系统设定 cgroup 中任务使用的内存限制，并自动生成由那些任务使用的内存资源报告。</li>
-<li>net_cls: 这个子系统使用等级识别符（classid）标记网络数据包，可允许 Linux 流量控制程序（tc）识别从具体 cgroup 中生成的数据包。</li>
-<li>ns: 命名空间子系统。</li>
-</ul>
-<h2 id="子系统、层级、控制组群和任务的关系"><a href="#子系统、层级、控制组群和任务的关系" class="headerlink" title="子系统、层级、控制组群和任务的关系"></a>子系统、层级、控制组群和任务的关系</h2><blockquote>
-<p>在 cgroup 术语中系统进程称为任务。</p>
-</blockquote>
-<h4 id="Rule-1"><a href="#Rule-1" class="headerlink" title="Rule 1"></a>Rule 1</h4><p><strong>任何单一子系统（比如 cpu）最多可附加到一个层级中。</strong></p>
-<p><em>结果是，cpu 子系统永远无法附加到两个不同的层级。</em></p>
-<h4 id="Rule-2"><a href="#Rule-2" class="headerlink" title="Rule 2"></a>Rule 2</h4><p><strong>单一层级可附加一个或者多个子系统</strong></p>
-<p><em>结果是，cpu 和 memory 子系统（或者任意数目的子系统）都可附加到单一层级中，只要每个子系统不再附加到另一个层级即可。</em></p>
-<h4 id="Rule-3"><a href="#Rule-3" class="headerlink" title="Rule 3"></a>Rule 3</h4><p>每次在系统中创建新层级时，该系统中的所有任务都是那个层级的默认 cgroup（我们称之为 root cgroup）的初始成员。任何创建的单一层级，该系统中的每个任务都可以是那个层级中唯一一个 cgroup 的成员。单一任务可以是在多个 cgroup 中，只要每个 cgroup 都在不同的层级中即可。只要某个任务成为同一层级中第二个 cgroup 成员，就会将其从那个层级的第一个 cgroup 中删除。</p>
-<p><strong>一个任务永远不会同时位于同一层级的不同 cgroup 中。</strong></p>
-<p><em>结果是，如果 cpu 和 memory 子系统都附加到名为 cpu_and_mem的层级中，且 net_cls 子系统是附加到名为 net 的层级中，那么运行的 httpd 进程可以是 cpu_and_mem 中任意 cgroup 的成员，同时也是 net 中任意 cgroup 的成员。</em></p>
-<p>httpd 进程所在 cpu_and_mem 中的 cgroup 可将其 CPU 时间限制为分配给其它进程时间的一半，并将其内存用量限制为最多 1024MB。另外，net中的 cgroup 还可将其传输速率限制为 30MB／s。</p>
-<p><strong>首次创建层级时，该系统中的每个任务都至少是一个 cgroup 的成员，即 root cgroup。因此每当使用 cgroup 时，每个系统任务总是至少在一个 cgroup 中。</strong></p>
-<h4 id="Rule-4"><a href="#Rule-4" class="headerlink" title="Rule 4"></a>Rule 4</h4><p><strong>系统中的任意进程（任务）都将自己分支创建子进程（任务）。该子任务自动成为其父进程所在 cgroup 的成员。</strong>然后可根据需要将该子任务移动到不同的 cgroup 中，但开始时它总是继承其父任务的 cgroup（进程术语中称其为“环境”）。</p>
-<p><em>cpu_and_mem 层级中名为 halt_cpu_1gb_max 的 cgroup 成员的任务，以及 net 层级中 cgroup trans_rate_30 的成员。当 httpd 进程将其自身分为几个分支时，其子进程会自动成为 half_cpu_1gb_max cgroup 和 trans_rate_30 cgroup 的成员。它会完全继承其父任务所属的同一 cgroup。</em></p>
-<p>此后，父任务和子任务就彼此完全独立：更改某个任务所属 cgroup 不会影响到另一个。同样更改父任务的 cgroup 也不会以任何方式影响其子任务。<strong>总之：所有子任务总是可继承其父任务的同一 cgroup 的成员关系，但之后可更改或者删除那些成员关系。</strong></p>
-<h2 id="资源管理实施"><a href="#资源管理实施" class="headerlink" title="资源管理实施"></a>资源管理实施</h2><ul>
-<li>因为某个任务可属于任一层级中的单一 cgroup，所以只有一个方法可让单一子系统限制或者影响任务。这是合理的：是一个功能，而不是限制。</li>
-<li>可以将几个子系统分组在一起以便它们可影响单一层级中的所有任务。因为该层级中的 cgroup 有不同的参数设定，因此会对那些任务产生不同的影响。</li>
-<li>有时可能需要重构层级。例如：从附加了几个子系统的层级中删除一个子系统，并将其附加到不同的层级中。</li>
-<li>反正，如果从不同层级中分离子系统的需求降低，则可以删除层级并将其子系统附加到现有层级中。</li>
-<li>这个设计允许简单的 cgroup 使用，比如为单一层级中的具体任务设定几个参数 ，单一层级可以是只附加了 cpu 和 memory 子系统的层级。</li>
-<li>这个设计还允许高精度配置：系统中的每个任务（进程）都可以是每个层级的成员，每个层级都有单一附加的子系统。这样的配置可让系统管理员绝对控制每个单一任务的所有参数。</li>
-</ul>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/02/25/cgroup_part1/" class="archive-article-date">
-  	<time datetime="2016-02-24T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-25</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cgroup/">Cgroup</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-curl_sendmail" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/18/curl_sendmail/">Curl 发送邮件</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>关于curl，大家都知道它可用来访问web页面，下载文件等等。其实它的功能远不止这么点，它支持众多协议，其中就包括发送邮件的SMTP协议。</p>
-<h2 id="确认curl是否支持SMTP"><a href="#确认curl是否支持SMTP" class="headerlink" title="确认curl是否支持SMTP"></a>确认curl是否支持SMTP</h2><p>首先确认你的curl是否支持smtp。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># curl-config --protocols |grep SMTP</div></pre></td></tr></table></figure>
-<p>如果不支持smtp协议，那么重新安装curl。</p>
-<h2 id="安装高版本curl"><a href="#安装高版本curl" class="headerlink" title="安装高版本curl"></a>安装高版本curl</h2><p>使用yum安装的curl一般不支持smtp协议，接下来我们使用源码包来安装。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"># cd /usr/local/src</div><div class="line"># wget https://github.com/bagder/curl/archivemaster.zip</div><div class="line"># unzip master.zip</div><div class="line"># cd curl-master</div><div class="line"># ./buildconf</div><div class="line"># ./configure </div><div class="line"># make &amp;&amp; make install</div></pre></td></tr></table></figure>
-<p>安装好后再次确认是否支持smtp。</p>
-<h2 id="使用curl发送邮件"><a href="#使用curl发送邮件" class="headerlink" title="使用curl发送邮件"></a>使用curl发送邮件</h2><h4 id="编写邮件内容"><a href="#编写邮件内容" class="headerlink" title="编写邮件内容"></a>编写邮件内容</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># cat mail.txt</div><div class="line">From:from@xxx.com</div><div class="line">To:to@xxx.com</div><div class="line">Subject: curl发送邮件标题</div><div class="line"></div><div class="line">邮件内容。。。</div></pre></td></tr></table></figure>
-<h4 id="发送邮件"><a href="#发送邮件" class="headerlink" title="发送邮件"></a>发送邮件</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># /usr/local/bin/curl -s --url &quot;smtp://smtp.xxx.com --mail-from &quot;from@xxx.com&quot; --mail-rcpt &quot;to@xxx.com&quot; --upload-file mail.txt --user &quot;from@xxx.com:PASSWORD&quot;</div></pre></td></tr></table></figure>
-<h4 id="参数说明"><a href="#参数说明" class="headerlink" title="参数说明"></a>参数说明</h4><blockquote>
-<p>–url:            smtp地址</p>
-<p>–mail-from:    发件人邮箱</p>
-<p>–mail-rcpt:    收件人邮箱</p>
-<p>–upload-file:    信件内容，包含发件人、收件人、标题、内容</p>
-<p>–user:            账号密码，中间用冒号分割</p>
-</blockquote>
-<h4 id="curl更多协议"><a href="#curl更多协议" class="headerlink" title="curl更多协议"></a>curl更多协议</h4><p>curl支持众多协议，详细内容可使用如下命令查看。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># /usr/local/bin/curl-config --protocols</div></pre></td></tr></table></figure>
-<h2 id="zabbix-curl发邮件脚本"><a href="#zabbix-curl发邮件脚本" class="headerlink" title="zabbix curl发邮件脚本"></a>zabbix curl发邮件脚本</h2><p>我们通常使用<code>sendEmail</code>来发送告警，下面分享一个zabbix使用curl发送告警邮件的脚本。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line">#!/bin/bash</div><div class="line"># -------------------------------------------------------------------------------</div><div class="line"># FileName:    zabbix_curl_sendmail.sh</div><div class="line"># Revision:    1.0</div><div class="line"># Date:        2016/02/18</div><div class="line"># Author:      dingmingk</div><div class="line"># Email:       dingmingk@gmail.com</div><div class="line"># Website:     www.dingmingk.com</div><div class="line"># Description: use curl send email</div><div class="line"># Notes:       ~</div><div class="line"># -------------------------------------------------------------------------------</div><div class="line"># Copyright:   2015 (c) dingmingk</div><div class="line"># License:     GPL</div><div class="line"> </div><div class="line">MAIL_FROM=&apos;from@xxx.com&apos;</div><div class="line">MAIL_TO=$1</div><div class="line">MAIL_SUBJECT=$2</div><div class="line">MAIL_CONTENT=$3</div><div class="line">MAIL_CONTENT_FILE=&quot;/tmp/`/bin/date +%s`.txt&quot;</div><div class="line">MAIL_SMTP=&apos;smtp://smtp.xxx.com&apos;</div><div class="line">MAIL_USER=&apos;from@xxx.com&apos;</div><div class="line">MAIL_PASSWORD=&apos;PASSWORD&apos;</div><div class="line"> </div><div class="line"># create mail content file</div><div class="line">echo &quot;From:$&#123;MAIL_FROM&#125;</div><div class="line">To:$1</div><div class="line">Subject: $MAIL_SUBJECT</div><div class="line"> </div><div class="line">$MAIL_CONTENT &quot;&gt; $&#123;MAIL_CONTENT_FILE&#125;</div><div class="line"> </div><div class="line"># send mail</div><div class="line">/usr/local/bin/curl -s --url &quot;$&#123;MAIL_SMTP&#125;&quot; --mail-from &quot;$&#123;MAIL_FROM&#125;&quot; --mail-rcpt $&#123;MAIL_TO&#125; --upload-file $&#123;MAIL_CONTENT_FILE&#125; --user &quot;$&#123;MAIL_USER&#125;:$&#123;MAIL_PASSWORD&#125;&quot; </div><div class="line"> </div><div class="line"># delete mail content file</div><div class="line">rm $&#123;MAIL_CONTENT_FILE&#125;</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/02/18/curl_sendmail/" class="archive-article-date">
-  	<time datetime="2016-02-17T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-02-18</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <a class="extend prev" rel="prev" href="/">&laquo; Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/">Next &raquo;</a>
@@ -2086,7 +1885,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

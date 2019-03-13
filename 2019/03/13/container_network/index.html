@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>容器网络 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="容器技术系列分享（五）容器网络目录
+CNM
+CNI
+CNM vs CNI
+第三方驱动对比
+
+目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。
+Container Network Model(CNM)CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Por">
+<meta property="og:type" content="article">
+<meta property="og:title" content="容器网络">
+<meta property="og:url" content="https://dingmingk.github.io/2019/03/13/container_network/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="容器技术系列分享（五）容器网络目录
+CNM
+CNI
+CNM vs CNI
+第三方驱动对比
+
+目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。
+Container Network Model(CNM)CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Por">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_network_cnm01.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_network_cnm02.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_network_cni01.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_network02.png">
+<meta property="og:updated_time" content="2019-03-11T08:56:51.684Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="容器网络">
+<meta name="twitter:description" content="容器技术系列分享（五）容器网络目录
+CNM
+CNI
+CNM vs CNI
+第三方驱动对比
+
+目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。
+Container Network Model(CNM)CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Por">
+<meta name="twitter:image" content="https://dingmingk.github.io/assets/blogImg/k8s_network_cnm01.png">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-container_network" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      容器网络
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（五）"><a href="#容器技术系列分享（五）" class="headerlink" title="容器技术系列分享（五）"></a>容器技术系列分享（五）</h1><h2 id="容器网络"><a href="#容器网络" class="headerlink" title="容器网络"></a>容器网络</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>CNM</li>
+<li>CNI</li>
+<li>CNM vs CNI</li>
+<li>第三方驱动对比</li>
+</ul>
+<p>目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。</p>
+<h4 id="Container-Network-Model-CNM"><a href="#Container-Network-Model-CNM" class="headerlink" title="Container Network Model(CNM)"></a>Container Network Model(CNM)</h4><p>CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Porject Calico, VMware 和 Weave 这些公司和项目所采纳。</p>
+<p><img src="/assets/blogImg/k8s_network_cnm01.png" alt="k8s_network_cnm01"></p>
+<p>Libnetwork 是 CNM 的原生实现，它为 Docker Daemon 的网络驱动程序之间提供了接口。网络控制器负责将驱动和一个网络进行对接。每个驱动程序负责管理它所拥有的网络以及为该网络提供各种服务，例如 IPAM 等。由多个驱动支撑的多个网络可以同时并存。网络驱动可以按提供方被划分为原生驱动（libnetwork 内置的或 Docker 支持的）或者远程驱动（第三方插件）。原生驱动包括 none、bridge、overlay 以及 macvlan。</p>
+<p><img src="/assets/blogImg/k8s_network_cnm02.png" alt="k8s_network_cnm02"></p>
+<ul>
+<li>Network Sandbox：一个容器内部的网络栈</li>
+<li>Endpoint：一个通常成对出现的网络接口。一端在容器网络内，另一端在网格内。一个 Endpoint 可以加入一个网络。一个容器可以有多个 Endpoint。</li>
+<li>Network：一个 Endpoint 的集合，该集合内的所有 Endpoint 可以互联互通。</li>
+</ul>
+<p>最后，CNM 还支持标签（labels），label 是以 key-value 定义的元数据，用户可以通过定义 label 这样的元数据来自定义 libnetwork 和驱动的行为。</p>
+<h4 id="Container-Network-Interface-CNI"><a href="#Container-Network-Interface-CNI" class="headerlink" title="Container Network Interface(CNI)"></a>Container Network Interface(CNI)</h4><p>CNI 是由 CoreOS 提出的一个容器网络规范，已采纳该规范的包括 Apache Mesos, Cloud Foundry, Kubernetes, Kurma 和 rkt。另外 Contiv Networking，Project Calico 和 Weave 这些项目也为 CNI 提供插件。</p>
+<p><img src="/assets/blogImg/k8s_network_cni01.png" alt="k8s_network_cni01"></p>
+<p>CNI 的规范比较小巧，它规定了一个容器 runtime 和网络插件之间的简单契约，这个契约通过 JSON 的语法定义了 CNI 插件所需要提供的输入和输出。</p>
+<p>一个容器可以被加入到被不同插件所驱动的多个网络之中，一个网络有自己对应的插件和唯一的名称。CNI 插件负责为容器配置网络，包括两个基本接口：</p>
+<p><em>配置网络</em></p>
+<p>AddNetwork(net NetworkConfig, rt RuntimeConf) (types.Result, error)</p>
+<p><em>清理网络</em></p>
+<p>DelNetwork(net NetworkConfig, rt RuntimeConf) error</p>
+<h4 id="CNM-vs-CNI"><a href="#CNM-vs-CNI" class="headerlink" title="CNM vs CNI"></a>CNM vs CNI</h4><p>CNM 和 CNI 两种方案都使用了驱动模型或者插件模型来为容器创建网络栈，这样的设计使得用户可以自由选择，两者都支持多个网络驱动被同事使用，也允许容器加入一个或多个网络，两者也都允许容器 runtime 在它自己的命名空间中启动网络。</p>
+<p>这种模块化驱动的方式可以说对运维人员更有吸引力，因为运维人员可以比较灵活的选择适合现有模式的驱动。两种方案都提供了独立的扩展点，也就是插件的接口，这使得网络驱动可以创建、配置和连接网络，也使得 IPAM 可以配置、发现和管理 IP 地址。这种分离让编排变得容易。</p>
+<p>CNM 模式下的网络驱动不能访问容器的网络命名空间。这样做的好处是 libnetwork 可以为冲突解决提供仲裁。比如两个独立的网络驱动提供同样的静态路由配置，但是却指向不同的下一跳IP地址。与此不同，CNI允许驱动访问容器的网络命名空间。CNI正在研究在类似情况下如何提供仲裁。</p>
+<p>CNI支持与第三方 IPAM 的集成，可以用于任何容器 runtime。CNM 从设计上就仅仅支持 Docker。由于 CNI 简单的设计，许多人认为编写 CNI 插件会比编写 CNM 插件来得简单。</p>
+<p>这些模型增进了系统的模块化，增加了用户的选择。也促进了第三方网络插件以创新来提供更高级的网络功能。</p>
+<h4 id="第三方驱动对比"><a href="#第三方驱动对比" class="headerlink" title="第三方驱动对比"></a>第三方驱动对比</h4><p><img src="/assets/blogImg/k8s_network02.png" alt="k8s_network02"></p>
+<p>除了上图 5 种网络驱动，其实还有很多，Kubernetes 官方介绍了大概 23 种网络插件。接下来详细对比其中性能较好的几种。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方案</th>
+<th style="text-align:center">Calico</th>
+<th style="text-align:center">Contiv</th>
+<th style="text-align:right">macvlan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">优点</td>
+<td style="text-align:center">纯三层的数据中心解决方案（不依赖overlay），对 OpenStack、Kubernetes、AWS、GCE都比较友好。该方案集成简单。</td>
+<td style="text-align:center">能够和非容器环境兼容协作，不依赖物理网络具体细节，支持 Policy、ACI、QoS租户，支持物理网卡 sriov 和 offload。该方案配置比较复杂。</td>
+<td style="text-align:right">Docker 原生，性能衰减少，可控性高，隔离性好。</td>
+</tr>
+<tr>
+<td style="text-align:left">缺点</td>
+<td style="text-align:center">操作管理比较复杂，需要定制开发。</td>
+<td style="text-align:center">集成配置较复杂，相关资料少，学习成本较高，需要定制开发。</td>
+<td style="text-align:right">集群规模很大时，存在 ARP 广播风暴和交换机 MAC 表超限风险，另外需要自研 QoS 功能。</td>
+</tr>
+<tr>
+<td style="text-align:left">结论</td>
+<td style="text-align:center">Calico 基于 BGP 协议的 Overlay SDN 解决方案，企业生产环境如果可以开启 BGP 协议，可以考虑 Calico BGP 方案。</td>
+<td style="text-align:center">功能强型好，对 CNI 和 CNM 模型支持性好，集群配置较复杂，学习研究成本较高，可以考虑此方案。</td>
+<td style="text-align:right">初期较少的开发量即可上线（之后需要自研 QoS），通过合理的设计容量规划来规避相关风险时，可以考虑此方案。</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/container_network/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2019/03/13/k8s_cronjob/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          Kubernetes CronJob
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/03/11/k8s01/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Kubernetes 基础</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="container_network" data-title="容器网络" data-url="https://dingmingk.github.io/2019/03/13/container_network/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2019 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

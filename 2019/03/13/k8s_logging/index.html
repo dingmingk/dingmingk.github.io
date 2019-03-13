@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Kubernetes Logging Architecture | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Kubernetes Cluster-level logging architecturesKubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：
+
+在每个 Node 上运行一个日志客户端。
+在应用的 Pod 里以 sidecar 形式运行一个日志容器。
+应用直接把日志推送到后端日志存储里。
+
+Using a node logging agent
+一台 Node 上所有容器的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes Logging Architecture">
+<meta property="og:url" content="https://dingmingk.github.io/2019/03/13/k8s_logging/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="Kubernetes Cluster-level logging architecturesKubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：
+
+在每个 Node 上运行一个日志客户端。
+在应用的 Pod 里以 sidecar 形式运行一个日志容器。
+应用直接把日志推送到后端日志存储里。
+
+Using a node logging agent
+一台 Node 上所有容器的">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_logging_nodeAgent.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_logging_sidecar_stream.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_logging_sidecar_agent.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s_logging_directly.png">
+<meta property="og:updated_time" content="2019-03-13T06:35:34.201Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes Logging Architecture">
+<meta name="twitter:description" content="Kubernetes Cluster-level logging architecturesKubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：
+
+在每个 Node 上运行一个日志客户端。
+在应用的 Pod 里以 sidecar 形式运行一个日志容器。
+应用直接把日志推送到后端日志存储里。
+
+Using a node logging agent
+一台 Node 上所有容器的">
+<meta name="twitter:image" content="https://dingmingk.github.io/assets/blogImg/k8s_logging_nodeAgent.png">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-k8s_logging" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Kubernetes Logging Architecture
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Kubernetes-Cluster-level-logging-architectures"><a href="#Kubernetes-Cluster-level-logging-architectures" class="headerlink" title="Kubernetes Cluster-level logging architectures"></a>Kubernetes Cluster-level logging architectures</h2><p>Kubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：</p>
+<ul>
+<li>在每个 Node 上运行一个日志客户端。</li>
+<li>在应用的 Pod 里以 sidecar 形式运行一个日志容器。</li>
+<li>应用直接把日志推送到后端日志存储里。</li>
+</ul>
+<h3 id="Using-a-node-logging-agent"><a href="#Using-a-node-logging-agent" class="headerlink" title="Using a node logging agent"></a>Using a node logging agent</h3><p><img src="/assets/blogImg/k8s_logging_nodeAgent.png" alt="k8s_logging_nodeAgent"></p>
+<p>一台 Node 上所有容器的 <em>stdout/stderr</em> 日志会被统一保存到宿主机的目录，只需要以 DaemonSet 的形式在每个 Node 上运行一个日志收集客户端即可将这台 Node 上所有容器的 <em>标准输出/标准错误</em> 日志收集起来存到后端存储里。</p>
+<p>这里的日志收集客户端建议 <a href="https://www.fluentd.org/" target="_blank" rel="external">fluentd</a>。</p>
+<h3 id="Using-a-sidecar-container-with-the-logging-agent"><a href="#Using-a-sidecar-container-with-the-logging-agent" class="headerlink" title="Using a sidecar container with the logging agent"></a>Using a sidecar container with the logging agent</h3><p>使用 Sidecar 方式有两种方案：</p>
+<ul>
+<li>Sidecar 容器将应用日志导流到标准输出或标准错误。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_stream.png" alt="k8s_logging_sidecar_stream"></p>
+<p>这种方式有利于适配 kubelet，或每台 Node 已经运行日志收集客户端的情况。Sidecar 容器可以从文件、socket 或 journald 收集日志，为应用里的每个日志模块运行一个特定的 sidecar 容器，整个 Pod 共享一个共享目录，最终把每个日志模块的日志对应的输出到各自的 sidecar 容器的标准输出或标准错误。</p>
+<p>这是一个在容器内部写两个日志文件的应用范例,然后是同一个 Pod 里运行两个 sidecar 容器分别对两个日志文件进行收集：</p>
+<p>two-files-counter-pod-streaming-sidecar.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-1</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/1.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-2</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/2.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div></pre></td></tr></table></figure>
+<p>然后，你就可以使用 <code>kubectl logs counter count-log-1</code>查看 1.log 的内容。同理2。</p>
+<p>Node 上的日志客户端会自动采集这两个 sidecar容器的标准输出/标准错误，实际也就是采集了 1.log 和 2.log 两个日志文件。</p>
+<hr>
+<ul>
+<li>Sidecar 容器运行一个日志收集客户端，主动去收集应用日志。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_agent.png" alt="k8s_logging_sidecar_agent"></p>
+<p>这种方式适用于 Node 上没有日志收集客户端的情况。需要注意的是这种方式存在过多资源消耗的问题，而且无法使用 kubectl logs 命令直接查看应用日志。</p>
+<p>这里举例使用 fluentd 作为 sidecar logging agent 收集日志：</p>
+<p>fluentd-sidecar-config.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: fluentd-config</div><div class="line">data:</div><div class="line">  fluentd.conf: |</div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/1.log</div><div class="line">      pos_file /var/log/1.log.pos</div><div class="line">      tag count.format1</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/2.log</div><div class="line">      pos_file /var/log/2.log.pos</div><div class="line">      tag count.format2</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;match **&gt;</div><div class="line">      type google_cloud</div><div class="line">    &lt;/match&gt;</div></pre></td></tr></table></figure>
+<p>two-files-counter-pod-agent-sidecar.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-agent</div><div class="line">    image: k8s.gcr.io/fluentd-gcp:1.30</div><div class="line">    env:</div><div class="line">    - name: FLUENTD_ARGS</div><div class="line">      value: -c /etc/fluentd-config/fluentd.conf</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">    - name: config-volume</div><div class="line">      mountPath: /etc/fluentd-config</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-volume</div><div class="line">    configMap:</div><div class="line">      name: fluentd-config</div></pre></td></tr></table></figure>
+<h3 id="Exposing-logs-directly-from-the-application"><a href="#Exposing-logs-directly-from-the-application" class="headerlink" title="Exposing logs directly from the application"></a>Exposing logs directly from the application</h3><p><img src="/assets/blogImg/k8s_logging_directly.png" alt="k8s_logging_directly"></p>
+<p>这是最简单的方式，不过涉及应用的改造。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/k8s_logging/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+  
+    <a href="/2019/03/13/k8s_cronjob/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Kubernetes CronJob</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="k8s_logging" data-title="Kubernetes Logging Architecture" data-url="https://dingmingk.github.io/2019/03/13/k8s_logging/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2019 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>

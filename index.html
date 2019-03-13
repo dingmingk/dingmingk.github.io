@@ -137,6 +137,516 @@
       <div class="body-wrap">
         
   
+    <article id="post-k8s_logging" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/13/k8s_logging/">Kubernetes Logging Architecture</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Kubernetes-Cluster-level-logging-architectures"><a href="#Kubernetes-Cluster-level-logging-architectures" class="headerlink" title="Kubernetes Cluster-level logging architectures"></a>Kubernetes Cluster-level logging architectures</h2><p>Kubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：</p>
+<ul>
+<li>在每个 Node 上运行一个日志客户端。</li>
+<li>在应用的 Pod 里以 sidecar 形式运行一个日志容器。</li>
+<li>应用直接把日志推送到后端日志存储里。</li>
+</ul>
+<h3 id="Using-a-node-logging-agent"><a href="#Using-a-node-logging-agent" class="headerlink" title="Using a node logging agent"></a>Using a node logging agent</h3><p><img src="/assets/blogImg/k8s_logging_nodeAgent.png" alt="k8s_logging_nodeAgent"></p>
+<p>一台 Node 上所有容器的 <em>stdout/stderr</em> 日志会被统一保存到宿主机的目录，只需要以 DaemonSet 的形式在每个 Node 上运行一个日志收集客户端即可将这台 Node 上所有容器的 <em>标准输出/标准错误</em> 日志收集起来存到后端存储里。</p>
+<p>这里的日志收集客户端建议 <a href="https://www.fluentd.org/" target="_blank" rel="external">fluentd</a>。</p>
+<h3 id="Using-a-sidecar-container-with-the-logging-agent"><a href="#Using-a-sidecar-container-with-the-logging-agent" class="headerlink" title="Using a sidecar container with the logging agent"></a>Using a sidecar container with the logging agent</h3><p>使用 Sidecar 方式有两种方案：</p>
+<ul>
+<li>Sidecar 容器将应用日志导流到标准输出或标准错误。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_stream.png" alt="k8s_logging_sidecar_stream"></p>
+<p>这种方式有利于适配 kubelet，或每台 Node 已经运行日志收集客户端的情况。Sidecar 容器可以从文件、socket 或 journald 收集日志，为应用里的每个日志模块运行一个特定的 sidecar 容器，整个 Pod 共享一个共享目录，最终把每个日志模块的日志对应的输出到各自的 sidecar 容器的标准输出或标准错误。</p>
+<p>这是一个在容器内部写两个日志文件的应用范例,然后是同一个 Pod 里运行两个 sidecar 容器分别对两个日志文件进行收集：</p>
+<p>two-files-counter-pod-streaming-sidecar.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-1</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/1.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-2</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/2.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div></pre></td></tr></table></figure>
+<p>然后，你就可以使用 <code>kubectl logs counter count-log-1</code>查看 1.log 的内容。同理2。</p>
+<p>Node 上的日志客户端会自动采集这两个 sidecar容器的标准输出/标准错误，实际也就是采集了 1.log 和 2.log 两个日志文件。</p>
+<hr>
+<ul>
+<li>Sidecar 容器运行一个日志收集客户端，主动去收集应用日志。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_agent.png" alt="k8s_logging_sidecar_agent"></p>
+<p>这种方式适用于 Node 上没有日志收集客户端的情况。需要注意的是这种方式存在过多资源消耗的问题，而且无法使用 kubectl logs 命令直接查看应用日志。</p>
+<p>这里举例使用 fluentd 作为 sidecar logging agent 收集日志：</p>
+<p>fluentd-sidecar-config.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: fluentd-config</div><div class="line">data:</div><div class="line">  fluentd.conf: |</div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/1.log</div><div class="line">      pos_file /var/log/1.log.pos</div><div class="line">      tag count.format1</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/2.log</div><div class="line">      pos_file /var/log/2.log.pos</div><div class="line">      tag count.format2</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;match **&gt;</div><div class="line">      type google_cloud</div><div class="line">    &lt;/match&gt;</div></pre></td></tr></table></figure>
+<p>two-files-counter-pod-agent-sidecar.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-agent</div><div class="line">    image: k8s.gcr.io/fluentd-gcp:1.30</div><div class="line">    env:</div><div class="line">    - name: FLUENTD_ARGS</div><div class="line">      value: -c /etc/fluentd-config/fluentd.conf</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">    - name: config-volume</div><div class="line">      mountPath: /etc/fluentd-config</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-volume</div><div class="line">    configMap:</div><div class="line">      name: fluentd-config</div></pre></td></tr></table></figure>
+<h3 id="Exposing-logs-directly-from-the-application"><a href="#Exposing-logs-directly-from-the-application" class="headerlink" title="Exposing logs directly from the application"></a>Exposing logs directly from the application</h3><p><img src="/assets/blogImg/k8s_logging_directly.png" alt="k8s_logging_directly"></p>
+<p>这是最简单的方式，不过涉及应用的改造。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/k8s_logging/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_cronjob" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/13/k8s_cronjob/">Kubernetes CronJob</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Kubernetes-CronJob"><a href="#Kubernetes-CronJob" class="headerlink" title="Kubernetes CronJob"></a>Kubernetes CronJob</h2><h3 id="范例"><a href="#范例" class="headerlink" title="范例"></a>范例</h3><p>cronjob.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">apiVersion: batch/v1beta1</div><div class="line">kind: CronJob</div><div class="line">metadata:</div><div class="line">  name: hello</div><div class="line">spec:</div><div class="line">  schedule: &quot;*/1 * * * *&quot;</div><div class="line">  jobTemplate:</div><div class="line">    spec:</div><div class="line">      template:</div><div class="line">        spec:</div><div class="line">          containers:</div><div class="line">          - name: hello</div><div class="line">            image: busybox</div><div class="line">            args:</div><div class="line">            - /bin/sh</div><div class="line">            - -c</div><div class="line">            - date; echo Hello from the Kubernetes cluster</div><div class="line">          restartPolicy: OnFailure</div></pre></td></tr></table></figure>
+<p>创建 CronJob</p>
+<p><code>kubectl create -f cronjob.yaml</code></p>
+<p>查看 CronJob</p>
+<p><code>kubectl get cronjob hello</code></p>
+<p><img src="/assets/blogImg/k8s_cronjob01.png" alt="k8s_cronjob01"></p>
+<p>关注 Job 状态</p>
+<p><code>kubectl get jobs --watch</code></p>
+<p><img src="/assets/blogImg/k8s_cronjob02.png" alt="k8s_cronjob02"></p>
+<p>删除 CronJob</p>
+<p><code>kubectl delete cronjob hello</code></p>
+<p><a href="https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/" target="_blank" rel="external">更多详细操作</a></p>
+<h3 id="集成"><a href="#集成" class="headerlink" title="集成"></a>集成</h3><p>针对php项目容器化改造过程中，原有crontab任务较多的问题，在迁移到 k8s 集群时可无缝替换成 CronJob 方式管理。</p>
+<p>后续可基于 CronJob 开发客户端工具，实现简单高效的分布式任务系统。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/k8s_cronjob/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-container_network" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/13/container_network/">容器网络</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（五）"><a href="#容器技术系列分享（五）" class="headerlink" title="容器技术系列分享（五）"></a>容器技术系列分享（五）</h1><h2 id="容器网络"><a href="#容器网络" class="headerlink" title="容器网络"></a>容器网络</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>CNM</li>
+<li>CNI</li>
+<li>CNM vs CNI</li>
+<li>第三方驱动对比</li>
+</ul>
+<p>目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。</p>
+<h4 id="Container-Network-Model-CNM"><a href="#Container-Network-Model-CNM" class="headerlink" title="Container Network Model(CNM)"></a>Container Network Model(CNM)</h4><p>CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Porject Calico, VMware 和 Weave 这些公司和项目所采纳。</p>
+<p><img src="/assets/blogImg/k8s_network_cnm01.png" alt="k8s_network_cnm01"></p>
+<p>Libnetwork 是 CNM 的原生实现，它为 Docker Daemon 的网络驱动程序之间提供了接口。网络控制器负责将驱动和一个网络进行对接。每个驱动程序负责管理它所拥有的网络以及为该网络提供各种服务，例如 IPAM 等。由多个驱动支撑的多个网络可以同时并存。网络驱动可以按提供方被划分为原生驱动（libnetwork 内置的或 Docker 支持的）或者远程驱动（第三方插件）。原生驱动包括 none、bridge、overlay 以及 macvlan。</p>
+<p><img src="/assets/blogImg/k8s_network_cnm02.png" alt="k8s_network_cnm02"></p>
+<ul>
+<li>Network Sandbox：一个容器内部的网络栈</li>
+<li>Endpoint：一个通常成对出现的网络接口。一端在容器网络内，另一端在网格内。一个 Endpoint 可以加入一个网络。一个容器可以有多个 Endpoint。</li>
+<li>Network：一个 Endpoint 的集合，该集合内的所有 Endpoint 可以互联互通。</li>
+</ul>
+<p>最后，CNM 还支持标签（labels），label 是以 key-value 定义的元数据，用户可以通过定义 label 这样的元数据来自定义 libnetwork 和驱动的行为。</p>
+<h4 id="Container-Network-Interface-CNI"><a href="#Container-Network-Interface-CNI" class="headerlink" title="Container Network Interface(CNI)"></a>Container Network Interface(CNI)</h4><p>CNI 是由 CoreOS 提出的一个容器网络规范，已采纳该规范的包括 Apache Mesos, Cloud Foundry, Kubernetes, Kurma 和 rkt。另外 Contiv Networking，Project Calico 和 Weave 这些项目也为 CNI 提供插件。</p>
+<p><img src="/assets/blogImg/k8s_network_cni01.png" alt="k8s_network_cni01"></p>
+<p>CNI 的规范比较小巧，它规定了一个容器 runtime 和网络插件之间的简单契约，这个契约通过 JSON 的语法定义了 CNI 插件所需要提供的输入和输出。</p>
+<p>一个容器可以被加入到被不同插件所驱动的多个网络之中，一个网络有自己对应的插件和唯一的名称。CNI 插件负责为容器配置网络，包括两个基本接口：</p>
+<p><em>配置网络</em></p>
+<p>AddNetwork(net NetworkConfig, rt RuntimeConf) (types.Result, error)</p>
+<p><em>清理网络</em></p>
+<p>DelNetwork(net NetworkConfig, rt RuntimeConf) error</p>
+<h4 id="CNM-vs-CNI"><a href="#CNM-vs-CNI" class="headerlink" title="CNM vs CNI"></a>CNM vs CNI</h4><p>CNM 和 CNI 两种方案都使用了驱动模型或者插件模型来为容器创建网络栈，这样的设计使得用户可以自由选择，两者都支持多个网络驱动被同事使用，也允许容器加入一个或多个网络，两者也都允许容器 runtime 在它自己的命名空间中启动网络。</p>
+<p>这种模块化驱动的方式可以说对运维人员更有吸引力，因为运维人员可以比较灵活的选择适合现有模式的驱动。两种方案都提供了独立的扩展点，也就是插件的接口，这使得网络驱动可以创建、配置和连接网络，也使得 IPAM 可以配置、发现和管理 IP 地址。这种分离让编排变得容易。</p>
+<p>CNM 模式下的网络驱动不能访问容器的网络命名空间。这样做的好处是 libnetwork 可以为冲突解决提供仲裁。比如两个独立的网络驱动提供同样的静态路由配置，但是却指向不同的下一跳IP地址。与此不同，CNI允许驱动访问容器的网络命名空间。CNI正在研究在类似情况下如何提供仲裁。</p>
+<p>CNI支持与第三方 IPAM 的集成，可以用于任何容器 runtime。CNM 从设计上就仅仅支持 Docker。由于 CNI 简单的设计，许多人认为编写 CNI 插件会比编写 CNM 插件来得简单。</p>
+<p>这些模型增进了系统的模块化，增加了用户的选择。也促进了第三方网络插件以创新来提供更高级的网络功能。</p>
+<h4 id="第三方驱动对比"><a href="#第三方驱动对比" class="headerlink" title="第三方驱动对比"></a>第三方驱动对比</h4><p><img src="/assets/blogImg/k8s_network02.png" alt="k8s_network02"></p>
+<p>除了上图 5 种网络驱动，其实还有很多，Kubernetes 官方介绍了大概 23 种网络插件。接下来详细对比其中性能较好的几种。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方案</th>
+<th style="text-align:center">Calico</th>
+<th style="text-align:center">Contiv</th>
+<th style="text-align:right">macvlan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">优点</td>
+<td style="text-align:center">纯三层的数据中心解决方案（不依赖overlay），对 OpenStack、Kubernetes、AWS、GCE都比较友好。该方案集成简单。</td>
+<td style="text-align:center">能够和非容器环境兼容协作，不依赖物理网络具体细节，支持 Policy、ACI、QoS租户，支持物理网卡 sriov 和 offload。该方案配置比较复杂。</td>
+<td style="text-align:right">Docker 原生，性能衰减少，可控性高，隔离性好。</td>
+</tr>
+<tr>
+<td style="text-align:left">缺点</td>
+<td style="text-align:center">操作管理比较复杂，需要定制开发。</td>
+<td style="text-align:center">集成配置较复杂，相关资料少，学习成本较高，需要定制开发。</td>
+<td style="text-align:right">集群规模很大时，存在 ARP 广播风暴和交换机 MAC 表超限风险，另外需要自研 QoS 功能。</td>
+</tr>
+<tr>
+<td style="text-align:left">结论</td>
+<td style="text-align:center">Calico 基于 BGP 协议的 Overlay SDN 解决方案，企业生产环境如果可以开启 BGP 协议，可以考虑 Calico BGP 方案。</td>
+<td style="text-align:center">功能强型好，对 CNI 和 CNM 模型支持性好，集群配置较复杂，学习研究成本较高，可以考虑此方案。</td>
+<td style="text-align:right">初期较少的开发量即可上线（之后需要自研 QoS），通过合理的设计容量规划来规避相关风险时，可以考虑此方案。</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/container_network/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s01" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/11/k8s01/">Kubernetes 基础</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（四）"><a href="#容器技术系列分享（四）" class="headerlink" title="容器技术系列分享（四）"></a>容器技术系列分享（四）</h1><h2 id="Kubernetes-基础"><a href="#Kubernetes-基础" class="headerlink" title="Kubernetes 基础"></a>Kubernetes 基础</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>Kubernetes 是什么</li>
+<li>为什么要用 Kubernetes</li>
+<li>一个简单的例子</li>
+<li>Kubernetes 基本概念和术语<ul>
+<li>Master</li>
+<li>Node</li>
+<li>Pod</li>
+<li>Label</li>
+<li>Replication Controller</li>
+<li>Deployment</li>
+<li>Horizontal Pod Autoscaler</li>
+<li>StatefulSet</li>
+<li>Service</li>
+<li>Volume</li>
+<li>Persisten Volume</li>
+<li>Namespace</li>
+<li>Annotation</li>
+</ul>
+</li>
+</ul>
+<h4 id="Kubernetes-是什么"><a href="#Kubernetes-是什么" class="headerlink" title="Kubernetes 是什么"></a>Kubernetes 是什么</h4><p>Kubernetes 是一个基于容器技术的分布式架构方案，它是谷歌内部系统 Borg 的一个开源版本。</p>
+<p>Kubernetes是一个开放的开发平台，它不局限于任何一种语言，任何服务都可以映射为 Kubernetes 的 Service，并通过标准的 TCP 通信协议进行交互。</p>
+<p>Kubernetes 具有完备的集群管理能力，包括多层次的安全防护和准入机制、多租户应用支撑能力、透明的服务注册和服务发现机制、内建智能负载均衡器、强大的故障发现和自我修复能力、服务滚动升级和在线扩容能力、可扩展的资源自动调度机制，以及多粒度的资源配额管理能力。同时，Kubernetes 提供了完善的管理工具，这些工具涵盖了包括开发、部署测试、运维监控在内的多个环节。</p>
+<h4 id="为什么要用-Kubernetes"><a href="#为什么要用-Kubernetes" class="headerlink" title="为什么要用 Kubernetes"></a>为什么要用 Kubernetes</h4><p>Docker 容器化技术当前已经被很多公司所采用，其从单机走向集群已成为必然，而云计算的蓬勃发展正在加速这一过程。Kubernetes 作为当前唯一被业界广泛认可和看好的 Docker 分布式系统解决方案，可以遇见，在未来会有大量的新系统选择它。</p>
+<p>使用 Kubernetes 可以收获哪些好处？</p>
+<ul>
+<li>首先，最直接的感受就是可以“轻装上阵”地开发复杂系统了。以前动不动就需要十几个人而且团队里需要不少技术达人一起分工协助才能设计实现的和运维的分布式系统，在采用 Kubernetes 解决方案后，只需要一个劲精悍的小团队就能轻松应付。</li>
+<li>其次，使用 Kubernetes 就是在全面拥抱微服务架构。微服务架构的核心是将一个巨大的单体应用分解为许多小的互相连接的微服务，一个微服务背后可能有多个实例副本在支撑，副本的数量可能会随着系统的负荷变化而进行调整，内嵌的负载均衡器在这里发挥了重要作用。微服务架构使得每个服务都可以由专门的开发团队来开发，开发者可以自由选择开发技术，这对于大规模团队来说很有价值，另外每个微服务独立开发、升级、扩展，因此系统具备很高的稳定性和快速迭代能力。谷歌将微服务架构的基础设施直接打包到 Kubernetes 解决方案中，让我们有机会直接应用微服务架构解决复杂业务系统的架构问题。</li>
+<li>然后，我们的系统可以随时随地整体“搬迁”到别的机房或公有云上。Kubernetes 最初的目标就是运行在谷歌自家的公有云 GCE 中，未来会支持更多的公有云及基于 OpenStack 的私有云。同时，在 Kubernetes 的架构方案中，底层网络的细节完全被屏蔽，基于服务的 ClusterIP 甚至都无需我们改变运行期的配置文件，就能将系统从物理环境中无缝迁移到公有云中，或者在服务高峰期将部分服务对应的 Pod 副本放入公有云中以提升系统的吞吐量。</li>
+<li>最后，Kubernetes 系统架构具备了超强的横向扩容能力。对于互联网公司来说，用户规模就等价于资产，谁拥有更多的用户，谁就能在竞争中胜出，因此超强的横向扩容能力是互联网业务系统的关键指标之一。不用修改代码，一个 Kubernetes 集群即可从只包含几个 Node 的小集群平滑扩展到拥有上百个 Node 的大规模集群，我们利用 Kubernetes 提供的工具，甚至可以在线完成集群扩容。只要我们的微服务设计的好，结合硬件或者公有云资源的线性增加，系统就能够承受大量用户并发访问所带来的巨大压力。</li>
+</ul>
+<h4 id="一个简单的例子"><a href="#一个简单的例子" class="headerlink" title="一个简单的例子"></a>一个简单的例子</h4><p>这是一个简单的 Java Web 应用，运行在 Tomcat 里。JSP 页面通过 JDBC 直接访问 MySQL 数据库并展示数据。</p>
+<p>此应用需要启动两个容器： Web App 容器和 MySQL 容器，并且 Web App 容器需要访问 MySQL 容器。</p>
+<h5 id="启动-MySQL-应用"><a href="#启动-MySQL-应用" class="headerlink" title="启动 MySQL 应用"></a>启动 MySQL 应用</h5><p>首先为 MySQL 服务创建一个 RC 定义文件: mysql-rc.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    app: mysql</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: mysql</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: mysql</div><div class="line">        image: mysql</div><div class="line">        ports:</div><div class="line">        - containerPort: 3306</div><div class="line">        env:</div><div class="line">        - name: MYSQL_ROOT_PASSWORD</div><div class="line">          value: &quot;123456&quot;</div></pre></td></tr></table></figure>
+<p>创建好 mysql-rc.yaml 文件后，将它发布到 Kubernetes 集群中：</p>
+<p><code>kubectl create -f mysql-rc.yaml</code></p>
+<p>接下来，我们用 kubectl 命令查看刚刚创建的 RC：</p>
+<p><code>kubectl get rc</code></p>
+<p>查看 Pod 的创建情况：</p>
+<p><img src="/assets/blogImg/k8s01_javaweb01.png" alt="k8s01_javaweb01"></p>
+<p>我们通过 <em>docker ps</em> 命令查看正在运行的容器，发现提供 MySQL 服务的 Pod 容器以及创建并正常运行了。</p>
+<h5 id="创建-MySQL-服务"><a href="#创建-MySQL-服务" class="headerlink" title="创建 MySQL 服务"></a>创建 MySQL 服务</h5><p>为 MySQL 服务创建一个 Service 定义文件 mysql-svc.yaml: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">    - port: 3306</div><div class="line">  selector:</div><div class="line">    app: mysql</div></pre></td></tr></table></figure>
+<p>运行 kubectl 命令，创建 service：</p>
+<p><code>kubectl create -f mysql-svc.yaml</code></p>
+<p>运行 kubectl 命令，查看刚刚创建的 service：</p>
+<p><code>kubectl get svc</code></p>
+<p><img src="/assets/blogImg/k8s01_javaweb02.png" alt="k8s01_javaweb02"></p>
+<p>注意到这里分配了一个 CLUSTER-IP，这是一个虚拟地址，Kubernetes 集群中其他新创建的 Pod 就可以通过 Service 的 Cluster IP + Port 来连接它了。</p>
+<h5 id="启动-Tomcat-应用"><a href="#启动-Tomcat-应用" class="headerlink" title="启动 Tomcat 应用"></a>启动 Tomcat 应用</h5><p>我们用和启动 MySQL 同样的步骤启动 Tomcat。首先，创建对应的 RC 文件 myweb-rc.yaml:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: myweb</div><div class="line">spec:</div><div class="line">  replicas: 2</div><div class="line">  selector:</div><div class="line">    app: myweb</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: myweb</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: myweb</div><div class="line">          image: java-web:v1</div><div class="line">          ports:</div><div class="line">          - containerPort: 8080</div></pre></td></tr></table></figure>
+<p><code>kubectl create -f myweb-rc.yaml</code></p>
+<p><code>kubectl get rc</code></p>
+<p><code>kubectl get pods</code></p>
+<p><img src="/assets/blogImg/k8s01_javaweb03.png" alt="k8s01_javaweb03"></p>
+<h5 id="创建-Tomcat-服务"><a href="#创建-Tomcat-服务" class="headerlink" title="创建 Tomcat 服务"></a>创建 Tomcat 服务</h5><p>为 Tomcat 服务创建一个 Service 定义文件 myweb-svc.yaml: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: myweb</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">  ports:</div><div class="line">    - port: 8080</div><div class="line">      nodePort: 30003</div><div class="line">  selector:</div><div class="line">    app: myweb</div></pre></td></tr></table></figure>
+<p><code>kubectl create -f myweb-svc.yaml</code></p>
+<p><code>kubectl get service</code></p>
+<p><img src="/assets/blogImg/k8s01_javaweb04.png" alt="k8s01_javaweb04"></p>
+<p>$$$ 结果</p>
+<h4 id="Kubernetes-基本概念和术语"><a href="#Kubernetes-基本概念和术语" class="headerlink" title="Kubernetes 基本概念和术语"></a>Kubernetes 基本概念和术语</h4><p>Kubernetes 中的大部分概念如 Node、Pod、Replication Controller、Service 等都可以看作一种 “资源对象”，几乎所有的资源对象都可以通过 Kubernetes 提供的 kubectl 工具（或者 API 编程调用）执行增、删、改、查等操作并将其保存在 Etcd 中持久化存储。从这个角度看，Kubernetes 其实是一个高度自动化的资源控制系统，它通过跟踪对比 Etcd 库里保存的“资源期望状态”与当前环境中的“实际资源状态”的差异来实现自动控制和自动纠错的高级功能。</p>
+<p>在介绍资源对象之前，我们先了解一下 Kubernetes 集群的两种管理角色：Master 和 Node。</p>
+<h5 id="Master"><a href="#Master" class="headerlink" title="Master"></a>Master</h5><p>Kubernetes 里的 Master 指的是集群控制节点，每个 Kubernetes 集群里需要有一个 Master 节点来负责整个集群的管理和控制，基本上 Kubernetes 的所有控制命令都发给它，它来负责具体的执行过程。Master 节点通常会占据一个独立的服务器（高可用部署建议用3台服务器），其主要原因是它太重要了，是整个集群的“首脑”，如果宕机或不可用，那么对集群内容器应用的管理都将失效。</p>
+<p>Master 节点上运行着以下一组关键进程：</p>
+<ul>
+<li>Kubernetes API Server (kube-apiserver)：提供了 HTTP Rest 接口的关键服务进程，是 Kubernetes 里所有资源的增、删、改、查等操作的唯一入口，也是集群控制的入口进程。</li>
+<li>Kubernetes Controller Manager (kube-controller-manager)：Kubernetes 里所有资源对象的自动化控制中心。</li>
+<li>Kubernetes Scheduler (kube-scheduler)：负责资源调度（Pod 调度）的进程。</li>
+</ul>
+<p>另外，Kubernetes 集群还需要一组 Etcd 服务，因为 Kubernetes 里所有资源对象的数据都保存在 Etcd 中。</p>
+<h5 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h5><p>除了 Master， Kubernetes 集群中的其他机器被称为 Node 节点。与 Master 一样，Node 节点可以是一台物理主机，也可以是一台虚拟机。Node 节点才是 Kubernetes 集群中的工作负载节点，每个 Node 都会被 Master 分配一些工作负载（Docker 容器），当某个 Node 宕机时，其上的工作负载会被 Master 自动转移到其他节点上去。</p>
+<p>每个 Node 节点上运行以下一组关键进程：</p>
+<ul>
+<li>kubelet：负责 Pod 对应的容器的创建、启停等任务，同时与 Master 节点密切协作，实现集群管理的基本功能。</li>
+<li>kube-proxy：实现 Kubernetes Service 的通信与负载均衡机制的重要组件。</li>
+<li>Docker Engine（docker）：Docker 引擎，负责本机的容器创建和管理工作。</li>
+</ul>
+<p>Node 节点可以在运行期间动态增加到 Kubernetes 集群中，前提是这个节点上已经正确安装、配置和启动了上述关键进程，在默认情况下 kubelet 会向 Master 注册自己，这也是 Kubernetes 推荐的 Node 管理方式。一旦 Node 被纳入集群管理范围，kubelet 进程就会定时向 Master 节点汇报自身的情报，例如操作系统、Docker 版本、机器的 CPU 和内存情况，以及当前有哪些 Pod 在运行等，这样 Master 可以获知每个 Node 的资源使用情况，并实现高效均衡的资源调度策略。而某个 Node 炒过指定时间不上报信息时，会被 Master 判定为 “失联”，Node 的状态被标记为不可用（Not Ready），随后 Master 会触发工作负载转移的自动流程。</p>
+<p><code>kubectl get nodes</code></p>
+<p>$$$ 结果</p>
+<p><code>kubectl describe node k8s-node-1</code></p>
+<p>$$$ 结果</p>
+<p>上述命令展示了 Node 的如下关键信息：</p>
+<ul>
+<li>Node 基本信息：名称、标签、创建时间等。</li>
+<li>Node 当前的运行状态，Node 启动后会做一系列的自检工作，比如磁盘是否满了，如果满了就标注  OutOfDisk=True，否则继续检查内存是否不足（如果内存不足，就标注 MemoryPressure=True），最后一切正常，就设置为 Ready 状态（Ready=True），该状态表示 Node 处于健康状态， Master 将可以在其上调度新的任务了（如启动 Pod）。</li>
+<li>Node 的主机地址与主机名</li>
+<li>Node 上的资源总量：描述 Node 可用的系统资源，包括 CPU、内存、最大可调度 Pod 数量等。</li>
+<li>Node 可分配资源量：描述 Node 当前可用于分配的资源量。</li>
+<li>主机系统信息：包括主机的唯一标识 UUID、Linux Kernel 版本号、操作系统类型与版本、Kubernetes 版本号、kubelet 与 kube-proxy 版本号等。</li>
+<li>当前正在运行的 Pod 列表概要信息。</li>
+<li>已分配的资源使用概要信息，例如资源申请的最低、最大允许使用量占系统总量的百分比。</li>
+<li>Node 相关的 Event 信息。</li>
+</ul>
+<h5 id="Pod"><a href="#Pod" class="headerlink" title="Pod"></a>Pod</h5><p>Pod 是 Kubernetes 的最重要也最基本的概念。每个 Pod 都有一个特殊的被称为“根容器” 的 Pause 容器。Pause 容器对应的镜像属于 Kubernetes 平台的一部分，除了 Pause 容器，每个 Pod 还包含一个或多个紧密相关的用户业务容器。</p>
+<p><img src="/assets/blogImg/k8s01_pod01.png" alt="k8s01_pod01"></p>
+<blockquote>
+<p>为什么 Kubernetes 会设计出一个全新的 Pod 概念并且 Pod 有这样特殊的组成结构？</p>
+</blockquote>
+<ul>
+<li>原因之一：在一组容器作为一个单元的情况下，我们难以对“整体”简单地进行判断及有效地进行行动。比如，一个容器死亡了，此时算是整体死亡么？是 N/M 的死亡率么？引入业务无关并且不易死亡的 Pause 容器作为 Pod 的根容器，以它的状态代表整个容器组的状态，就简单、巧妙地解决了这个难题。</li>
+<li>原因之二：Pod 里的多个业务容器共享 Pause 容器的 IP，共享 Pause 容器挂载的 Volume，这样既简化了密切关联的业务容器之间的通信问题，也很好地解决了它们之间的文件共享问题。</li>
+</ul>
+<p>Kubernetes 为每个 Pod 都分配了唯一的 IP 地址，称之为 PodIP，一个 Pod 里的多个容器共享 PodIP 地址。Pod 的 IP 加上 Pod 里的容器端口（containerPort），就组成了一个概念————Endpoint，它代表此 Pod 里的一个服务进程的对外通信地址。一个 Pod 也存在着具有多个 Endpoint 的情况。</p>
+<p><img src="/assets/blogImg/k8s01_pod02.png" alt="k8s01_pod02"></p>
+<h5 id="Label"><a href="#Label" class="headerlink" title="Label"></a>Label</h5><p>Label 是 Kubernetes 系统中另外一个核心概念。一个 Label 是一个 key=value 的键值对，其中 Key 与 value 由用户自己指定。Label 可以附加到各种资源上，例如 Node、Pod、Service、RC 等，一个资源对象可以定义任意数量的 Label，同一个 Label 也可以被添加到任意数量的资源对象上去，Label 通常在资源对象定义时确定，也可以在创建对象后动态添加或者删除。</p>
+<p>我们可以通过给指定的资源对象捆绑一个或多个不同的 Label 来实现多维度的资源分组管理功能，以便于灵活、方便地进行资源分配、调度、配置、部署等管理工作。例如：部署不同版本的应用到不同的环境中；或者监控和分析应用（日志记录、监控、告警）等。一些常用的 Label 示例如下：</p>
+<ul>
+<li>版本标签：”release”:”stable”,”release”:”canary”…</li>
+<li>环境标签：”environment”:”dev”,”environment”:”production”…</li>
+<li>架构标签：”tier”:”frontend”,”tier”:”backend”…</li>
+<li>分区标签：”partition”:”customerA”,”partition”:”customerB”…</li>
+<li>质量管控标签：”track”:”daily”,”track”:”weekly”…</li>
+</ul>
+<p>给某个资源对象定义一个 Label，就相当于给它打了一个标签，随后可以通过 Label Selector（标签选择器）查询和筛选拥有某些 Label 的资源对象，Kubernetes 通过这种方式实现了类似 SQL 的简单又通用的查询机制。</p>
+<p>当前有两种 Label Selector 的表达式：基于等式的（Equality-based）和基于集合的（Set-based），前者采用“等式类”的表达式匹配标签，下面是一些具体的例子：</p>
+<ul>
+<li>name = redis-slave：匹配所有具有标签 name=redis-slave 的资源对象。</li>
+<li>env != production：匹配所有不具有标签 env=production 的资源对象，比如 env=test 就满足。</li>
+</ul>
+<p>使用集合操作的表达式匹配标签例子：</p>
+<ul>
+<li>name in (redis-master, redis-slave)：匹配所有具有标签 name=redis-master 或者 name=redis-slave 的资源对象。</li>
+<li>name not in (php-frontend)：匹配所有不具有标签 name=php-frontend 的资源对象。</li>
+</ul>
+<p>可以通过多个 Label Selector 表达式的组合实现复杂的条件选择，多个表达式之间用“，”进行分割即可，几个条件之间是 “AND” 的关系，即同时满足多个条件。</p>
+<p>新出现的管理对象如 Deployment、ReplicaSet、DaemonSet 和 Job 则可以在 Selector 中使用基于集合的筛选条件定义，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">selector:</div><div class="line">  matchLabels:</div><div class="line">    app: myweb</div><div class="line">  matchExpressions:</div><div class="line">    - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">    - &#123;key: environment, operator: NotIn, values: [dev]&#125;</div></pre></td></tr></table></figure>
+<p>matchLabels 用于定义一组 Label，与直接写在 Selector 中作用相同；matchExpressions 用于定义一组基于集合的筛选条件，可用的条件运算符包括：In、NotIn、Exists 和 DoesNotExist。</p>
+<p>如果同时设置了 matchLabels 和 matchExpressions，则两组条件为 “AND” 关系，即所有条件需要同时满足才能完成 Selector 的筛选。</p>
+<p>Label Selector 在 Kubernetes 中的重要使用场景有以下几处：</p>
+<ul>
+<li>kube-controller 进程通过资源对象 RC 上定义的 Label Selector 来筛选要监控的 Pod 副本的数量，从而实现 Pod 副本的数量始终符合预期设定的全自动控制流程。</li>
+<li>kube-proxy 进程通过 Service 的 Label Selector 来选择对应的 Pod，自动建立起每个 Service 到对应 Pod 的请求转发路由表，从而实现 Service 的智能负载均衡机制。</li>
+<li>通过对某些 Node 定义特定的 Label，并且在 Pod 定义文件中使用 NodeSelector 这种标签调度策略，kube-scheduler 进程可以实现 Pod “定向调度” 的特性。</li>
+</ul>
+<h5 id="Replication-Controller"><a href="#Replication-Controller" class="headerlink" title="Replication Controller"></a>Replication Controller</h5><p>RC 是 Kubernetes 系统中的核心概念之一，简单来说，它其实是定义了一个期望的场景，即声明某种 Pod 的副本数量在任意时刻都符合某个预期值，所以 RC 的定义包括如下部分：</p>
+<ul>
+<li>Pod 期待的副本数（replicas）</li>
+<li>用于筛选目标 Pod 的 Label Selector</li>
+<li>当 Pod 的副本数量小于预期数量时，用于创建新 Pod 的 Pod 模版（template）</li>
+</ul>
+<p>下面是一个完整的 RC 定义的例子，即确保拥有 tier=frontend 标签的这个 Pod（运行 Tomcat 容器）在整个 Kubernetes 集群中始终只有一个副本：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    tier: frontend</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: app-demo</div><div class="line">        tier: frontend</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: tomcact-demo</div><div class="line">        image: tomcat</div><div class="line">        imagePullPolicy: IfNotPresent</div><div class="line">        env:</div><div class="line">        - name: GET_HOSTS_FROM</div><div class="line">          value: dns</div><div class="line">        ports:</div><div class="line">        - containerPort: 80</div></pre></td></tr></table></figure>
+<p>当我们定义了一个 RC 并提交到 Kubernetes 集群中以后，Master 节点上的 Controller Manager 组件就得到通知，定期巡检系统中当前存活的目标 Pod，并确保目标 Pod 实例的数量刚好等于此 RC 的期望值，如果有过多的 Pod 副本在运行，系统就会停掉一些 Pod，否则系统就会再自动创建一些 Pod。通过 RC，Kubernetes 实现了用户应用集群的高可用性，并且大大减少了系统管理员在传统 IT 环境中需要完成的许多手工运维工作（如主机监控脚本、应用监控脚本、故障恢复脚本等）。</p>
+<p>在 RC 运行时，我们可以通过修改 RC 的副本数量，来实现 Pod 的动态缩放（Scaling）功能：</p>
+<p><code>kubect scale rc frontend --replicas=3</code></p>
+<p>在 Kubernetes v1.2时，Replication Controller升级成了 Replica Set，新功能支持集合的 Label selector（Set-based selector）。不过一般很少单独使用Replica Set，它主要被 Deployment 这个更高层的资源对象所使用，从而形成一整套 Pod 创建、删除、更新的编排机制。下面是等价于前面 RC 例子的 Replica Set 的定义（省去了 Pod 模版部分的内容）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: extensions/v1beta1</div><div class="line">kind: ReplicaSet</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      tier: frontend</div><div class="line">    matchExpressions:</div><div class="line">      - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">  template:</div><div class="line">  ......</div></pre></td></tr></table></figure>
+<p>最后我们总结一下关于 RC（Replica Set）的一些特性与作用：</p>
+<ul>
+<li>在大多数情况下，我们通过定义一个 RC 实现 Pod 的创建过程及副本数量的自动控制。</li>
+<li>RC 里包括完整的 Pod 定义模版。</li>
+<li>RC 通过 Label Selector 机制实现对 Pod 副本的自动控制。</li>
+<li>通过改变 RC 里的 Pod 副本数量，可以实现 Pod 的扩容或缩容功能。</li>
+<li>通过改变 RC 里 Pod 模版中的镜像版本，可以实现 Pod 的滚动升级功能。</li>
+</ul>
+<h5 id="Deployment"><a href="#Deployment" class="headerlink" title="Deployment"></a>Deployment</h5><p>Deployment 是 Kubernetes v1.2 引入的新概念，引入的目的是为了更好地解决 Pod 的编排问题。为此，Deployment 在内部使用了 Replica Set 来实现目的，无论从 Deployment 的作用与目的、它的 YAML 定义，还是从它的具体命令行操作来看，我们都可以把它看作 RC 的一次升级，两者的相似度超过 90%。</p>
+<p>Deployment 相对于 RC 的一个最大升级是可以随时知道当前 Pod “部署” 的进度。实际上由于一个 Pod 的创建、调度、绑定节点及在目标 Node 上启动对应的容器这一完整过程需要一定的时间，所以我们期待系统启动 N 个 Pod 副本的目标状态，实际上是一个连续变化的“部署过程”导致的最终状态。</p>
+<p>Deployment 的典型使用场景有以下几个：</p>
+<ul>
+<li>创建一个 Deployment 对象来生成对应的 Replica Set 并完成 Pod 副本的创建过程。</li>
+<li>检查 Deployment 的状态来看部署动作是否完成（Pod 副本的数量是否达到预期的值）。</li>
+<li>更新 Deployment 以创建新的 Pod （比如镜像升级）。</li>
+<li>如果当前 Deployment 不稳定，则回滚到一个早先的 Deployment 版本。</li>
+<li>暂停 Deployment 以便于一次性修改多个 PodTemplateSpec 的配置项，之后再恢复 Deployment，进行新的发布。</li>
+<li>扩展 Deployment 以应对高负载。</li>
+<li>查看 Deployment 的状态，以此作为发布是否成功的指标。</li>
+<li>清理不再需要的旧版本 ReplicaSets。</li>
+</ul>
+<p>举个例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: extensions/v1beta1</div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      tier: frontend</div><div class="line">    matchExpressions:</div><div class="line">      - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: app-demo</div><div class="line">        tier: frontend</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: tomcat-demo</div><div class="line">        image: tomcat</div><div class="line">        imagePullPolicy: IfNotPresent</div><div class="line">        ports:</div><div class="line">        - containerPort: 8080</div></pre></td></tr></table></figure>
+<p>创建 Deployment：</p>
+<p><code>kubectl create -f tomcat-deployment.yaml</code></p>
+<p>$$$ 结果</p>
+<p>查看 Deployment 信息：</p>
+<p><code>kubectl get deployments</code></p>
+<p>$$$ 结果</p>
+<p>对上述输出中涉及的数量解释如下：</p>
+<ul>
+<li>DESIRED: Pod 副本数量的期望值，即 Deployment 里定义的 Replica。</li>
+<li>CURRENT: 当前 Replica 的值，实际上是 Deployment 所创建的 Replica Set 里的 Replica 值，这个值不断增加，直到达到 DESIRED 为止，表明整个部署过程完成。</li>
+<li>UP-TO-DATE: 最新版本的 Pod 的副本数量，用于指示在滚动升级的过程中，有多少个副本已经成功升级。</li>
+<li>AVAILABLE: 当前集群中可用的 Pod 副本数量，即集群中当前存活的 Pod 数量。</li>
+</ul>
+<p>查看 Replica Set，可以看到它的命名与 Deployment 的名字有关系：</p>
+<p><code>kubectl get rs</code></p>
+<p>$$$ 结果</p>
+<p>查看创建的 Pod，我嗯发现 Pod 的命名以 Deployment 对应的 Replica Set 的名字为前缀，这种命名很清晰地表明了一个 Replica Set 创建了哪些 Pod，对于 Pod 滚动升级这种复杂的过程来说，很容易排查错误：</p>
+<p><code>kubectl get pods</code></p>
+<p>$$$ 结果</p>
+<p>Pod 的管理对象，除了 RC 和 Deployment，还包括 ReplicaSet、DaemonSet、StatefulSet、Job 等，分别用于不同的应用场景中。</p>
+<h5 id="Horizontal-Pod-Autoscaler"><a href="#Horizontal-Pod-Autoscaler" class="headerlink" title="Horizontal Pod Autoscaler"></a>Horizontal Pod Autoscaler</h5><p>前面我们提到过，通过手动执行 kubectl scale 命令，可以实现 Pod 扩容或缩容。而 Kubernetes v1.1 版本中发布了一个新特性————Horizontal Pod Autoscaling（Pod 横向自动扩容，简称 HPA）。</p>
+<p>HPA 与之前的 RC、Deployment 一样，也属于一种 Kubernetes 资源对象。通过追踪分析 RC 控制的所有目标 Pod 的负载变化情况，来确定是否需要针对性地调整目标 Pod 的副本数。当前，HPA 可以有以下两种方式作为 Pod 负载的度量指标：</p>
+<ul>
+<li>CPUUtilizationPercentage</li>
+<li>应用程序自定义的度量指标，比如服务在每秒内的相应的请求数（TPS 或 QPS）。</li>
+</ul>
+<p>CPUUtilizationPercentage 是一个算数平均值，即目标 Pod 所有副本自身的 CPU 利用率的平均值。一个 Pod 自身的 CPU 利用率是该 Pod 当前 CPU 的使用量除以它的 Pod Request 的值，比如我们定义一个 Pod 的 Pod Request 为 0.4，而当前 Pod 的 CPU 使用量为 0.2，则它的 CPU 使用率为50%，如此一来，我们就可以算出一个 RC 控制的所有 Pod 副本的 CPU 利用率的算术平均值了。如果某一时刻 CPUUtilizationPercentage 的值超过 80%，则意味着当前的 Pod 副本数很可能不足以支撑接下来更多的请求，需要进行动态扩容，而当请求高峰时段过去后， Pod 的 CPU 利用率又会降下来，此时对应的 Pod 副本数应该自动减少到一个合理的水平。</p>
+<p>下面是 HPA 定义的一个具体例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: autoscaling/v1</div><div class="line">kind: HorizontalPodAutoscaler</div><div class="line">metadata:</div><div class="line">  name: php-apache</div><div class="line">  namespace: default</div><div class="line">spec:</div><div class="line">  maxReplicas: 10</div><div class="line">  minReplicas: 1</div><div class="line">  scaleTargerRes:</div><div class="line">    kind: Deployment</div><div class="line">    name: php-apache</div><div class="line">  targerCPUUtilizationPercentage: 90</div></pre></td></tr></table></figure>
+<h5 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h5>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/11/k8s01/" class="archive-article-date">
+  	<time datetime="2019-03-10T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-11</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-docker02" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -173,7 +683,7 @@
 <p>对于每一层来说你都可以跨多个镜像分享，这样可以节省大量的磁盘空间。</p>
 <h5 id="容器体积"><a href="#容器体积" class="headerlink" title="容器体积"></a>容器体积</h5><p>在创建容器并考虑到体积问题的时候，不要为了节省空间去使用体积小的镜像，尽量使用你将要提供数据的应用程序打成的镜像。如果你这样做了，并且提交了磁盘数据，你不仅在容器中储存了你的数据，而且对实际应用程序的调试也非常有用。</p>
 <h5 id="消耗"><a href="#消耗" class="headerlink" title="消耗"></a>消耗</h5><p>当你已经构建了一个镜像，在运行它的时候发现有一个package缺少了，把它添加到Dockerfile的底部，而不是添加到顶部的run apt-get命令那里。这意味着你能尽快的重新构建这个镜像了。一旦你的镜像可以正常工作，你可以再提交源码之前重新优化整理Dockerfile。</p>
-<h5 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div></pre></td><td class="code"><pre><div class="line"># 1 - Common Header / Packages</div><div class="line">FROM ubuntu:trusty</div><div class="line">MAINTAINER Jin Dingming ”jindm@2345.com”</div><div class="line"></div><div class="line">RUN apt-get -yq update \</div><div class="line">&amp;&amp; apt-get -yqq install \</div><div class="line">wget \</div><div class="line">curl \</div><div class="line">git \</div><div class="line">software-properties-common</div><div class="line"></div><div class="line"># 2 - Python</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">python-dev \</div><div class="line">python-pip \</div><div class="line">python-pysqlite2 \</div><div class="line">python-mysqldb</div><div class="line"></div><div class="line"># 3 - Apache</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">apache2 \</div><div class="line">apache2-utils</div><div class="line"></div><div class="line"># 4 - Apache ENVs</div><div class="line">ENV APACHE_CONFDIR /etc/apache2</div><div class="line">ENV APACHE_ENVVARS $APACHE_CONFDIR/envvars</div><div class="line">ENV APACHE_RUN_USER www-data</div><div class="line">ENV APACHE_RUN_GROUP www-data</div><div class="line">ENV APACHE_RUN_DIR /var/run/apache2</div><div class="line">ENV APACHE_PID_FILE $APACHE_RUN_DIR/apache2.pid</div><div class="line">ENV APACHE_LOCK_DIR /var/lock/apache2</div><div class="line">ENV APACHE_LOG_DIR /var/log/apache2</div><div class="line"></div><div class="line"># 5 - Graphite and Deps</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">libapache2-mod-python \</div><div class="line">python-cairo \</div><div class="line">python-jinja2 \</div><div class="line">sqlite3</div><div class="line"></div><div class="line">RUN \</div><div class="line">pip install whisper \</div><div class="line">carbon \</div><div class="line">graphite-web \</div><div class="line">&apos;Twisted&lt;12.0&apos; \</div><div class="line">&apos;django&lt;1.6&apos; \</div><div class="line">django-tagging</div><div class="line"></div><div class="line"># 6 - Other</div><div class="line">EXPOSE 80 2003 2004 7002</div><div class="line"></div><div class="line">WORKDIR /app</div><div class="line"></div><div class="line">VOLUME /opt/graphite/data</div><div class="line"></div><div class="line"># Define default command.</div><div class="line">CMD [&quot;/app/bin/start_graphite&quot;]</div><div class="line"></div><div class="line"># 7 - First use of ADD</div><div class="line">ADD . /app</div><div class="line"></div><div class="line"># 8 - Final setup</div><div class="line">RUN mkdir -p /app/wsgi \</div><div class="line">&amp;&amp; useradd -d /app -c &apos;application&apos; -s &apos;/bin/false&apos; graphite \</div><div class="line">&amp;&amp; chmod +x /app/bin/* \</div><div class="line">&amp;&amp; chown -R graphite:graphite /app \</div><div class="line">&amp;&amp; chown -R graphite:graphite /opt/graphite \</div><div class="line">&amp;&amp; rm -f /etc/apache2/sites-enabled/* \</div><div class="line">&amp;&amp; mv /app/apache-graphite.conf /etc/apache2/sites-enabled/apache-graphite.conf</div></pre></td></tr></table></figure>
+<h5 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div></pre></td><td class="code"><pre><div class="line"># 1 - Common Header / Packages</div><div class="line">FROM ubuntu:trusty</div><div class="line">MAINTAINER Jin Dingming &lt;jindm@2345.com&gt;</div><div class="line"></div><div class="line">RUN apt-get -yq update \</div><div class="line">&amp;&amp; apt-get -yqq install \</div><div class="line">wget \</div><div class="line">curl \</div><div class="line">git \</div><div class="line">software-properties-common</div><div class="line"></div><div class="line"># 2 - Python</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">python-dev \</div><div class="line">python-pip \</div><div class="line">python-pysqlite2 \</div><div class="line">python-mysqldb</div><div class="line"></div><div class="line"># 3 - Apache</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">apache2 \</div><div class="line">apache2-utils</div><div class="line"></div><div class="line"># 4 - Apache ENVs</div><div class="line">ENV APACHE_CONFDIR /etc/apache2</div><div class="line">ENV APACHE_ENVVARS $APACHE_CONFDIR/envvars</div><div class="line">ENV APACHE_RUN_USER www-data</div><div class="line">ENV APACHE_RUN_GROUP www-data</div><div class="line">ENV APACHE_RUN_DIR /var/run/apache2</div><div class="line">ENV APACHE_PID_FILE $APACHE_RUN_DIR/apache2.pid</div><div class="line">ENV APACHE_LOCK_DIR /var/lock/apache2</div><div class="line">ENV APACHE_LOG_DIR /var/log/apache2</div><div class="line"></div><div class="line"># 5 - Graphite and Deps</div><div class="line">RUN \</div><div class="line">apt-get -yqq install \</div><div class="line">libapache2-mod-python \</div><div class="line">python-cairo \</div><div class="line">python-jinja2 \</div><div class="line">sqlite3</div><div class="line"></div><div class="line">RUN \</div><div class="line">pip install whisper \</div><div class="line">carbon \</div><div class="line">graphite-web \</div><div class="line">&apos;Twisted&lt;12.0&apos; \</div><div class="line">&apos;django&lt;1.6&apos; \</div><div class="line">django-tagging</div><div class="line"></div><div class="line"># 6 - Other</div><div class="line">EXPOSE 80 2003 2004 7002</div><div class="line"></div><div class="line">WORKDIR /app</div><div class="line"></div><div class="line">VOLUME /opt/graphite/data</div><div class="line"></div><div class="line"># Define default command.</div><div class="line">CMD [&quot;/app/bin/start_graphite&quot;]</div><div class="line"></div><div class="line"># 7 - First use of ADD</div><div class="line">ADD . /app</div><div class="line"></div><div class="line"># 8 - Final setup</div><div class="line">RUN mkdir -p /app/wsgi \</div><div class="line">&amp;&amp; useradd -d /app -c &apos;application&apos; -s &apos;/bin/false&apos; graphite \</div><div class="line">&amp;&amp; chmod +x /app/bin/* \</div><div class="line">&amp;&amp; chown -R graphite:graphite /app \</div><div class="line">&amp;&amp; chown -R graphite:graphite /opt/graphite \</div><div class="line">&amp;&amp; rm -f /etc/apache2/sites-enabled/* \</div><div class="line">&amp;&amp; mv /app/apache-graphite.conf /etc/apache2/sites-enabled/apache-graphite.conf</div></pre></td></tr></table></figure>
 <h5 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h5><ol>
 <li><p>Common Header/Packages</p>
 <p> 这是最常见的共享层，在同一个主机上运行所有镜像应该从它开始。可以看到这里添加了一些诸如curl和git的操作，他们不是必须的，但是对调试很有用，而且因为他们在分享层，所以不会占用太多空间。</p>
@@ -888,6 +1398,77 @@
 
 
   
+    <article id="post-k8s_context" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/04/01/k8s_context/">Kubernetes 不同工作组共享集群案例</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>在一个组织内部，不同的工作组可以在同一个 Kubernetes 集群中工作，Kubernetes 通过命名空间和 Context 的设置来实现对不同工作组进行区分，使得它们既可以共享同一个 Kubernetes 集群的服务，也能够互不干扰。</p>
+<p>假设在我们的组织中有两个工作组：开发组和生产运维组。开发组在 Kubernetes 集群中需要不断创建、修改、删除各种 Pod、RC、Service 等资源对象，以便实现敏捷开发的过程。而生产运维组则需要使用严格的权限设置来确保生产系统中的 Pod、RC、Service 处于正常运行状态且不会被误操作。</p>
+<h2 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h2><p>为了在 Kubernetes 集群中实现这两个分组，首先需要创建两个命名空间。</p>
+<p><strong>namespace-development.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
+<p><strong>namespace-production.yaml</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: production</div></pre></td></tr></table></figure>
+<p>使用 kubectl create 命令完成命名空间的创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f namespace-development.yaml</div><div class="line">$ kubectl create -f namespace-production.yaml</div></pre></td></tr></table></figure>
+<p>查看系统中的命名空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get namespaces</div></pre></td></tr></table></figure>
+<h2 id="定义-Context（运行环境）"><a href="#定义-Context（运行环境）" class="headerlink" title="定义 Context（运行环境）"></a>定义 Context（运行环境）</h2><p>接下来，需要为这两个工作组分别定义一个 Context，即运行环境。这个运行环境将属于某个特定的命名空间。</p>
+<p>通过 kubectl config set-context 命令定义 Context，并将 Context 置于之前创建的命名空间中：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl config set-cluster kubernetes-cluster --server=https://192.168.1.128:8080</div><div class="line">$ kubectl config set-context ctx-dev --namespace=development --cluster=kubernetes-cluster --user=dev</div><div class="line">$ kubectl config set-context ctx-prod --namespace=production --cluster=kubernetes-cluster --user=prod</div></pre></td></tr></table></figure>
+<p>使用 kubectl config view 命令查看已定义的 Context：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">$ kubectl config view</div><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">clusters:</div><div class="line">- cluster:</div><div class="line">    server: http://192.168.1.128:8080</div><div class="line">  name: kubernetes-cluster</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: development</div><div class="line">  name: ctx-dev</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: production</div><div class="line">  name: ctx-prod</div><div class="line">current-context: ctx-dev</div><div class="line">preferences: &#123;&#125;</div><div class="line">users: []</div></pre></td></tr></table></figure>
+<p>注意，通过 kubectl config 命令在 ${HOME}/.kube 目录下生成了一个名为 config 的文件，文件内容即 kubectl config view 命令看到的内容。所以，也可以通过手工编辑该文件的方式来设置 Context。</p>
+<h2 id="设置工作组在特定-Context-环境中工作"><a href="#设置工作组在特定-Context-环境中工作" class="headerlink" title="设置工作组在特定 Context 环境中工作"></a>设置工作组在特定 Context 环境中工作</h2><p>使用 kubectl config use-context <context_name> 命令来设置当前的运行环境。</context_name></p>
+<p>下面的命令把当前运行环境设置为 ”ctx-dev“：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl config use-context ctx-dev</div></pre></td></tr></table></figure>
+<p>通过这个命令，当前的运行环境即被设置为开发组所需的环境。之后的所有操作都将在名为 “development” 的命名空间中完成。</p>
+<p>各工作组之间的工作将不会相互干扰，并且它们都能够在同一个 Kubernetes 集群中同时工作。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2016/04/01/k8s_context/" class="archive-article-date">
+  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-k8s_security_demo" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -967,247 +1548,6 @@
       
       <a href="/2016/04/01/k8s_security_demo/" class="archive-article-date">
   	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_context" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/04/01/k8s_context/">Kubernetes 不同工作组共享集群案例</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在一个组织内部，不同的工作组可以在同一个 Kubernetes 集群中工作，Kubernetes 通过命名空间和 Context 的设置来实现对不同工作组进行区分，使得它们既可以共享同一个 Kubernetes 集群的服务，也能够互不干扰。</p>
-<p>假设在我们的组织中有两个工作组：开发组和生产运维组。开发组在 Kubernetes 集群中需要不断创建、修改、删除各种 Pod、RC、Service 等资源对象，以便实现敏捷开发的过程。而生产运维组则需要使用严格的权限设置来确保生产系统中的 Pod、RC、Service 处于正常运行状态且不会被误操作。</p>
-<h2 id="创建-namespace"><a href="#创建-namespace" class="headerlink" title="创建 namespace"></a>创建 namespace</h2><p>为了在 Kubernetes 集群中实现这两个分组，首先需要创建两个命名空间。</p>
-<p><strong>namespace-development.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
-<p><strong>namespace-production.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: production</div></pre></td></tr></table></figure>
-<p>使用 kubectl create 命令完成命名空间的创建：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f namespace-development.yaml</div><div class="line">$ kubectl create -f namespace-production.yaml</div></pre></td></tr></table></figure>
-<p>查看系统中的命名空间：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get namespaces</div></pre></td></tr></table></figure>
-<h2 id="定义-Context（运行环境）"><a href="#定义-Context（运行环境）" class="headerlink" title="定义 Context（运行环境）"></a>定义 Context（运行环境）</h2><p>接下来，需要为这两个工作组分别定义一个 Context，即运行环境。这个运行环境将属于某个特定的命名空间。</p>
-<p>通过 kubectl config set-context 命令定义 Context，并将 Context 置于之前创建的命名空间中：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl config set-cluster kubernetes-cluster --server=https://192.168.1.128:8080</div><div class="line">$ kubectl config set-context ctx-dev --namespace=development --cluster=kubernetes-cluster --user=dev</div><div class="line">$ kubectl config set-context ctx-prod --namespace=production --cluster=kubernetes-cluster --user=prod</div></pre></td></tr></table></figure>
-<p>使用 kubectl config view 命令查看已定义的 Context：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">$ kubectl config view</div><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">clusters:</div><div class="line">- cluster:</div><div class="line">    server: http://192.168.1.128:8080</div><div class="line">  name: kubernetes-cluster</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: development</div><div class="line">  name: ctx-dev</div><div class="line">- context:</div><div class="line">    cluster: kubernetes-cluster</div><div class="line">    namespace: production</div><div class="line">  name: ctx-prod</div><div class="line">current-context: ctx-dev</div><div class="line">preferences: &#123;&#125;</div><div class="line">users: []</div></pre></td></tr></table></figure>
-<p>注意，通过 kubectl config 命令在 ${HOME}/.kube 目录下生成了一个名为 config 的文件，文件内容即 kubectl config view 命令看到的内容。所以，也可以通过手工编辑该文件的方式来设置 Context。</p>
-<h2 id="设置工作组在特定-Context-环境中工作"><a href="#设置工作组在特定-Context-环境中工作" class="headerlink" title="设置工作组在特定 Context 环境中工作"></a>设置工作组在特定 Context 环境中工作</h2><p>使用 kubectl config use-context <context_name> 命令来设置当前的运行环境。</context_name></p>
-<p>下面的命令把当前运行环境设置为 ”ctx-dev“：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl config use-context ctx-dev</div></pre></td></tr></table></figure>
-<p>通过这个命令，当前的运行环境即被设置为开发组所需的环境。之后的所有操作都将在名为 “development” 的命名空间中完成。</p>
-<p>各工作组之间的工作将不会相互干扰，并且它们都能够在同一个 Kubernetes 集群中同时工作。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/04/01/k8s_context/" class="archive-article-date">
-  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_security" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/31/k8s_security/">Kubernetes 安全机制</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Kubernetes 通过一系列机制来实现集群的安全控制，其中包括 API Server 的认证授权、准入控制机制及保护敏感信息的 Secret 机制等。集群的安全性必须考虑如下几个目标：</p>
-<ol>
-<li>保证容器与其所在的宿主机的隔离；</li>
-<li>限制容器给基础设施及其他容器带来消极影响的能力；</li>
-<li>最小权限原则————合理限制所有组件的权限，确保组件只执行它被授权的行为，通过限制单个组件的能力来限制它所能到达的权限范围；</li>
-<li>明确组件间边界的划分；</li>
-<li>划分普通用户和管理员的角色；</li>
-<li>在必要的时候允许将管理员权限赋给普通用户；</li>
-<li>允许拥有“Secret”数据（Keys、Certs、Passwords）的应用在集群中运行。</li>
-</ol>
-<p>下面分别从 Authentication、Authorization、Admission Control、Secret 和 Service Account 六个方面来说明集群的安全机制。</p>
-<h2 id="Authentication-认证"><a href="#Authentication-认证" class="headerlink" title="Authentication 认证"></a>Authentication 认证</h2><p>Kubernetes 对 API 调用使用 CA（Client Authentication）、Token 和 HTTP Base 方式实现用户认证。</p>
-<p>使用 CA 认证的应用需包含一个 CA 认证机构给服务器端下发的根证书、服务端证书和私钥文件。因此 API Server 的三个参数“–client-ca-file”“–tls-cert-file”和“–tls-private-key-file”分别指向根证书文件、服务端证书文件和私钥文件。API Server 客户端应用的三个启动参数（例如 Kubectl 的三个参数 “certificate-authority”“client-certificate”和“client-key”），或客户端应用的 kubeconfig 配置文件中的配置项“certificate-authority”“client-certificate”和“client-key”分别指向根证书文件、客户端证书文件和私钥文件。</p>
-<p>Kubernetes 的 CA 认证方式通过添加 API Server 的启动参数“–client-ca-file=SOMEFILE”实现，其中“SOMEFILE”为认证授权文件，该文件包含一个或多个证书颁发机构（CA Certificates Authorities）。</p>
-<p>Token 认证方式通过添加 API Server 的启动参数“–token_auth_file=SOMEFILE”实现，其中“SOMEFILE”指的是 Token 文件。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">例如 Token 文件内容为：</div><div class="line">lkjqweroiuuou,Thomas,8x7d1kklzseertyywx</div><div class="line">用 CURL 去访问该 API Server：</div><div class="line">curl $APISERVER/api --header &quot;Authorization: Bearer lkjqweroiuuou&quot; --insecure</div><div class="line">&#123;</div><div class="line">  &quot;version&quot; : [</div><div class="line">    &quot;v1&quot;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>基本认证方式是通过添加 API Server 的启动参数“–basic_auth_file=SOMEFILE”实现的，其中“SOMEFILE”指的是用于存储用户和密码信息的基本认证文件。</p>
-<p>当使用基本认证方式从 HTTP 客户端访问 API Server 时，HTTP 请求头中的 Authorization 域必须包含“Basic BASE64ENCODEDUSER:PASSWORD”的值。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">tmp=`base64 &quot;dingmingk:passwd&quot;`</div><div class="line">curl $APISERVER/api --header &quot;Authorization: Basic $tmp&quot; --insecure</div><div class="line">&#123;</div><div class="line">  &quot;version&quot;:[</div><div class="line">    &quot;v1&quot;</div><div class="line">  ]</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h2 id="Authorization-授权"><a href="#Authorization-授权" class="headerlink" title="Authorization 授权"></a>Authorization 授权</h2><p>在 Kubernetes 中，授权（Authorization）是认证（Authenticaiton）后的一个独立步骤，作用于 API Server 主要端口的所有 HTTP 访问。授权流程不作用于只读端口，在计划中只读端口在不久之后将被删除。授权流程通过访问策略比较请求上下文的属性（例如用户名、资源和 Namespace）。在通过 API 访问资源之前，必须通过访问策略进行校验。访问策略通过 API Server 的启动参数 –authorization_mode 配置，该参数包含如下三个值：</p>
-<ul>
-<li>–authorization_mode=AlwaysDeny</li>
-<li>–authorization_mode=AlwaysAllow</li>
-<li>–authorization_mode=ABAC</li>
-</ul>
-<p>其中，“AlwaysDeny”表示拒绝所有的请求，该配置一般用于测试；“AlwaysAllow”表示接受所有请求，如果集群不需要授权流程，则可以采用该策略；“ABAC”表示使用用户配置的授权策略去管理访问 API Server 的请求，ABAC（Attribute-Based Access Control）为基于属性的访问控制。</p>
-<p>在 Kubernetes 中，一个 HTTP 请求包含如下 4 个能被授权进程识别的属性：</p>
-<ul>
-<li>用户名（代表一个已经被认证的用户的字符型用户名）；</li>
-<li>是否是只读请求（REST 的 GET 操作是只读的）；</li>
-<li>被访问的是哪一类资源，例如访问 Pod 资源/api/v1/namespaces/defaults/pods；</li>
-<li>被访问对象所属的 Namespace，如果这被访问的资源不支持 Namespace，则是空字符串。</li>
-</ul>
-<p>如果选用 ABAC 模式，那么需要通过设置 API Server 的“–authorization_policy_file=SOME_FILENAME”参数来指定授权策略文件，其中“SOME_FILENAME”为授权策略文件。授权策略文件的每一行都是一个 JSON 对象，该 JSON 对象是一个 Map，这个 Map 内不包含 List 和 Map。每行都是一个“策略对象”。策略对象包含下面 4 个属性：</p>
-<ul>
-<li>user（用户名），为字符串类型，该字符串类型的用户名来源于 Token 文件或基本认证文件中的用户名字段的值；</li>
-<li>readonly（只读标识），为布尔类型，当它的值为 true 时，表明该策略允许 GET 请求通过；</li>
-<li>resource（资源），为字符串类型，来自于 URL 的资源，例如“Pods”；</li>
-<li>namespace（命名空间），为字符串类型，表明该策略允许访问某个 Namespace 的资源。</li>
-</ul>
-<p>没被设置的属性，将被等同于根据值的类型设置成零值（例如为字符串类型属性设置一个空字符串；为布尔值属性设置 false；为数值类型属性设置 0）。</p>
-<p>授权策略文件中的策略对象的一个未设置属性，表示匹配 HTTP 请求中该属性的任何值。对请求的 4 个属性值和授权策略文件中的所有策略对象逐个匹配，如果至少有一个策略对象被匹配上，则该请求将被授权通过。</p>
-<p>例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">允许用户 alice 做任何事情：&#123;&quot;user&quot;:&quot;alice&quot;&#125;。</div><div class="line">用户 Kubelet 指定读取资源 Pods：&#123;&quot;user&quot;:&quot;kubelet&quot;,&quot;resource&quot;:&quot;pods&quot;,&quot;readonly&quot;:true&#125;。</div><div class="line">用户 Kubelet 能读和写资源 events：&#123;&quot;user&quot;:&quot;kubelet&quot;,&quot;resource&quot;:&quot;events&quot;&#125;</div><div class="line">用户 bob 只能读取 Namespace &quot;myNamespace&quot; 中的资源 Pods：&#123;&quot;user&quot;:&quot;bob&quot;,&quot;resource&quot;:&quot;pods&quot;,&quot;readonly&quot;:true,&quot;ns&quot;:&quot;myNamespace&quot;&#125;</div></pre></td></tr></table></figure>
-<h2 id="Admission-Control-准入控制"><a href="#Admission-Control-准入控制" class="headerlink" title="Admission Control 准入控制"></a>Admission Control 准入控制</h2><p>Admission Control 是用于拦截所有经过认证和鉴权后的访问 API Server 请求的可插入代码（或插件）。这些可插入代码运行于 API Server 进程中，在被调用前必须被编译成二进制文件。在请求被 API Server 接收前，每个 Admission Control 插件按配置顺序执行。如果其中的任意一个插件拒绝该请求，就意味着这个请求被 API Server 拒绝，同时 API Server 反馈一个错误信息给请求发起方。</p>
-<p>在某些情况下，Admission Control 插件会使用系统配置的默认值取改变进入集群对象的内容。此外，Admission Control 插件可能会改变请求处理所使用的配额，比如增加请求处理的资源配额。</p>
-<p>通过配置 API Server 的启动参数“admission_control”，在该参数中加入需要的 Admission Control 插件列表，各插件的名称之间用逗号隔开。例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">--admission_control=NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota</div></pre></td></tr></table></figure>
-<p>Admission Control 的插件列表如下表所示：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">名称</th>
-<th style="text-align:left">说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">AlwaysAdmit</td>
-<td style="text-align:left">允许所有请求通过</td>
-</tr>
-<tr>
-<td style="text-align:center">AlwaysDeny</td>
-<td style="text-align:left">拒绝所有请求，一般用于测试</td>
-</tr>
-<tr>
-<td style="text-align:center">DenyExecOnPrivileged</td>
-<td style="text-align:left">拦截所有带有 SecurityContext 属性的 Pod 的请求，拒绝在一个特权容器中执行命令</td>
-</tr>
-<tr>
-<td style="text-align:center">ServiceAccount</td>
-<td style="text-align:left">配合 Service Account Controller 使用，为设定了 Service Account 的 Pod 自动管理 Secret，使得 Pod 能够使用相应的 Secret 下载 Image 和访问 API Server</td>
-</tr>
-<tr>
-<td style="text-align:center">SecurityContextDeny</td>
-<td style="text-align:left">不允许带有 SecurityContext 属性的 Pod 存在，SecurityContext 属性用于创建特权容器</td>
-</tr>
-<tr>
-<td style="text-align:center">ResourceQuota</td>
-<td style="text-align:left">在 Namespace 中做资源配额限制</td>
-</tr>
-<tr>
-<td style="text-align:center">LimitRanger</td>
-<td style="text-align:left">限制 Namespace 中的 Pod 和 Container 的 CPU 和 内存配额</td>
-</tr>
-<tr>
-<td style="text-align:center">NamespaceExists</td>
-<td style="text-align:left">读区请求中的 Namespace 属性，如果该 Namespace 不存在，则拒绝该请求</td>
-</tr>
-<tr>
-<td style="text-align:center">NamespaceAutoProvision(deprecated)</td>
-<td style="text-align:left">读取请求中的 Namespace 属性，如果该 Namespace 不存在，则尝试创建该 Namespace</td>
-</tr>
-<tr>
-<td style="text-align:center">NamespaceLifecycle</td>
-<td style="text-align:left">该插件限制访问处于中止状态的 Namespace，禁止在该 Namespace 中创建新的内容。当 NamespaceLifecycle 和 NamespaceExists 能够合并成一个插件后，NamespaceAutoProvision 就会变成 deprecated</td>
-</tr>
-</tbody>
-</table>
-<h2 id="Secret-私密凭据"><a href="#Secret-私密凭据" class="headerlink" title="Secret 私密凭据"></a>Secret 私密凭据</h2><p>Secret 的主要作用是保管私密数据，比如密码、OAuth Tokens、SSH Keys 等信息。将这些私密信息放在 Secret 对象中比直接放在 Pod 或 Docker Image 中更安全，也更便于使用。</p>
-<p>Kubernetes 在 Pod 创建时，如果该 Pod 指定了 Service Account，那么为该 Pod 自动添加包含凭证信息的 Secrets，用于访问 API Server 和下载 Image。该功能可以通过 Admission Control 添加或失效，然而如果需要以安全的方式去访问 API Server，则建议开启该功能。</p>
-<p>下面的例子用于创建一个 Secret：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ kubectl namespace myspace</div><div class="line">$ cat &lt;&lt;EOF &gt; secrets.yaml</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysecret</div><div class="line">type: Opaque</div><div class="line">data:</div><div class="line">  password: dmFsdWUtMgOK</div><div class="line">  username: dmFsdWUtMQOK</div><div class="line">$ kubectl create -f secrets.yaml</div></pre></td></tr></table></figure>
-<p>在上面的例子中，data域的各子域的值必须为 base64 编码值，其中 password 域和 username 域 base64 编码前的值分别为“value-1” 和“value-2”。</p>
-<p>一旦 Secret 被创建，则可以通过下面的三种方式使用它：</p>
-<ol>
-<li>在创建 Pod 时，通过为 Pod 指定 Service Account 来自动使用该 Secret；</li>
-<li>通过挂载该 Secret 到 Pod 来使用它；</li>
-<li>在创建 Pod 时，指定 Pod 的 spc.ImagePullSecrets 来引用它。</li>
-</ol>
-<p>将一个 Secret 通过挂载的方式添加到 Pod 的 Volume 中：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: myPod</div><div class="line">  namespace: myns</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    name: mycontainer</div><div class="line">    image: redis</div><div class="line">    volumeMounts:</div><div class="line">    - name: foo</div><div class="line">      mountPath: /etc/foo</div><div class="line">      readOnly: true</div><div class="line">  volumes:</div><div class="line">  - name: foo</div><div class="line">    secret:</div><div class="line">      secretNmae: mysecret</div></pre></td></tr></table></figure>
-<p>手动使用 imagePullSecret：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">$ docker login localhost:1180</div><div class="line"></div><div class="line">用 base64 编码 dockercfg 的内容</div><div class="line">$ cat ~/.dockercfg | base64</div><div class="line"></div><div class="line">将上一步命令的输出结果作为 Secret 的“data.dockercfg” 域的内容，由此来创建一个 Secret</div><div class="line">$ cat &gt; image-pull-secret.yaml &lt;&lt;EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: myregistrykey</div><div class="line">data:</div><div class="line">  .dockercfg: xxxxxxxxxxxxxxxxxxxxx</div><div class="line">type: kubernetes.io/dockercfg</div><div class="line">EOF</div><div class="line">$ kubectl create -f image-pull-secret.yaml</div><div class="line"></div><div class="line">在创建 Pod 时，引用该 Secret</div><div class="line">$ cat &gt; pods.yaml &lt;&lt; EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: mypod2</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: foo</div><div class="line">      image: janedoe/awesomeapp:v1</div><div class="line">  imagePullSecrets:</div><div class="line">    - name: myregistrykey</div><div class="line">EOF</div><div class="line"></div><div class="line">$ kubectl create -f pods.yaml</div></pre></td></tr></table></figure>
-<p>Pod 创建时会验证所挂载的 Secret 是否真的指向一个 Secret 对象，因此 Secret 必须在任何引用它的 Pod 之前被创建。Secret 对象属于 Namespace，它们只能被同一个 NameSpace 中的 Pod 所引用。</p>
-<p>Secret 包含三种类型：Opaque、ServiceAccount 和 Dockercfg。前面举例介绍了如何创建 Opaque 和 Dockercfg 类型的 Secret。下面的例子为创建一个 Service Account Secret：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysecret</div><div class="line">  annotations:</div><div class="line">    kubernetes.io/service-account.name: myserviceaccount</div><div class="line">type: kubernetes.io/service-account-token</div></pre></td></tr></table></figure>
-<h2 id="Service-Account"><a href="#Service-Account" class="headerlink" title="Service Account"></a>Service Account</h2><p>Service Account 是多个 Secret 的集合。它包含两类 Secret：一类为普通 Secret，用于访问 API Server，也被称为 Service Account Secret；另一类为 imagePullSecret，用于下载容器镜像。如果镜像库运行在 Insecure 模式下，则该 Service Account 可以不包含 imagePullSecret。在下面的例子中创建了一个名为 build-robot 的 Service Account，并查询该 Service Account 的信息：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">$ cat &gt; serviceaccount.yaml &lt;&lt; EOF</div><div class="line">apiVersion: v1</div><div class="line">kind: ServiceAccount</div><div class="line">metadata:</div><div class="line">  name: myserviceaccount</div><div class="line">secrets:</div><div class="line">  - name: mysecret</div><div class="line">    kind: Secret</div><div class="line">    apiVersion: v1</div><div class="line">  - name: mysecret1</div><div class="line">    kind: Secret</div><div class="line">    apiVersion: v1</div><div class="line">imagePullSecrets:</div><div class="line">  - name: mysecret2</div><div class="line">EOF</div><div class="line">$ kubectl create -f serviceaccount.yaml</div><div class="line">$ kubectl get serviceaccounts build-robot -o yaml</div></pre></td></tr></table></figure>
-<p>在 Pod 的创建过程中指定“spec.serviceAccountName”的值为相应的 Service Account 的名称：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: mypod</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">    - name: mycontainer</div><div class="line">      image: nginx</div><div class="line">  serviceAccountName: myserviceaccount</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/31/k8s_security/" class="archive-article-date">
-  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
 </a>
       
 	<div class="article-tag tagcloud">
@@ -1333,267 +1673,6 @@
 
 
   
-    <article id="post-k8s_network" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/30/k8s_network/">Kubernetes 网络配置方案</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>为了实现各 Node 上 Pod 之间的互通，需要一些方案来打通网络，这是 Kubernetes 能够正常工作的前提。本篇将对常用的直接路由、Flannel 和 Open vSwitch 三种配置进行详细说明。</p>
-<h2 id="直接路由"><a href="#直接路由" class="headerlink" title="直接路由"></a>直接路由</h2><p>通过在每个 Node 上添加到其他 Node 上 docker0 的静态路由规则，就可以将不同物理服务器上 Docker Daemon 创建的 docker0 网桥互联互通。</p>
-<p>例如 Pod1 所在 docker0 网桥的 IP 子网是 10.1.10.0，Node 地址为 192.168.1.128；而 Pod2 所在 docker0 网桥的 IP 子网是 10.1.20.0，Node 地址为 192.168.1.129.</p>
-<p>在 Node1 上增加一条到 Node2 上 docker0 的静态路由规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.20.0 netmask 255.255.255.0 gw 192.168.1.129</div></pre></td></tr></table></figure>
-<p>同样，在 Node2 上增加一条到 Node1 上 docker0 的静态路由规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">route add -net 10.1.10.0 netmask 255.255.255.0 gw 192.168.1.128</div></pre></td></tr></table></figure>
-<p>我们的集群中机器数量通常很多。假设有 100 台服务器，那么就需要在每台服务器上手工添加到另外 99 台服务器 docker0 的路由规则。为了减少手工操作，可以使用 Quagga 软件来实现路由规则的动态添加。</p>
-<p>除了在每台服务器上安装 Quagga 软件并启动，还可以使用互联网上的一个 Quagga 容器来运行，在这里使用 index.alauda.cn/georce/router 镜像启动 Quagga。在每台 Node 上下载该 Docker 镜像：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker pull index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
-<p>在运行 Quagga 路由器之前，需要确保每个 Node 上 docker0 网桥的子网地址不能重叠，也不能与物理机所在的网络重叠，这需要网络管理员仔细规划。</p>
-<p>下面以 3 个 Node 为例，使用 ifconfig 命令修改 docker0 网桥的地址和子网（假设 Node 所在的物理网络不是 10.1.X.X地址段）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Node 1: # ifconfig docker0 10.1.10.1/24</div><div class="line">Node 2: # ifconfig docker0 10.1.20.1/24</div><div class="line">Node 3: # ifconfig docker0 10.1.30.1/24</div></pre></td></tr></table></figure>
-<p>然后在每个 Node 上启动 Quagga 容器。需要说明的是，Quagga 需要以 –privileged 特权模式运行，并且指定 –net=host，表示直接使用物理机的网络：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -itd --name=router --privileged --net=host index.alauda.cn/georce/router</div></pre></td></tr></table></figure>
-<p>启动成功后，Quagga 会相互学习来完成到其他机器的 docker0 路由的添加。</p>
-<h2 id="使用-flannel-叠加网络"><a href="#使用-flannel-叠加网络" class="headerlink" title="使用 flannel 叠加网络"></a>使用 flannel 叠加网络</h2><p>falnnel 采用叠加网络（Overlay Network）模型来完成网络的打通。</p>
-<h4 id="安装-etcd"><a href="#安装-etcd" class="headerlink" title="安装 etcd"></a>安装 etcd</h4><p>由于 flannel 使用 etcd 作为数据库，所以需要预先安装好 etcd。</p>
-<h4 id="安装-flannel"><a href="#安装-flannel" class="headerlink" title="安装 flannel"></a>安装 flannel</h4><p>需要在每台 Node 上都安装 flannel。flannel 软件的下载地址为 (<a href="https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件" target="_blank" rel="external">https://github.com/coreos/flannel/releases)。将下载的压缩包解压，把二进制文件</a> flanneld 和 mk-docker-opts.sh 复制到 /usr/bin（或其他 PATH 环境变量中的目录），即可完成对 flannel 的安装。</p>
-<h4 id="配置-flannel"><a href="#配置-flannel" class="headerlink" title="配置 flannel"></a>配置 flannel</h4><p>此处以使用 systemd 系统为例对 flanneld 服务进行配置。编辑服务配置文件 /etc/systemd/system/flanneld.service：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">[Unit]</div><div class="line">Description=Flanneld overlay address etcd agent</div><div class="line">After=network.target</div><div class="line">Before=docker.service</div><div class="line"></div><div class="line">[Service]</div><div class="line">Type=notify</div><div class="line">EnvironmentFile=/etc/sysconfig/flanneld</div><div class="line">EnvironmentFile=-/etc/sysconfig/docker-network</div><div class="line">ExecStart=/usr/bin/flanneld -etcd-endpoints=$&#123;FLANNEL_ETCD&#125; $FLANNEL_OPTIONS</div><div class="line"></div><div class="line">[Install]</div><div class="line">RequiredBy=docker.service</div><div class="line">WantedBy=multi-user.target</div></pre></td></tr></table></figure>
-<p>编辑配置文件/etc/sysconfig/flannel，设置 etcd 的 URL 地址：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># Flanneld configuration options</div><div class="line"># etcd url location. Point this to the server where etcd runs</div><div class="line">FLANNEL_ETCD=&quot;http://192.168.1.128:2379&quot;</div><div class="line"></div><div class="line"># etcd config key. THis is the configuration key that flannel queries</div><div class="line"># For address range assignment</div><div class="line">FLANNEL_ETCD_KEY=&quot;/coreos.com/network&quot;</div><div class="line"></div><div class="line"># Any additional options that you want to pass</div><div class="line">#FLANNEL_OPTIONS=&quot; &quot;</div></pre></td></tr></table></figure>
-<p>在启动 flannel 之前，需要在 etcd 中添加一条网络配置记录，这个配置将用于 flannel 分配给每个 Docker 的虚拟 IP 地址段：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># etcdctl set /coreos.com/network/config &apos;&#123; &quot;Network&quot; : &quot; 10.1.0.0/16 &quot; &#125;&apos;</div></pre></td></tr></table></figure>
-<h4 id="由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。"><a href="#由于-flannel-将覆盖-docker0-网桥，所以如果-Docker-服务网已启动，则停止-Docker-服务。" class="headerlink" title="由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。"></a>由于 flannel 将覆盖 docker0 网桥，所以如果 Docker 服务网已启动，则停止 Docker 服务。</h4><h4 id="启动-flanneld-服务"><a href="#启动-flanneld-服务" class="headerlink" title="启动 flanneld 服务"></a>启动 flanneld 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart flanneld</div></pre></td></tr></table></figure>
-<h4 id="在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置："><a href="#在每个-Node-节点执行以下命令来完成对-docker0-网桥的配置：" class="headerlink" title="在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置："></a>在每个 Node 节点执行以下命令来完成对 docker0 网桥的配置：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mk-docker-opts.sh -i</div><div class="line"># source /run/flannel/subnet.env</div><div class="line"># ifconfig docker0 $&#123;FLANNEL_SUBNET&#125;</div></pre></td></tr></table></figure>
-<h4 id="重新启动-Docker-服务"><a href="#重新启动-Docker-服务" class="headerlink" title="重新启动 Docker 服务"></a>重新启动 Docker 服务</h4><h2 id="使用-Open-vSwitch"><a href="#使用-Open-vSwitch" class="headerlink" title="使用 Open vSwitch"></a>使用 Open vSwitch</h2><p>以两个 Node 为例，首先确保节点 192.168.18.128 的 Docker0 采用 172.17.43.0／24 网段，而 192.168.18.131 的 Docker0 采用 172.17.42.0/24 网段，对应参数为 DockerDaemon 进程里的 bip 参数。</p>
-<h4 id="安装-ovs"><a href="#安装-ovs" class="headerlink" title="安装 ovs"></a>安装 ovs</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install openvswitch-x.x.x-x.x86_64.rpm</div></pre></td></tr></table></figure>
-<p>禁止 SELINUX 功能，配置后重启机器</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># vi /etc/selinux/config</div><div class="line">SELINUX=disabled</div></pre></td></tr></table></figure>
-<p>查看 Open vSwitch 的服务状态，应该启动两个进程：ovsdb-server 与 ovs-vswitchd。</p>
-<h4 id="创建网桥和-GRE-隧道"><a href="#创建网桥和-GRE-隧道" class="headerlink" title="创建网桥和 GRE 隧道"></a>创建网桥和 GRE 隧道</h4><p>接下来需要在每个 Node 上建立 ovs 的网桥 br0，然后在网桥上创建一个 GRE 隧道连接对端网桥，最后把 ovs 的网桥 br0 作为一个端口连接到 docker0 这个 Linux 网桥上。这样以来，两个节点上的 docker0 网段就能互通了。</p>
-<p>创建网桥</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-br br0</div></pre></td></tr></table></figure>
-<p>创建 GRE 隧道连接对端，remote_ip 为对端 eth0 的网卡地址</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ovs-vsctl add-port br0 grel -- set interface grel type=gre option:remote_ip=192.168.18.128</div></pre></td></tr></table></figure>
-<p>添加 br0 到本地 docker0，使得容器流量通过 OVS 流经 tunnel</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># brctl addif docker0 br0</div></pre></td></tr></table></figure>
-<p>启动 br0 与 docker0 网桥</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># ip link set dev br0 up</div><div class="line"># ip link set dev docker0 up</div></pre></td></tr></table></figure>
-<p>添加路由规则。由于 192.168.18.128 与 192.168.18.131 的 docker0 网段分别为 172.17.43.0/24 与 172.17.42.0／24，这两个网段的路由都需要经过本机的 docker0 网桥路由，其中一个 24 网段是通过 OVS 的 GRE 隧道到达对端的，因此需要在每个 Node 上添加通过 docker0 网桥转发的 172.17.0.0/16 段的路由规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># ip route add 172.17.0.0/16 dev docker0</div></pre></td></tr></table></figure>
-<p>清空 Docker 自带的 iptables 规则及 Linux 的规则 ，后者存在拒绝 icmp 报文通过防火墙的规则：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># iptables -t nat -F; iptables -F</div></pre></td></tr></table></figure>
-<p>在 192.168.18.131 上完成上述步骤后，在 192.168.18.128 节点执行同样的操作。注意，GRE 隧道里的 IP 地址药改为对端节点（192.168.18.131）的 IP 地址。</p>
-<h4 id="Node-上容器之间的互通测试"><a href="#Node-上容器之间的互通测试" class="headerlink" title="Node 上容器之间的互通测试"></a>Node 上容器之间的互通测试</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># tshark -i br0 -R ip proto great</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/30/k8s_network/" class="archive-article-date">
-  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_dns" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/30/k8s_dns/">Kubernetes DNS 服务配置案例</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在 Kubernetes 系统中，Pod 在访问其他 Pod 的 Service 时，可以通过两种服务发现方式完成，即环境变量和 DNS 方式。但是使用环境变量是有限制条件的，即 Service 必须在 Pod 之前被创建出来，然后系统才能在新建的 Pod 中自动设置与 Service 相关的环境变量。DNS 则没有这个限制，其通过全局的 DNS 服务器来完成服务的注册与发现。</p>
-<p>Kubernetes 提供的 DNS 由以下三个组件组成：</p>
-<ol>
-<li>etcd: DNS 存储</li>
-<li>kube2sky: 将 Kubernetes Master 中的 Service（服务）注册到 etcd。</li>
-<li>skyDNS: 提供 DNS 域名解析服务。</li>
-</ol>
-<p>这三个组件以 Pod 的方式启动和运行，所以在一个 Kubernetes 集群中，它们都可能被调度到任意一个 Node 节点上去。为了能够使它们之间网络互通，需要将各 Pod 之间的网络打通。</p>
-<h2 id="skydns-配置文件"><a href="#skydns-配置文件" class="headerlink" title="skydns 配置文件"></a>skydns 配置文件</h2><p>首先创建 DNS 服务的 ReplicationController 配置文件：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: kube-dns-v8</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">    kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">    version: v8</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: kube-dns</div><div class="line">        version: v8</div><div class="line">        kubernetes.io/cluster-service: &quot; true &quot;</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: etcd</div><div class="line">        image: gcr.io/google_containers/etcd:2.0.9</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        command:</div><div class="line">        - /usr/local/bin/etcd</div><div class="line">        - -data-dir</div><div class="line">        - /var/etcd/data</div><div class="line">        - -listen-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -advertise-client-urls</div><div class="line">        - http://127.0.0.1:2379,http://127.0.0.1:4001</div><div class="line">        - -initial-cluster-token</div><div class="line">        - skydns-etcd</div><div class="line">        volumeMounts:</div><div class="line">        - name: etcd-storage</div><div class="line">          mountPath: /var/etcd/data</div><div class="line">      - name: kube2sky</div><div class="line">        image: gcr.io/google_containers/kube2sky:1.11</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /kube2sky &quot;</div><div class="line">        - --kube_master_url=http://192.168.1.128:8080</div><div class="line">        - -domain=cluster.local</div><div class="line">      - name: skydns</div><div class="line">        image: gcr.io/google_containers/skydns:2015-03-11-001</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 100m</div><div class="line">            memory: 50Mi</div><div class="line">        args:</div><div class="line">        # command = &quot; /skydns &quot;</div><div class="line">        - -machines=http://localhost:4001</div><div class="line">        - -addr=0.0.0.0:53</div><div class="line">        - -domain=cluster.local</div><div class="line">        ports:</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns</div><div class="line">          protocol: UDP</div><div class="line">        - containerPort: 53</div><div class="line">          name: dns-tcp</div><div class="line">          protocol: TCP</div><div class="line">      volumes:</div><div class="line">        - name: etcd-storage</div><div class="line">          emptyDir: &#123;&#125;</div><div class="line">      dnsPolicy: Default</div></pre></td></tr></table></figure>
-<p>需要修改的几个配置参数如下：</p>
-<ul>
-<li>kube2sky 容器需要访问 Kubernetes Master，需要配置 Master 所在物理主机的 IP 地址和端口号，本例中设置参数 –kube_master_url 的值为 <a href="http://192.168.1.128:8080。" target="_blank" rel="external">http://192.168.1.128:8080。</a></li>
-<li>kube2sky 容器和 skydns 容器的启动参数 -domain,设置 Kubernetes 集群中 Service 所属的域名，本例中为 cluster.local。启动后，kube2sky 会监听 Kubernetes，当有新的 Service 创建时，就会生成相应的记录并保存到 etcd 中。kube2sky 为每个 Service 生成两条记录：<ul>
-<li><service_name>.<namespace_name>.<domain>;</domain></namespace_name></service_name></li>
-<li><service_name>.<namespace_name>.svc.<domain>。</domain></namespace_name></service_name></li>
-</ul>
-</li>
-<li>skydns 的启动参数 -addr=0.0.0.0:53 表示使用本机 TCP 和 UDP 的 53 端口提供服务。</li>
-</ul>
-<p>创建 DNS 服务的 Service 配置文件如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: kube-dns</div><div class="line">  namespace: kube-system</div><div class="line">  labels:</div><div class="line">    k8s-app: kube-system</div><div class="line">    labels:</div><div class="line">      k8s-app: kube-dns</div><div class="line">      kubernetes.io/cluster-services: &quot; true &quot;</div><div class="line">      kubernetes.io/name: &quot; KubeDNS &quot;</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    k8s-app: kube-dns</div><div class="line">  clusterIP: 20.1.0.100</div><div class="line">  ports:</div><div class="line">  - name: dns</div><div class="line">    port: 53</div><div class="line">    protocol: UDP</div><div class="line">  - name: dns-tcp</div><div class="line">    port: 53</div><div class="line">    protocol: TCP</div></pre></td></tr></table></figure>
-<p>注意，skydns 服务使用的 clusterIP 需要我们指定一个固定的 IP 地址，每个 Node 的 Kubernetes 进程都将使用这个 IP 地址，不能通过 Kubernetes 自动分配。</p>
-<p>另外，这个 IP 地址需要在 kube-apiserver 启动参数 –service-cluster-ip-range 指定的 IP 地址范围内。</p>
-<h2 id="修改每个-Node-上的-Kubelet-启动参数"><a href="#修改每个-Node-上的-Kubelet-启动参数" class="headerlink" title="修改每个 Node 上的 Kubelet 启动参数"></a>修改每个 Node 上的 Kubelet 启动参数</h2><p>修改每台 Node 上 Kubelet 的启动参数：</p>
-<ul>
-<li>–cluster_dns=20.1.0.100，为 DNS 服务的 ClusterIP 地址；</li>
-<li>–cluster_domain=cluster.local，为 DNS 服务中设置的域名。</li>
-</ul>
-<p>然后重启 Kubelet 服务。</p>
-<h2 id="创建-skydns-Pod-和服务"><a href="#创建-skydns-Pod-和服务" class="headerlink" title="创建 skydns Pod 和服务"></a>创建 skydns Pod 和服务</h2><p>通过 kubectl create 完成 RC 和 Service 的创建：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># kubectl create -f skydns-rc.yaml</div><div class="line"># kubectl create -f skydns-svc.yaml</div></pre></td></tr></table></figure>
-<p>创建完成后，可以查看系统创建的 RC、Pod、Service 是否创建成功：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># kubectl get rc|pods|services --namespace=kube-system</div></pre></td></tr></table></figure>
-<h2 id="DNS-服务的工作原理"><a href="#DNS-服务的工作原理" class="headerlink" title="DNS 服务的工作原理"></a>DNS 服务的工作原理</h2><p>让我们看看 DNS 服务背后的工作原理。</p>
-<p>kube2sky 容器应用通过调用 Kubernetes Master 的 API 获得集群中所有 Service 的信息，并持续监控新 Service 的生成，然后写入 etcd 中。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">查看 etcd 中存储的 Service 信息</div><div class="line"># kubectl exec kube-dns-v8-xxxxx -c etcd --namespace=kube-system etcdctl ls /skydns/local/cluster</div></pre></td></tr></table></figure>
-<p>根据 Kubelet 启动参数的设置（–cluster_dns），Kubelet 会在每个新创建的 Pod 中设置 DNS 域名解析配置文件 /etc/resolv.conf 文件，在其中增加了一条 nameserver 配置和一条 search 配置。</p>
-<p>最后，应用程序就能够像访问网站域名一样，仅仅通过服务的名字就能访问到服务了。</p>
-<p>通过 DNS 设置，对于其他 Service 的查询将可以不再依赖系统为每个 Pod 创建的环境变量，而是直接使用 Service 的名字就能对其进行访问，使得应用程序中的代码更加简洁。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/30/k8s_dns/" class="archive-article-date">
-  	<time datetime="2016-03-29T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-30</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_quota" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/29/k8s_quota/">Kubernetes 资源配额管理</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>资源的配额管理功能主要用于对集群中可用的资源进行分配和限制。为了开启配额管理，需要设置 kube-apiserver 的 –admission_control 参数，使之家在这两个准入控制器。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kube-apiserver ... --admission_control=LimitRanger,ResourceQuota...</div></pre></td></tr></table></figure>
-<h2 id="指定容器配额"><a href="#指定容器配额" class="headerlink" title="指定容器配额"></a>指定容器配额</h2><p>对指定容器实施配额管理非常简单，只要在 Pod 或 ReplicationController 的定义文件中设定 resources 属性即可为某个容器指定配额。目前容器支持 CPU 和 Memory 两类资源的配额限制。</p>
-<p>在下面这个 RC 定义文件中增加了 redis-master 的资源配额声明:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: redis-master</div><div class="line">  labels:</div><div class="line">    name: redis-master</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: redis-master</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: redis-master</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: master</div><div class="line">        image: kubenetes/redis-master</div><div class="line">        ports:</div><div class="line">        - containerPort: 6379</div><div class="line">        resources:</div><div class="line">          limits:</div><div class="line">            cpu: 0.5</div><div class="line">            memory: 128Mi</div></pre></td></tr></table></figure>
-<p>以上配置表示，系统将对名为 master 的容器限制 CPU 为 0.5（也可以写为500m），可用内存限制为 128MiB字节。</p>
-<blockquote>
-<p>1 KB(kilobyte) = 1000 bytes = 8000 bits</p>
-<p>1 KiB(kibibyte) = 2^10 bytes = 1024 bytes = 8192 bits</p>
-</blockquote>
-<h2 id="全局默认配额"><a href="#全局默认配额" class="headerlink" title="全局默认配额"></a>全局默认配额</h2><p>除了可以直接在容器（或 RC）的定义文件中给指定的容器增加资源配额参数，我们还可以通过创建 LimitRange 对象来定义一个全局默认配额模版。这个默认配额模版会加载到集群中的每个 Pod 及容器上，这样就不用为每个 Pod 和容器重复设置了。</p>
-<p>我们定义一个名为 limit-range-1 的 LimitRange：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: LimitRange</div><div class="line">metadata:</div><div class="line">  name: limit-range-1</div><div class="line">spec:</div><div class="line">  limits:</div><div class="line">    - type: &quot; Pod &quot; </div><div class="line">      max:</div><div class="line">        cpu: &quot; 2 &quot;</div><div class="line">        memory: 1Gi</div><div class="line">      min:</div><div class="line">        cpu: 250m</div><div class="line">        memory: 32Mi</div><div class="line">    - type: &quot; Container &quot;</div><div class="line">      max:</div><div class="line">        cpu: &quot; 2 &quot;</div><div class="line">        memory: 1Gi</div><div class="line">      min:</div><div class="line">        cpu: 250m</div><div class="line">        memory: 32Mi</div><div class="line">      default:</div><div class="line">        cpu: 250m</div><div class="line">        memory: 64Mi</div></pre></td></tr></table></figure>
-<p>上述设置表明：</p>
-<ul>
-<li>任意 Pod 内所有容器的 CPU 使用限制在 0.25～2；</li>
-<li>任意 Pod 内所有容器的内存使用限制在 32Mi～1Gi；</li>
-<li>任意容器的 CPU 使用限制在 0.25～2，默认值为 0.25；</li>
-<li>任意容器的内存使用限制在 32Mi～1Gi，默认值为 64Mi。</li>
-</ul>
-<h2 id="多租户配额管理"><a href="#多租户配额管理" class="headerlink" title="多租户配额管理"></a>多租户配额管理</h2><p>多租户在 Kubernetes 中以 Namespace 来体现，这里的多租户可以是多个租户、多个业务系统或者相互隔离的多种作业环境。一个集群中的资源总是有限的，当这个集群被多个租户的应用同时使用时，为了更好地使用这种有限的共有资源，我们需要将资源配额的管理单元提升到租户级别，只需要在不同租户对应的 Namespace 上加载对应的 ResourceQuota 配置即可达到目的。</p>
-<p>假设我们集群拥有的总资源为：CPU 共有 128core；内存总量为 1024GiB；有两个租户，分别是开发组和测试组，开发组的资源配额为 32core CPU 及 256GiB 内存，测试组的资源配额为 96core CPU 及 768GiB 内存。</p>
-<p>首先，创建开发组对应的命名空间：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
-<p>接着，创建用于限定开发组的 ResourceQuota 对象，注意 metadata.namespace 属性被设定为开发组的命名空间：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ResourceQuota</div><div class="line">metadata:</div><div class="line">  name: quota-development</div><div class="line">  namespace: development</div><div class="line">spec:</div><div class="line">  hard:</div><div class="line">    cpu: &quot; 32 &quot;</div><div class="line">    memory: 256Gi</div><div class="line">    persistentvolumeclaims: &quot; 10 &quot;</div><div class="line">    pods: &quot; 100 &quot;</div><div class="line">    replicationcontrollers: &quot; 50 &quot;</div><div class="line">    resourcequotas: &quot; 1 &quot;</div><div class="line">    secrets: &quot; 20 &quot;</div><div class="line">    services: &quot; 50 &quot;</div></pre></td></tr></table></figure>
-<p>测试组相应的 namespace 与 ResourceQuota 同上，略。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/29/k8s_quota/" class="archive-article-date">
-  	<time datetime="2016-03-28T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-29</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -1659,7 +1738,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 12.5px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <title>Kubernetes 基础 | 他的国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="容器技术系列分享（四）Kubernetes 基础目录
+Kubernetes 是什么
+为什么要用 Kubernetes
+一个简单的例子
+Kubernetes 基本概念和术语
+Master
+Node
+Pod
+Label
+Replication Controller
+Deployment
+Horizontal Pod Autoscaler
+StatefulSet
+Service
+Volume
+Persi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 基础">
+<meta property="og:url" content="https://dingmingk.github.io/2019/03/11/k8s01/index.html">
+<meta property="og:site_name" content="他的国">
+<meta property="og:description" content="容器技术系列分享（四）Kubernetes 基础目录
+Kubernetes 是什么
+为什么要用 Kubernetes
+一个简单的例子
+Kubernetes 基本概念和术语
+Master
+Node
+Pod
+Label
+Replication Controller
+Deployment
+Horizontal Pod Autoscaler
+StatefulSet
+Service
+Volume
+Persi">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_javaweb01.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_javaweb02.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_javaweb03.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_javaweb04.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_pod01.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_pod02.png">
+<meta property="og:updated_time" content="2019-03-13T00:26:36.123Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kubernetes 基础">
+<meta name="twitter:description" content="容器技术系列分享（四）Kubernetes 基础目录
+Kubernetes 是什么
+为什么要用 Kubernetes
+一个简单的例子
+Kubernetes 基本概念和术语
+Master
+Node
+Pod
+Label
+Replication Controller
+Deployment
+Horizontal Pod Autoscaler
+StatefulSet
+Service
+Volume
+Persi">
+<meta name="twitter:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_javaweb01.png">
+  
+    <link rel="alternative" href="/atom.xml" title="他的国" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <script src="/style.js"></script>
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">dingmingk</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">做一个安静的美男子</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">友链</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="3" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+		        
+					<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+		        
+					<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">dingmingk</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/dingmingk.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">dingmingk</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">做一个安静的美男子</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/dingmingk" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/2704974481" title="weibo">weibo</a>
+			        
+						<a class="zhihu" target="_blank" href="https://www.zhihu.com/people/jin-ding-ming" title="zhihu">zhihu</a>
+			        
+						<a class="mail" target="_blank" href="/dingmingk@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-k8s01" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Kubernetes 基础
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（四）"><a href="#容器技术系列分享（四）" class="headerlink" title="容器技术系列分享（四）"></a>容器技术系列分享（四）</h1><h2 id="Kubernetes-基础"><a href="#Kubernetes-基础" class="headerlink" title="Kubernetes 基础"></a>Kubernetes 基础</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>Kubernetes 是什么</li>
+<li>为什么要用 Kubernetes</li>
+<li>一个简单的例子</li>
+<li>Kubernetes 基本概念和术语<ul>
+<li>Master</li>
+<li>Node</li>
+<li>Pod</li>
+<li>Label</li>
+<li>Replication Controller</li>
+<li>Deployment</li>
+<li>Horizontal Pod Autoscaler</li>
+<li>StatefulSet</li>
+<li>Service</li>
+<li>Volume</li>
+<li>Persisten Volume</li>
+<li>Namespace</li>
+<li>Annotation</li>
+</ul>
+</li>
+</ul>
+<h4 id="Kubernetes-是什么"><a href="#Kubernetes-是什么" class="headerlink" title="Kubernetes 是什么"></a>Kubernetes 是什么</h4><p>Kubernetes 是一个基于容器技术的分布式架构方案，它是谷歌内部系统 Borg 的一个开源版本。</p>
+<p>Kubernetes是一个开放的开发平台，它不局限于任何一种语言，任何服务都可以映射为 Kubernetes 的 Service，并通过标准的 TCP 通信协议进行交互。</p>
+<p>Kubernetes 具有完备的集群管理能力，包括多层次的安全防护和准入机制、多租户应用支撑能力、透明的服务注册和服务发现机制、内建智能负载均衡器、强大的故障发现和自我修复能力、服务滚动升级和在线扩容能力、可扩展的资源自动调度机制，以及多粒度的资源配额管理能力。同时，Kubernetes 提供了完善的管理工具，这些工具涵盖了包括开发、部署测试、运维监控在内的多个环节。</p>
+<h4 id="为什么要用-Kubernetes"><a href="#为什么要用-Kubernetes" class="headerlink" title="为什么要用 Kubernetes"></a>为什么要用 Kubernetes</h4><p>Docker 容器化技术当前已经被很多公司所采用，其从单机走向集群已成为必然，而云计算的蓬勃发展正在加速这一过程。Kubernetes 作为当前唯一被业界广泛认可和看好的 Docker 分布式系统解决方案，可以遇见，在未来会有大量的新系统选择它。</p>
+<p>使用 Kubernetes 可以收获哪些好处？</p>
+<ul>
+<li>首先，最直接的感受就是可以“轻装上阵”地开发复杂系统了。以前动不动就需要十几个人而且团队里需要不少技术达人一起分工协助才能设计实现的和运维的分布式系统，在采用 Kubernetes 解决方案后，只需要一个劲精悍的小团队就能轻松应付。</li>
+<li>其次，使用 Kubernetes 就是在全面拥抱微服务架构。微服务架构的核心是将一个巨大的单体应用分解为许多小的互相连接的微服务，一个微服务背后可能有多个实例副本在支撑，副本的数量可能会随着系统的负荷变化而进行调整，内嵌的负载均衡器在这里发挥了重要作用。微服务架构使得每个服务都可以由专门的开发团队来开发，开发者可以自由选择开发技术，这对于大规模团队来说很有价值，另外每个微服务独立开发、升级、扩展，因此系统具备很高的稳定性和快速迭代能力。谷歌将微服务架构的基础设施直接打包到 Kubernetes 解决方案中，让我们有机会直接应用微服务架构解决复杂业务系统的架构问题。</li>
+<li>然后，我们的系统可以随时随地整体“搬迁”到别的机房或公有云上。Kubernetes 最初的目标就是运行在谷歌自家的公有云 GCE 中，未来会支持更多的公有云及基于 OpenStack 的私有云。同时，在 Kubernetes 的架构方案中，底层网络的细节完全被屏蔽，基于服务的 ClusterIP 甚至都无需我们改变运行期的配置文件，就能将系统从物理环境中无缝迁移到公有云中，或者在服务高峰期将部分服务对应的 Pod 副本放入公有云中以提升系统的吞吐量。</li>
+<li>最后，Kubernetes 系统架构具备了超强的横向扩容能力。对于互联网公司来说，用户规模就等价于资产，谁拥有更多的用户，谁就能在竞争中胜出，因此超强的横向扩容能力是互联网业务系统的关键指标之一。不用修改代码，一个 Kubernetes 集群即可从只包含几个 Node 的小集群平滑扩展到拥有上百个 Node 的大规模集群，我们利用 Kubernetes 提供的工具，甚至可以在线完成集群扩容。只要我们的微服务设计的好，结合硬件或者公有云资源的线性增加，系统就能够承受大量用户并发访问所带来的巨大压力。</li>
+</ul>
+<h4 id="一个简单的例子"><a href="#一个简单的例子" class="headerlink" title="一个简单的例子"></a>一个简单的例子</h4><p>这是一个简单的 Java Web 应用，运行在 Tomcat 里。JSP 页面通过 JDBC 直接访问 MySQL 数据库并展示数据。</p>
+<p>此应用需要启动两个容器： Web App 容器和 MySQL 容器，并且 Web App 容器需要访问 MySQL 容器。</p>
+<h5 id="启动-MySQL-应用"><a href="#启动-MySQL-应用" class="headerlink" title="启动 MySQL 应用"></a>启动 MySQL 应用</h5><p>首先为 MySQL 服务创建一个 RC 定义文件: mysql-rc.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    app: mysql</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: mysql</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: mysql</div><div class="line">        image: mysql</div><div class="line">        ports:</div><div class="line">        - containerPort: 3306</div><div class="line">        env:</div><div class="line">        - name: MYSQL_ROOT_PASSWORD</div><div class="line">          value: &quot;123456&quot;</div></pre></td></tr></table></figure>
+<p>创建好 mysql-rc.yaml 文件后，将它发布到 Kubernetes 集群中：</p>
+<p><code>kubectl create -f mysql-rc.yaml</code></p>
+<p>接下来，我们用 kubectl 命令查看刚刚创建的 RC：</p>
+<p><code>kubectl get rc</code></p>
+<p>查看 Pod 的创建情况：</p>
+<p><img src="/assets/blogImg/k8s01_javaweb01.png" alt="k8s01_javaweb01"></p>
+<p>我们通过 <em>docker ps</em> 命令查看正在运行的容器，发现提供 MySQL 服务的 Pod 容器以及创建并正常运行了。</p>
+<h5 id="创建-MySQL-服务"><a href="#创建-MySQL-服务" class="headerlink" title="创建 MySQL 服务"></a>创建 MySQL 服务</h5><p>为 MySQL 服务创建一个 Service 定义文件 mysql-svc.yaml: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">    - port: 3306</div><div class="line">  selector:</div><div class="line">    app: mysql</div></pre></td></tr></table></figure>
+<p>运行 kubectl 命令，创建 service：</p>
+<p><code>kubectl create -f mysql-svc.yaml</code></p>
+<p>运行 kubectl 命令，查看刚刚创建的 service：</p>
+<p><code>kubectl get svc</code></p>
+<p><img src="/assets/blogImg/k8s01_javaweb02.png" alt="k8s01_javaweb02"></p>
+<p>注意到这里分配了一个 CLUSTER-IP，这是一个虚拟地址，Kubernetes 集群中其他新创建的 Pod 就可以通过 Service 的 Cluster IP + Port 来连接它了。</p>
+<h5 id="启动-Tomcat-应用"><a href="#启动-Tomcat-应用" class="headerlink" title="启动 Tomcat 应用"></a>启动 Tomcat 应用</h5><p>我们用和启动 MySQL 同样的步骤启动 Tomcat。首先，创建对应的 RC 文件 myweb-rc.yaml:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: myweb</div><div class="line">spec:</div><div class="line">  replicas: 2</div><div class="line">  selector:</div><div class="line">    app: myweb</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: myweb</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: myweb</div><div class="line">          image: java-web:v1</div><div class="line">          ports:</div><div class="line">          - containerPort: 8080</div></pre></td></tr></table></figure>
+<p><code>kubectl create -f myweb-rc.yaml</code></p>
+<p><code>kubectl get rc</code></p>
+<p><code>kubectl get pods</code></p>
+<p><img src="/assets/blogImg/k8s01_javaweb03.png" alt="k8s01_javaweb03"></p>
+<h5 id="创建-Tomcat-服务"><a href="#创建-Tomcat-服务" class="headerlink" title="创建 Tomcat 服务"></a>创建 Tomcat 服务</h5><p>为 Tomcat 服务创建一个 Service 定义文件 myweb-svc.yaml: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: myweb</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">  ports:</div><div class="line">    - port: 8080</div><div class="line">      nodePort: 30003</div><div class="line">  selector:</div><div class="line">    app: myweb</div></pre></td></tr></table></figure>
+<p><code>kubectl create -f myweb-svc.yaml</code></p>
+<p><code>kubectl get service</code></p>
+<p><img src="/assets/blogImg/k8s01_javaweb04.png" alt="k8s01_javaweb04"></p>
+<p>$$$ 结果</p>
+<h4 id="Kubernetes-基本概念和术语"><a href="#Kubernetes-基本概念和术语" class="headerlink" title="Kubernetes 基本概念和术语"></a>Kubernetes 基本概念和术语</h4><p>Kubernetes 中的大部分概念如 Node、Pod、Replication Controller、Service 等都可以看作一种 “资源对象”，几乎所有的资源对象都可以通过 Kubernetes 提供的 kubectl 工具（或者 API 编程调用）执行增、删、改、查等操作并将其保存在 Etcd 中持久化存储。从这个角度看，Kubernetes 其实是一个高度自动化的资源控制系统，它通过跟踪对比 Etcd 库里保存的“资源期望状态”与当前环境中的“实际资源状态”的差异来实现自动控制和自动纠错的高级功能。</p>
+<p>在介绍资源对象之前，我们先了解一下 Kubernetes 集群的两种管理角色：Master 和 Node。</p>
+<h5 id="Master"><a href="#Master" class="headerlink" title="Master"></a>Master</h5><p>Kubernetes 里的 Master 指的是集群控制节点，每个 Kubernetes 集群里需要有一个 Master 节点来负责整个集群的管理和控制，基本上 Kubernetes 的所有控制命令都发给它，它来负责具体的执行过程。Master 节点通常会占据一个独立的服务器（高可用部署建议用3台服务器），其主要原因是它太重要了，是整个集群的“首脑”，如果宕机或不可用，那么对集群内容器应用的管理都将失效。</p>
+<p>Master 节点上运行着以下一组关键进程：</p>
+<ul>
+<li>Kubernetes API Server (kube-apiserver)：提供了 HTTP Rest 接口的关键服务进程，是 Kubernetes 里所有资源的增、删、改、查等操作的唯一入口，也是集群控制的入口进程。</li>
+<li>Kubernetes Controller Manager (kube-controller-manager)：Kubernetes 里所有资源对象的自动化控制中心。</li>
+<li>Kubernetes Scheduler (kube-scheduler)：负责资源调度（Pod 调度）的进程。</li>
+</ul>
+<p>另外，Kubernetes 集群还需要一组 Etcd 服务，因为 Kubernetes 里所有资源对象的数据都保存在 Etcd 中。</p>
+<h5 id="Node"><a href="#Node" class="headerlink" title="Node"></a>Node</h5><p>除了 Master， Kubernetes 集群中的其他机器被称为 Node 节点。与 Master 一样，Node 节点可以是一台物理主机，也可以是一台虚拟机。Node 节点才是 Kubernetes 集群中的工作负载节点，每个 Node 都会被 Master 分配一些工作负载（Docker 容器），当某个 Node 宕机时，其上的工作负载会被 Master 自动转移到其他节点上去。</p>
+<p>每个 Node 节点上运行以下一组关键进程：</p>
+<ul>
+<li>kubelet：负责 Pod 对应的容器的创建、启停等任务，同时与 Master 节点密切协作，实现集群管理的基本功能。</li>
+<li>kube-proxy：实现 Kubernetes Service 的通信与负载均衡机制的重要组件。</li>
+<li>Docker Engine（docker）：Docker 引擎，负责本机的容器创建和管理工作。</li>
+</ul>
+<p>Node 节点可以在运行期间动态增加到 Kubernetes 集群中，前提是这个节点上已经正确安装、配置和启动了上述关键进程，在默认情况下 kubelet 会向 Master 注册自己，这也是 Kubernetes 推荐的 Node 管理方式。一旦 Node 被纳入集群管理范围，kubelet 进程就会定时向 Master 节点汇报自身的情报，例如操作系统、Docker 版本、机器的 CPU 和内存情况，以及当前有哪些 Pod 在运行等，这样 Master 可以获知每个 Node 的资源使用情况，并实现高效均衡的资源调度策略。而某个 Node 炒过指定时间不上报信息时，会被 Master 判定为 “失联”，Node 的状态被标记为不可用（Not Ready），随后 Master 会触发工作负载转移的自动流程。</p>
+<p><code>kubectl get nodes</code></p>
+<p>$$$ 结果</p>
+<p><code>kubectl describe node k8s-node-1</code></p>
+<p>$$$ 结果</p>
+<p>上述命令展示了 Node 的如下关键信息：</p>
+<ul>
+<li>Node 基本信息：名称、标签、创建时间等。</li>
+<li>Node 当前的运行状态，Node 启动后会做一系列的自检工作，比如磁盘是否满了，如果满了就标注  OutOfDisk=True，否则继续检查内存是否不足（如果内存不足，就标注 MemoryPressure=True），最后一切正常，就设置为 Ready 状态（Ready=True），该状态表示 Node 处于健康状态， Master 将可以在其上调度新的任务了（如启动 Pod）。</li>
+<li>Node 的主机地址与主机名</li>
+<li>Node 上的资源总量：描述 Node 可用的系统资源，包括 CPU、内存、最大可调度 Pod 数量等。</li>
+<li>Node 可分配资源量：描述 Node 当前可用于分配的资源量。</li>
+<li>主机系统信息：包括主机的唯一标识 UUID、Linux Kernel 版本号、操作系统类型与版本、Kubernetes 版本号、kubelet 与 kube-proxy 版本号等。</li>
+<li>当前正在运行的 Pod 列表概要信息。</li>
+<li>已分配的资源使用概要信息，例如资源申请的最低、最大允许使用量占系统总量的百分比。</li>
+<li>Node 相关的 Event 信息。</li>
+</ul>
+<h5 id="Pod"><a href="#Pod" class="headerlink" title="Pod"></a>Pod</h5><p>Pod 是 Kubernetes 的最重要也最基本的概念。每个 Pod 都有一个特殊的被称为“根容器” 的 Pause 容器。Pause 容器对应的镜像属于 Kubernetes 平台的一部分，除了 Pause 容器，每个 Pod 还包含一个或多个紧密相关的用户业务容器。</p>
+<p><img src="/assets/blogImg/k8s01_pod01.png" alt="k8s01_pod01"></p>
+<blockquote>
+<p>为什么 Kubernetes 会设计出一个全新的 Pod 概念并且 Pod 有这样特殊的组成结构？</p>
+</blockquote>
+<ul>
+<li>原因之一：在一组容器作为一个单元的情况下，我们难以对“整体”简单地进行判断及有效地进行行动。比如，一个容器死亡了，此时算是整体死亡么？是 N/M 的死亡率么？引入业务无关并且不易死亡的 Pause 容器作为 Pod 的根容器，以它的状态代表整个容器组的状态，就简单、巧妙地解决了这个难题。</li>
+<li>原因之二：Pod 里的多个业务容器共享 Pause 容器的 IP，共享 Pause 容器挂载的 Volume，这样既简化了密切关联的业务容器之间的通信问题，也很好地解决了它们之间的文件共享问题。</li>
+</ul>
+<p>Kubernetes 为每个 Pod 都分配了唯一的 IP 地址，称之为 PodIP，一个 Pod 里的多个容器共享 PodIP 地址。Pod 的 IP 加上 Pod 里的容器端口（containerPort），就组成了一个概念————Endpoint，它代表此 Pod 里的一个服务进程的对外通信地址。一个 Pod 也存在着具有多个 Endpoint 的情况。</p>
+<p><img src="/assets/blogImg/k8s01_pod02.png" alt="k8s01_pod02"></p>
+<h5 id="Label"><a href="#Label" class="headerlink" title="Label"></a>Label</h5><p>Label 是 Kubernetes 系统中另外一个核心概念。一个 Label 是一个 key=value 的键值对，其中 Key 与 value 由用户自己指定。Label 可以附加到各种资源上，例如 Node、Pod、Service、RC 等，一个资源对象可以定义任意数量的 Label，同一个 Label 也可以被添加到任意数量的资源对象上去，Label 通常在资源对象定义时确定，也可以在创建对象后动态添加或者删除。</p>
+<p>我们可以通过给指定的资源对象捆绑一个或多个不同的 Label 来实现多维度的资源分组管理功能，以便于灵活、方便地进行资源分配、调度、配置、部署等管理工作。例如：部署不同版本的应用到不同的环境中；或者监控和分析应用（日志记录、监控、告警）等。一些常用的 Label 示例如下：</p>
+<ul>
+<li>版本标签：”release”:”stable”,”release”:”canary”…</li>
+<li>环境标签：”environment”:”dev”,”environment”:”production”…</li>
+<li>架构标签：”tier”:”frontend”,”tier”:”backend”…</li>
+<li>分区标签：”partition”:”customerA”,”partition”:”customerB”…</li>
+<li>质量管控标签：”track”:”daily”,”track”:”weekly”…</li>
+</ul>
+<p>给某个资源对象定义一个 Label，就相当于给它打了一个标签，随后可以通过 Label Selector（标签选择器）查询和筛选拥有某些 Label 的资源对象，Kubernetes 通过这种方式实现了类似 SQL 的简单又通用的查询机制。</p>
+<p>当前有两种 Label Selector 的表达式：基于等式的（Equality-based）和基于集合的（Set-based），前者采用“等式类”的表达式匹配标签，下面是一些具体的例子：</p>
+<ul>
+<li>name = redis-slave：匹配所有具有标签 name=redis-slave 的资源对象。</li>
+<li>env != production：匹配所有不具有标签 env=production 的资源对象，比如 env=test 就满足。</li>
+</ul>
+<p>使用集合操作的表达式匹配标签例子：</p>
+<ul>
+<li>name in (redis-master, redis-slave)：匹配所有具有标签 name=redis-master 或者 name=redis-slave 的资源对象。</li>
+<li>name not in (php-frontend)：匹配所有不具有标签 name=php-frontend 的资源对象。</li>
+</ul>
+<p>可以通过多个 Label Selector 表达式的组合实现复杂的条件选择，多个表达式之间用“，”进行分割即可，几个条件之间是 “AND” 的关系，即同时满足多个条件。</p>
+<p>新出现的管理对象如 Deployment、ReplicaSet、DaemonSet 和 Job 则可以在 Selector 中使用基于集合的筛选条件定义，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">selector:</div><div class="line">  matchLabels:</div><div class="line">    app: myweb</div><div class="line">  matchExpressions:</div><div class="line">    - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">    - &#123;key: environment, operator: NotIn, values: [dev]&#125;</div></pre></td></tr></table></figure>
+<p>matchLabels 用于定义一组 Label，与直接写在 Selector 中作用相同；matchExpressions 用于定义一组基于集合的筛选条件，可用的条件运算符包括：In、NotIn、Exists 和 DoesNotExist。</p>
+<p>如果同时设置了 matchLabels 和 matchExpressions，则两组条件为 “AND” 关系，即所有条件需要同时满足才能完成 Selector 的筛选。</p>
+<p>Label Selector 在 Kubernetes 中的重要使用场景有以下几处：</p>
+<ul>
+<li>kube-controller 进程通过资源对象 RC 上定义的 Label Selector 来筛选要监控的 Pod 副本的数量，从而实现 Pod 副本的数量始终符合预期设定的全自动控制流程。</li>
+<li>kube-proxy 进程通过 Service 的 Label Selector 来选择对应的 Pod，自动建立起每个 Service 到对应 Pod 的请求转发路由表，从而实现 Service 的智能负载均衡机制。</li>
+<li>通过对某些 Node 定义特定的 Label，并且在 Pod 定义文件中使用 NodeSelector 这种标签调度策略，kube-scheduler 进程可以实现 Pod “定向调度” 的特性。</li>
+</ul>
+<h5 id="Replication-Controller"><a href="#Replication-Controller" class="headerlink" title="Replication Controller"></a>Replication Controller</h5><p>RC 是 Kubernetes 系统中的核心概念之一，简单来说，它其实是定义了一个期望的场景，即声明某种 Pod 的副本数量在任意时刻都符合某个预期值，所以 RC 的定义包括如下部分：</p>
+<ul>
+<li>Pod 期待的副本数（replicas）</li>
+<li>用于筛选目标 Pod 的 Label Selector</li>
+<li>当 Pod 的副本数量小于预期数量时，用于创建新 Pod 的 Pod 模版（template）</li>
+</ul>
+<p>下面是一个完整的 RC 定义的例子，即确保拥有 tier=frontend 标签的这个 Pod（运行 Tomcat 容器）在整个 Kubernetes 集群中始终只有一个副本：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    tier: frontend</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: app-demo</div><div class="line">        tier: frontend</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: tomcact-demo</div><div class="line">        image: tomcat</div><div class="line">        imagePullPolicy: IfNotPresent</div><div class="line">        env:</div><div class="line">        - name: GET_HOSTS_FROM</div><div class="line">          value: dns</div><div class="line">        ports:</div><div class="line">        - containerPort: 80</div></pre></td></tr></table></figure>
+<p>当我们定义了一个 RC 并提交到 Kubernetes 集群中以后，Master 节点上的 Controller Manager 组件就得到通知，定期巡检系统中当前存活的目标 Pod，并确保目标 Pod 实例的数量刚好等于此 RC 的期望值，如果有过多的 Pod 副本在运行，系统就会停掉一些 Pod，否则系统就会再自动创建一些 Pod。通过 RC，Kubernetes 实现了用户应用集群的高可用性，并且大大减少了系统管理员在传统 IT 环境中需要完成的许多手工运维工作（如主机监控脚本、应用监控脚本、故障恢复脚本等）。</p>
+<p>在 RC 运行时，我们可以通过修改 RC 的副本数量，来实现 Pod 的动态缩放（Scaling）功能：</p>
+<p><code>kubect scale rc frontend --replicas=3</code></p>
+<p>在 Kubernetes v1.2时，Replication Controller升级成了 Replica Set，新功能支持集合的 Label selector（Set-based selector）。不过一般很少单独使用Replica Set，它主要被 Deployment 这个更高层的资源对象所使用，从而形成一整套 Pod 创建、删除、更新的编排机制。下面是等价于前面 RC 例子的 Replica Set 的定义（省去了 Pod 模版部分的内容）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: extensions/v1beta1</div><div class="line">kind: ReplicaSet</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      tier: frontend</div><div class="line">    matchExpressions:</div><div class="line">      - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">  template:</div><div class="line">  ......</div></pre></td></tr></table></figure>
+<p>最后我们总结一下关于 RC（Replica Set）的一些特性与作用：</p>
+<ul>
+<li>在大多数情况下，我们通过定义一个 RC 实现 Pod 的创建过程及副本数量的自动控制。</li>
+<li>RC 里包括完整的 Pod 定义模版。</li>
+<li>RC 通过 Label Selector 机制实现对 Pod 副本的自动控制。</li>
+<li>通过改变 RC 里的 Pod 副本数量，可以实现 Pod 的扩容或缩容功能。</li>
+<li>通过改变 RC 里 Pod 模版中的镜像版本，可以实现 Pod 的滚动升级功能。</li>
+</ul>
+<h5 id="Deployment"><a href="#Deployment" class="headerlink" title="Deployment"></a>Deployment</h5><p>Deployment 是 Kubernetes v1.2 引入的新概念，引入的目的是为了更好地解决 Pod 的编排问题。为此，Deployment 在内部使用了 Replica Set 来实现目的，无论从 Deployment 的作用与目的、它的 YAML 定义，还是从它的具体命令行操作来看，我们都可以把它看作 RC 的一次升级，两者的相似度超过 90%。</p>
+<p>Deployment 相对于 RC 的一个最大升级是可以随时知道当前 Pod “部署” 的进度。实际上由于一个 Pod 的创建、调度、绑定节点及在目标 Node 上启动对应的容器这一完整过程需要一定的时间，所以我们期待系统启动 N 个 Pod 副本的目标状态，实际上是一个连续变化的“部署过程”导致的最终状态。</p>
+<p>Deployment 的典型使用场景有以下几个：</p>
+<ul>
+<li>创建一个 Deployment 对象来生成对应的 Replica Set 并完成 Pod 副本的创建过程。</li>
+<li>检查 Deployment 的状态来看部署动作是否完成（Pod 副本的数量是否达到预期的值）。</li>
+<li>更新 Deployment 以创建新的 Pod （比如镜像升级）。</li>
+<li>如果当前 Deployment 不稳定，则回滚到一个早先的 Deployment 版本。</li>
+<li>暂停 Deployment 以便于一次性修改多个 PodTemplateSpec 的配置项，之后再恢复 Deployment，进行新的发布。</li>
+<li>扩展 Deployment 以应对高负载。</li>
+<li>查看 Deployment 的状态，以此作为发布是否成功的指标。</li>
+<li>清理不再需要的旧版本 ReplicaSets。</li>
+</ul>
+<p>举个例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: extensions/v1beta1</div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      tier: frontend</div><div class="line">    matchExpressions:</div><div class="line">      - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: app-demo</div><div class="line">        tier: frontend</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: tomcat-demo</div><div class="line">        image: tomcat</div><div class="line">        imagePullPolicy: IfNotPresent</div><div class="line">        ports:</div><div class="line">        - containerPort: 8080</div></pre></td></tr></table></figure>
+<p>创建 Deployment：</p>
+<p><code>kubectl create -f tomcat-deployment.yaml</code></p>
+<p>$$$ 结果</p>
+<p>查看 Deployment 信息：</p>
+<p><code>kubectl get deployments</code></p>
+<p>$$$ 结果</p>
+<p>对上述输出中涉及的数量解释如下：</p>
+<ul>
+<li>DESIRED: Pod 副本数量的期望值，即 Deployment 里定义的 Replica。</li>
+<li>CURRENT: 当前 Replica 的值，实际上是 Deployment 所创建的 Replica Set 里的 Replica 值，这个值不断增加，直到达到 DESIRED 为止，表明整个部署过程完成。</li>
+<li>UP-TO-DATE: 最新版本的 Pod 的副本数量，用于指示在滚动升级的过程中，有多少个副本已经成功升级。</li>
+<li>AVAILABLE: 当前集群中可用的 Pod 副本数量，即集群中当前存活的 Pod 数量。</li>
+</ul>
+<p>查看 Replica Set，可以看到它的命名与 Deployment 的名字有关系：</p>
+<p><code>kubectl get rs</code></p>
+<p>$$$ 结果</p>
+<p>查看创建的 Pod，我嗯发现 Pod 的命名以 Deployment 对应的 Replica Set 的名字为前缀，这种命名很清晰地表明了一个 Replica Set 创建了哪些 Pod，对于 Pod 滚动升级这种复杂的过程来说，很容易排查错误：</p>
+<p><code>kubectl get pods</code></p>
+<p>$$$ 结果</p>
+<p>Pod 的管理对象，除了 RC 和 Deployment，还包括 ReplicaSet、DaemonSet、StatefulSet、Job 等，分别用于不同的应用场景中。</p>
+<h5 id="Horizontal-Pod-Autoscaler"><a href="#Horizontal-Pod-Autoscaler" class="headerlink" title="Horizontal Pod Autoscaler"></a>Horizontal Pod Autoscaler</h5><p>前面我们提到过，通过手动执行 kubectl scale 命令，可以实现 Pod 扩容或缩容。而 Kubernetes v1.1 版本中发布了一个新特性————Horizontal Pod Autoscaling（Pod 横向自动扩容，简称 HPA）。</p>
+<p>HPA 与之前的 RC、Deployment 一样，也属于一种 Kubernetes 资源对象。通过追踪分析 RC 控制的所有目标 Pod 的负载变化情况，来确定是否需要针对性地调整目标 Pod 的副本数。当前，HPA 可以有以下两种方式作为 Pod 负载的度量指标：</p>
+<ul>
+<li>CPUUtilizationPercentage</li>
+<li>应用程序自定义的度量指标，比如服务在每秒内的相应的请求数（TPS 或 QPS）。</li>
+</ul>
+<p>CPUUtilizationPercentage 是一个算数平均值，即目标 Pod 所有副本自身的 CPU 利用率的平均值。一个 Pod 自身的 CPU 利用率是该 Pod 当前 CPU 的使用量除以它的 Pod Request 的值，比如我们定义一个 Pod 的 Pod Request 为 0.4，而当前 Pod 的 CPU 使用量为 0.2，则它的 CPU 使用率为50%，如此一来，我们就可以算出一个 RC 控制的所有 Pod 副本的 CPU 利用率的算术平均值了。如果某一时刻 CPUUtilizationPercentage 的值超过 80%，则意味着当前的 Pod 副本数很可能不足以支撑接下来更多的请求，需要进行动态扩容，而当请求高峰时段过去后， Pod 的 CPU 利用率又会降下来，此时对应的 Pod 副本数应该自动减少到一个合理的水平。</p>
+<p>下面是 HPA 定义的一个具体例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: autoscaling/v1</div><div class="line">kind: HorizontalPodAutoscaler</div><div class="line">metadata:</div><div class="line">  name: php-apache</div><div class="line">  namespace: default</div><div class="line">spec:</div><div class="line">  maxReplicas: 10</div><div class="line">  minReplicas: 1</div><div class="line">  scaleTargerRes:</div><div class="line">    kind: Deployment</div><div class="line">    name: php-apache</div><div class="line">  targerCPUUtilizationPercentage: 90</div></pre></td></tr></table></figure>
+<h5 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h5>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/11/k8s01/" class="archive-article-date">
+  	<time datetime="2019-03-10T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-11</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/2019/03/13/container_network/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          容器网络
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/03/06/docker02/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Docker 进阶</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="k8s01" data-title="Kubernetes 基础" data-url="https://dingmingk.github.io/2019/03/11/k8s01/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"dingmingk"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2019 dingmingk
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: false,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+      <li data-hook="tools-section-friends"><span class="text">友链</span><i class="icon-link"></i></li>
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    			</div>
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-friends">
+  		
+  			<div class="friends-wrap" id="js-friends">
+  			
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接1</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接2</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接3</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接4</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接5</a>
+  	        
+  	          <a target="_blank" class="main-nav-link switch-friends-link" href="http://localhost:4000/">友情链接6</a>
+  	        
+  	        </div>
+  		
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">很惭愧&lt;br&gt;&lt;br&gt;只做了一点微小的工作&lt;br&gt;谢谢大家</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>
