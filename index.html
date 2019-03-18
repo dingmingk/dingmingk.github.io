@@ -137,7 +137,7 @@
       <div class="body-wrap">
         
   
-    <article id="post-k8s_logging" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-k8s_pipeline" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <input type="hidden" class="isFancy" />
@@ -147,7 +147,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/13/k8s_logging/">Kubernetes Logging Architecture</a>
+      <a class="article-title" href="/2019/03/18/k8s_pipeline/">Kubernetes Pipeline</a>
     </h1>
   
 
@@ -155,51 +155,149 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="Kubernetes-Cluster-level-logging-architectures"><a href="#Kubernetes-Cluster-level-logging-architectures" class="headerlink" title="Kubernetes Cluster-level logging architectures"></a>Kubernetes Cluster-level logging architectures</h2><p>Kubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：</p>
-<ul>
-<li>在每个 Node 上运行一个日志客户端。</li>
-<li>在应用的 Pod 里以 sidecar 形式运行一个日志容器。</li>
-<li>应用直接把日志推送到后端日志存储里。</li>
-</ul>
-<h3 id="Using-a-node-logging-agent"><a href="#Using-a-node-logging-agent" class="headerlink" title="Using a node logging agent"></a>Using a node logging agent</h3><p><img src="/assets/blogImg/k8s_logging_nodeAgent.png" alt="k8s_logging_nodeAgent"></p>
-<p>一台 Node 上所有容器的 <em>stdout/stderr</em> 日志会被统一保存到宿主机的目录，只需要以 DaemonSet 的形式在每个 Node 上运行一个日志收集客户端即可将这台 Node 上所有容器的 <em>标准输出/标准错误</em> 日志收集起来存到后端存储里。</p>
-<p>这里的日志收集客户端建议 <a href="https://www.fluentd.org/" target="_blank" rel="external">fluentd</a>。</p>
-<h3 id="Using-a-sidecar-container-with-the-logging-agent"><a href="#Using-a-sidecar-container-with-the-logging-agent" class="headerlink" title="Using a sidecar container with the logging agent"></a>Using a sidecar container with the logging agent</h3><p>使用 Sidecar 方式有两种方案：</p>
-<ul>
-<li>Sidecar 容器将应用日志导流到标准输出或标准错误。</li>
-</ul>
-<p><img src="/assets/blogImg/k8s_logging_sidecar_stream.png" alt="k8s_logging_sidecar_stream"></p>
-<p>这种方式有利于适配 kubelet，或每台 Node 已经运行日志收集客户端的情况。Sidecar 容器可以从文件、socket 或 journald 收集日志，为应用里的每个日志模块运行一个特定的 sidecar 容器，整个 Pod 共享一个共享目录，最终把每个日志模块的日志对应的输出到各自的 sidecar 容器的标准输出或标准错误。</p>
-<p>这是一个在容器内部写两个日志文件的应用范例,然后是同一个 Pod 里运行两个 sidecar 容器分别对两个日志文件进行收集：</p>
-<p>two-files-counter-pod-streaming-sidecar.yaml </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-1</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/1.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-2</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/2.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div></pre></td></tr></table></figure>
-<p>然后，你就可以使用 <code>kubectl logs counter count-log-1</code>查看 1.log 的内容。同理2。</p>
-<p>Node 上的日志客户端会自动采集这两个 sidecar容器的标准输出/标准错误，实际也就是采集了 1.log 和 2.log 两个日志文件。</p>
-<hr>
-<ul>
-<li>Sidecar 容器运行一个日志收集客户端，主动去收集应用日志。</li>
-</ul>
-<p><img src="/assets/blogImg/k8s_logging_sidecar_agent.png" alt="k8s_logging_sidecar_agent"></p>
-<p>这种方式适用于 Node 上没有日志收集客户端的情况。需要注意的是这种方式存在过多资源消耗的问题，而且无法使用 kubectl logs 命令直接查看应用日志。</p>
-<p>这里举例使用 fluentd 作为 sidecar logging agent 收集日志：</p>
-<p>fluentd-sidecar-config.yaml </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: fluentd-config</div><div class="line">data:</div><div class="line">  fluentd.conf: |</div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/1.log</div><div class="line">      pos_file /var/log/1.log.pos</div><div class="line">      tag count.format1</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/2.log</div><div class="line">      pos_file /var/log/2.log.pos</div><div class="line">      tag count.format2</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;match **&gt;</div><div class="line">      type google_cloud</div><div class="line">    &lt;/match&gt;</div></pre></td></tr></table></figure>
-<p>two-files-counter-pod-agent-sidecar.yaml</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-agent</div><div class="line">    image: k8s.gcr.io/fluentd-gcp:1.30</div><div class="line">    env:</div><div class="line">    - name: FLUENTD_ARGS</div><div class="line">      value: -c /etc/fluentd-config/fluentd.conf</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">    - name: config-volume</div><div class="line">      mountPath: /etc/fluentd-config</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-volume</div><div class="line">    configMap:</div><div class="line">      name: fluentd-config</div></pre></td></tr></table></figure>
-<h3 id="Exposing-logs-directly-from-the-application"><a href="#Exposing-logs-directly-from-the-application" class="headerlink" title="Exposing logs directly from the application"></a>Exposing logs directly from the application</h3><p><img src="/assets/blogImg/k8s_logging_directly.png" alt="k8s_logging_directly"></p>
-<p>这是最简单的方式，不过涉及应用的改造。</p>
+        <h2 id="Kubernetes-集群基于-Jenkins-的-CI-CD-流程实践"><a href="#Kubernetes-集群基于-Jenkins-的-CI-CD-流程实践" class="headerlink" title="Kubernetes 集群基于 Jenkins 的 CI/CD 流程实践"></a>Kubernetes 集群基于 Jenkins 的 CI/CD 流程实践</h2><p>通过在 Kubernetes 集群上创建并配置 Jenkins Server 实现应用开发管理的 CI/CD 流程，并且利用 Kubernetes-Jenkins-Plugin 实现动态按需扩展 jenkins-slave。</p>
+<h3 id="安装-Kubernetes-集群"><a href="#安装-Kubernetes-集群" class="headerlink" title="安装 Kubernetes 集群"></a>安装 Kubernetes 集群</h3><p>首先，需要有一个 Kubernetes 集群，本地可以运行 Minikube。</p>
+<p>安装 Helm。</p>
+<h3 id="安装-Jenkins-Server"><a href="#安装-Jenkins-Server" class="headerlink" title="安装 Jenkins Server"></a>安装 Jenkins Server</h3><p><code>helm install stable/jenkins --set rbac.install=true</code></p>
+<blockquote>
+<p>详细的配置可以下载 <a href="https://github.com/kubernetes/charts.git" target="_blank" rel="external">https://github.com/kubernetes/charts.git</a> 仓库查看并修改。</p>
+</blockquote>
+<p>正常启动后可以看到如下提示，获取 Jenkins 地址和初始密码等。</p>
+<p><img src="/assets/blogImg/k8s_pipeline_jenkins01.png" alt="k8s_pipeline_jenkins01"></p>
+<h3 id="访问-Jenkins"><a href="#访问-Jenkins" class="headerlink" title="访问 Jenkins"></a>访问 Jenkins</h3><p><strong>查看服务</strong></p>
+<p><code>kubectl get svc</code></p>
+<p><img src="/assets/blogImg/k8s_pipeline_jenkins02.png" alt="k8s_pipeline_jenkins02"></p>
+<p>浏览器打开 <a href="http://NodeIP:NodePort" target="_blank" rel="external">http://NodeIP:NodePort</a> 即可访问。</p>
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>登录 Jenkins 后，新建一个流水线任务，将以下代码填入“Pipeline script”中，保存后运行。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line">podTemplate(label: &apos;golang-pod&apos;,  containers: [</div><div class="line">    containerTemplate(</div><div class="line">            name: &apos;golang&apos;,</div><div class="line">            image: &apos;registry.cn-hangzhou.aliyuncs.com/spacexnice/golang:1.8.3-docker&apos;,</div><div class="line">            ttyEnabled: true,</div><div class="line">            command: &apos;cat&apos;</div><div class="line">        ),</div><div class="line">    containerTemplate(</div><div class="line">            name: &apos;jnlp&apos;,</div><div class="line">            image: &apos;registry.cn-hangzhou.aliyuncs.com/google-containers/jnlp-slave:alpine&apos;,</div><div class="line">            args: &apos;$&#123;computer.jnlpmac&#125; $&#123;computer.name&#125;&apos;,</div><div class="line">            command: &apos;&apos;</div><div class="line">        )</div><div class="line">  ]</div><div class="line">  ,volumes: [</div><div class="line">        /*persistentVolumeClaim(mountPath: &apos;/home/jenkins&apos;, claimName: &apos;jenkins&apos;, readOnly: false),*/</div><div class="line">        hostPathVolume(hostPath: &apos;/root/work/jenkins&apos;, mountPath: &apos;/home/jenkins&apos;),</div><div class="line">        hostPathVolume(hostPath: &apos;/var/run/docker.sock&apos;, mountPath: &apos;/var/run/docker.sock&apos;),</div><div class="line">        hostPathVolume(hostPath: &apos;/tmp/&apos;, mountPath: &apos;/tmp/&apos;),</div><div class="line">]) </div><div class="line">&#123;</div><div class="line">    node (&apos;golang-pod&apos;) &#123;</div><div class="line">        </div><div class="line">        container(&apos;golang&apos;) &#123;</div><div class="line">            git url: &apos;https://github.com/spacexnice/blog.git&apos; , branch: &apos;code&apos;</div><div class="line">            </div><div class="line">            stage(&apos;Build blog project&apos;) &#123;</div><div class="line">                </div><div class="line">                sh(&quot;make&quot;)</div><div class="line">        </div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>同时在服务器上运行 <code>watch kubectl get pods</code>可以看到 Jenkins Server 通过 Kubernetes 启动了相应的 Pod 来执行任务。</p>
+<p><img src="/assets/blogImg/k8s_pipeline_jenkins03.png" alt="k8s_pipeline_jenkins03"></p>
+<p><img src="/assets/blogImg/k8s_pipeline_jenkins04.png" alt="k8s_pipeline_jenkins04"></p>
+<p><img src="/assets/blogImg/k8s_pipeline_jenkins05.png" alt="k8s_pipeline_jenkins05"></p>
+<p>任务完成后，相应的 Pod 会被自动回收。</p>
 
       
     </div>
     <div class="article-info article-info-index">
       
-      <a href="/2019/03/13/k8s_logging/" class="archive-article-date">
-  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+      <a href="/2019/03/18/k8s_pipeline/" class="archive-article-date">
+  	<time datetime="2019-03-17T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-18</time>
 </a>
       
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Jenkins/">Jenkins</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Pipeline/">Pipeline</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-container_network" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/15/container_network/">容器网络</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="容器技术系列分享（五）"><a href="#容器技术系列分享（五）" class="headerlink" title="容器技术系列分享（五）"></a>容器技术系列分享（五）</h1><h2 id="容器网络"><a href="#容器网络" class="headerlink" title="容器网络"></a>容器网络</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
+<li>CNM</li>
+<li>CNI</li>
+<li>CNM vs CNI</li>
+<li>第三方驱动对比</li>
+</ul>
+<p>目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。</p>
+<h4 id="Container-Network-Model-CNM"><a href="#Container-Network-Model-CNM" class="headerlink" title="Container Network Model(CNM)"></a>Container Network Model(CNM)</h4><p>CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Porject Calico, VMware 和 Weave 这些公司和项目所采纳。</p>
+<p><img src="/assets/blogImg/k8s_network_cnm01.png" alt="k8s_network_cnm01"></p>
+<p>Libnetwork 是 CNM 的原生实现，它为 Docker Daemon 的网络驱动程序之间提供了接口。网络控制器负责将驱动和一个网络进行对接。每个驱动程序负责管理它所拥有的网络以及为该网络提供各种服务，例如 IPAM 等。由多个驱动支撑的多个网络可以同时并存。网络驱动可以按提供方被划分为原生驱动（libnetwork 内置的或 Docker 支持的）或者远程驱动（第三方插件）。原生驱动包括 none、bridge、overlay 以及 macvlan。</p>
+<p><img src="/assets/blogImg/k8s_network_cnm02.png" alt="k8s_network_cnm02"></p>
+<ul>
+<li>Network Sandbox：一个容器内部的网络栈</li>
+<li>Endpoint：一个通常成对出现的网络接口。一端在容器网络内，另一端在网格内。一个 Endpoint 可以加入一个网络。一个容器可以有多个 Endpoint。</li>
+<li>Network：一个 Endpoint 的集合，该集合内的所有 Endpoint 可以互联互通。</li>
+</ul>
+<p>最后，CNM 还支持标签（labels），label 是以 key-value 定义的元数据，用户可以通过定义 label 这样的元数据来自定义 libnetwork 和驱动的行为。</p>
+<h4 id="Container-Network-Interface-CNI"><a href="#Container-Network-Interface-CNI" class="headerlink" title="Container Network Interface(CNI)"></a>Container Network Interface(CNI)</h4><p>CNI 是由 CoreOS 提出的一个容器网络规范，已采纳该规范的包括 Apache Mesos, Cloud Foundry, Kubernetes, Kurma 和 rkt。另外 Contiv Networking，Project Calico 和 Weave 这些项目也为 CNI 提供插件。</p>
+<p><img src="/assets/blogImg/k8s_network_cni01.png" alt="k8s_network_cni01"></p>
+<p>CNI 的规范比较小巧，它规定了一个容器 runtime 和网络插件之间的简单契约，这个契约通过 JSON 的语法定义了 CNI 插件所需要提供的输入和输出。</p>
+<p>一个容器可以被加入到被不同插件所驱动的多个网络之中，一个网络有自己对应的插件和唯一的名称。CNI 插件负责为容器配置网络，包括两个基本接口：</p>
+<p><em>配置网络</em></p>
+<p>AddNetwork(net NetworkConfig, rt RuntimeConf) (types.Result, error)</p>
+<p><em>清理网络</em></p>
+<p>DelNetwork(net NetworkConfig, rt RuntimeConf) error</p>
+<h4 id="CNM-vs-CNI"><a href="#CNM-vs-CNI" class="headerlink" title="CNM vs CNI"></a>CNM vs CNI</h4><p>CNM 和 CNI 两种方案都使用了驱动模型或者插件模型来为容器创建网络栈，这样的设计使得用户可以自由选择，两者都支持多个网络驱动被同事使用，也允许容器加入一个或多个网络，两者也都允许容器 runtime 在它自己的命名空间中启动网络。</p>
+<p>这种模块化驱动的方式可以说对运维人员更有吸引力，因为运维人员可以比较灵活的选择适合现有模式的驱动。两种方案都提供了独立的扩展点，也就是插件的接口，这使得网络驱动可以创建、配置和连接网络，也使得 IPAM 可以配置、发现和管理 IP 地址。这种分离让编排变得容易。</p>
+<p>CNM 模式下的网络驱动不能访问容器的网络命名空间。这样做的好处是 libnetwork 可以为冲突解决提供仲裁。比如两个独立的网络驱动提供同样的静态路由配置，但是却指向不同的下一跳IP地址。与此不同，CNI允许驱动访问容器的网络命名空间。CNI正在研究在类似情况下如何提供仲裁。</p>
+<p>CNI支持与第三方 IPAM 的集成，可以用于任何容器 runtime。CNM 从设计上就仅仅支持 Docker。由于 CNI 简单的设计，许多人认为编写 CNI 插件会比编写 CNM 插件来得简单。</p>
+<p>这些模型增进了系统的模块化，增加了用户的选择。也促进了第三方网络插件以创新来提供更高级的网络功能。</p>
+<h4 id="第三方驱动对比"><a href="#第三方驱动对比" class="headerlink" title="第三方驱动对比"></a>第三方驱动对比</h4><p><img src="/assets/blogImg/k8s_network02.png" alt="k8s_network02"></p>
+<p>除了上图 5 种网络驱动，其实还有很多，Kubernetes 官方介绍了大概 23 种网络插件。接下来详细对比其中性能较好的几种。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方案</th>
+<th style="text-align:center">Calico</th>
+<th style="text-align:center">Contiv</th>
+<th style="text-align:right">macvlan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">优点</td>
+<td style="text-align:center">纯三层的数据中心解决方案（不依赖overlay），对 OpenStack、Kubernetes、AWS、GCE都比较友好。该方案集成简单。</td>
+<td style="text-align:center">能够和非容器环境兼容协作，不依赖物理网络具体细节，支持 Policy、ACI、QoS租户，支持物理网卡 sriov 和 offload。该方案配置比较复杂。</td>
+<td style="text-align:right">Docker 原生，性能衰减少，可控性高，隔离性好。</td>
+</tr>
+<tr>
+<td style="text-align:left">缺点</td>
+<td style="text-align:center">操作管理比较复杂，需要定制开发。</td>
+<td style="text-align:center">集成配置较复杂，相关资料少，学习成本较高，需要定制开发。</td>
+<td style="text-align:right">集群规模很大时，存在 ARP 广播风暴和交换机 MAC 表超限风险，另外需要自研 QoS 功能。</td>
+</tr>
+<tr>
+<td style="text-align:left">结论</td>
+<td style="text-align:center">Calico 基于 BGP 协议的 Overlay SDN 解决方案，企业生产环境如果可以开启 BGP 协议，可以考虑 Calico BGP 方案。</td>
+<td style="text-align:center">功能强型好，对 CNI 和 CNM 模型支持性好，集群配置较复杂，学习研究成本较高，可以考虑此方案。</td>
+<td style="text-align:right">初期较少的开发量即可上线（之后需要自研 QoS），通过合理的设计容量规划来规避相关风险时，可以考虑此方案。</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/15/container_network/" class="archive-article-date">
+  	<time datetime="2019-03-14T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-15</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
 	</div>
 
       
@@ -283,7 +381,7 @@
 
 
   
-    <article id="post-container_network" class="article article-type-post" itemscope itemprop="blogPost">
+    <article id="post-k8s_logging" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
       <input type="hidden" class="isFancy" />
@@ -293,7 +391,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/13/container_network/">容器网络</a>
+      <a class="article-title" href="/2019/03/13/k8s_logging/">Kubernetes Logging Architecture</a>
     </h1>
   
 
@@ -301,80 +399,51 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h1 id="容器技术系列分享（五）"><a href="#容器技术系列分享（五）" class="headerlink" title="容器技术系列分享（五）"></a>容器技术系列分享（五）</h1><h2 id="容器网络"><a href="#容器网络" class="headerlink" title="容器网络"></a>容器网络</h2><h3 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h3><ul>
-<li>CNM</li>
-<li>CNI</li>
-<li>CNM vs CNI</li>
-<li>第三方驱动对比</li>
-</ul>
-<p>目前关于容器网络接口的配置有两种标准：容器网络模型（CNM）和容器网络接口（CNI）。</p>
-<h4 id="Container-Network-Model-CNM"><a href="#Container-Network-Model-CNM" class="headerlink" title="Container Network Model(CNM)"></a>Container Network Model(CNM)</h4><p>CNM 是一个被 Docker 提出的规范，现在已经被 Cisco Contiv, Kuryr, Open Virtual Networking(OVN), Porject Calico, VMware 和 Weave 这些公司和项目所采纳。</p>
-<p><img src="/assets/blogImg/k8s_network_cnm01.png" alt="k8s_network_cnm01"></p>
-<p>Libnetwork 是 CNM 的原生实现，它为 Docker Daemon 的网络驱动程序之间提供了接口。网络控制器负责将驱动和一个网络进行对接。每个驱动程序负责管理它所拥有的网络以及为该网络提供各种服务，例如 IPAM 等。由多个驱动支撑的多个网络可以同时并存。网络驱动可以按提供方被划分为原生驱动（libnetwork 内置的或 Docker 支持的）或者远程驱动（第三方插件）。原生驱动包括 none、bridge、overlay 以及 macvlan。</p>
-<p><img src="/assets/blogImg/k8s_network_cnm02.png" alt="k8s_network_cnm02"></p>
+        <h2 id="Kubernetes-Cluster-level-logging-architectures"><a href="#Kubernetes-Cluster-level-logging-architectures" class="headerlink" title="Kubernetes Cluster-level logging architectures"></a>Kubernetes Cluster-level logging architectures</h2><p>Kubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：</p>
 <ul>
-<li>Network Sandbox：一个容器内部的网络栈</li>
-<li>Endpoint：一个通常成对出现的网络接口。一端在容器网络内，另一端在网格内。一个 Endpoint 可以加入一个网络。一个容器可以有多个 Endpoint。</li>
-<li>Network：一个 Endpoint 的集合，该集合内的所有 Endpoint 可以互联互通。</li>
+<li>在每个 Node 上运行一个日志客户端。</li>
+<li>在应用的 Pod 里以 sidecar 形式运行一个日志容器。</li>
+<li>应用直接把日志推送到后端日志存储里。</li>
 </ul>
-<p>最后，CNM 还支持标签（labels），label 是以 key-value 定义的元数据，用户可以通过定义 label 这样的元数据来自定义 libnetwork 和驱动的行为。</p>
-<h4 id="Container-Network-Interface-CNI"><a href="#Container-Network-Interface-CNI" class="headerlink" title="Container Network Interface(CNI)"></a>Container Network Interface(CNI)</h4><p>CNI 是由 CoreOS 提出的一个容器网络规范，已采纳该规范的包括 Apache Mesos, Cloud Foundry, Kubernetes, Kurma 和 rkt。另外 Contiv Networking，Project Calico 和 Weave 这些项目也为 CNI 提供插件。</p>
-<p><img src="/assets/blogImg/k8s_network_cni01.png" alt="k8s_network_cni01"></p>
-<p>CNI 的规范比较小巧，它规定了一个容器 runtime 和网络插件之间的简单契约，这个契约通过 JSON 的语法定义了 CNI 插件所需要提供的输入和输出。</p>
-<p>一个容器可以被加入到被不同插件所驱动的多个网络之中，一个网络有自己对应的插件和唯一的名称。CNI 插件负责为容器配置网络，包括两个基本接口：</p>
-<p><em>配置网络</em></p>
-<p>AddNetwork(net NetworkConfig, rt RuntimeConf) (types.Result, error)</p>
-<p><em>清理网络</em></p>
-<p>DelNetwork(net NetworkConfig, rt RuntimeConf) error</p>
-<h4 id="CNM-vs-CNI"><a href="#CNM-vs-CNI" class="headerlink" title="CNM vs CNI"></a>CNM vs CNI</h4><p>CNM 和 CNI 两种方案都使用了驱动模型或者插件模型来为容器创建网络栈，这样的设计使得用户可以自由选择，两者都支持多个网络驱动被同事使用，也允许容器加入一个或多个网络，两者也都允许容器 runtime 在它自己的命名空间中启动网络。</p>
-<p>这种模块化驱动的方式可以说对运维人员更有吸引力，因为运维人员可以比较灵活的选择适合现有模式的驱动。两种方案都提供了独立的扩展点，也就是插件的接口，这使得网络驱动可以创建、配置和连接网络，也使得 IPAM 可以配置、发现和管理 IP 地址。这种分离让编排变得容易。</p>
-<p>CNM 模式下的网络驱动不能访问容器的网络命名空间。这样做的好处是 libnetwork 可以为冲突解决提供仲裁。比如两个独立的网络驱动提供同样的静态路由配置，但是却指向不同的下一跳IP地址。与此不同，CNI允许驱动访问容器的网络命名空间。CNI正在研究在类似情况下如何提供仲裁。</p>
-<p>CNI支持与第三方 IPAM 的集成，可以用于任何容器 runtime。CNM 从设计上就仅仅支持 Docker。由于 CNI 简单的设计，许多人认为编写 CNI 插件会比编写 CNM 插件来得简单。</p>
-<p>这些模型增进了系统的模块化，增加了用户的选择。也促进了第三方网络插件以创新来提供更高级的网络功能。</p>
-<h4 id="第三方驱动对比"><a href="#第三方驱动对比" class="headerlink" title="第三方驱动对比"></a>第三方驱动对比</h4><p><img src="/assets/blogImg/k8s_network02.png" alt="k8s_network02"></p>
-<p>除了上图 5 种网络驱动，其实还有很多，Kubernetes 官方介绍了大概 23 种网络插件。接下来详细对比其中性能较好的几种。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">方案</th>
-<th style="text-align:center">Calico</th>
-<th style="text-align:center">Contiv</th>
-<th style="text-align:right">macvlan</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">优点</td>
-<td style="text-align:center">纯三层的数据中心解决方案（不依赖overlay），对 OpenStack、Kubernetes、AWS、GCE都比较友好。该方案集成简单。</td>
-<td style="text-align:center">能够和非容器环境兼容协作，不依赖物理网络具体细节，支持 Policy、ACI、QoS租户，支持物理网卡 sriov 和 offload。该方案配置比较复杂。</td>
-<td style="text-align:right">Docker 原生，性能衰减少，可控性高，隔离性好。</td>
-</tr>
-<tr>
-<td style="text-align:left">缺点</td>
-<td style="text-align:center">操作管理比较复杂，需要定制开发。</td>
-<td style="text-align:center">集成配置较复杂，相关资料少，学习成本较高，需要定制开发。</td>
-<td style="text-align:right">集群规模很大时，存在 ARP 广播风暴和交换机 MAC 表超限风险，另外需要自研 QoS 功能。</td>
-</tr>
-<tr>
-<td style="text-align:left">结论</td>
-<td style="text-align:center">Calico 基于 BGP 协议的 Overlay SDN 解决方案，企业生产环境如果可以开启 BGP 协议，可以考虑 Calico BGP 方案。</td>
-<td style="text-align:center">功能强型好，对 CNI 和 CNM 模型支持性好，集群配置较复杂，学习研究成本较高，可以考虑此方案。</td>
-<td style="text-align:right">初期较少的开发量即可上线（之后需要自研 QoS），通过合理的设计容量规划来规避相关风险时，可以考虑此方案。</td>
-</tr>
-</tbody>
-</table>
+<h3 id="Using-a-node-logging-agent"><a href="#Using-a-node-logging-agent" class="headerlink" title="Using a node logging agent"></a>Using a node logging agent</h3><p><img src="/assets/blogImg/k8s_logging_nodeAgent.png" alt="k8s_logging_nodeAgent"></p>
+<p>一台 Node 上所有容器的 <em>stdout/stderr</em> 日志会被统一保存到宿主机的目录，只需要以 DaemonSet 的形式在每个 Node 上运行一个日志收集客户端即可将这台 Node 上所有容器的 <em>标准输出/标准错误</em> 日志收集起来存到后端存储里。</p>
+<p>这里的日志收集客户端建议 <a href="https://www.fluentd.org/" target="_blank" rel="external">fluentd</a>。</p>
+<h3 id="Using-a-sidecar-container-with-the-logging-agent"><a href="#Using-a-sidecar-container-with-the-logging-agent" class="headerlink" title="Using a sidecar container with the logging agent"></a>Using a sidecar container with the logging agent</h3><p>使用 Sidecar 方式有两种方案：</p>
+<ul>
+<li>Sidecar 容器将应用日志导流到标准输出或标准错误。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_stream.png" alt="k8s_logging_sidecar_stream"></p>
+<p>这种方式有利于适配 kubelet，或每台 Node 已经运行日志收集客户端的情况。Sidecar 容器可以从文件、socket 或 journald 收集日志，为应用里的每个日志模块运行一个特定的 sidecar 容器，整个 Pod 共享一个共享目录，最终把每个日志模块的日志对应的输出到各自的 sidecar 容器的标准输出或标准错误。</p>
+<p>这是一个在容器内部写两个日志文件的应用范例,然后是同一个 Pod 里运行两个 sidecar 容器分别对两个日志文件进行收集：</p>
+<p>two-files-counter-pod-streaming-sidecar.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-1</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/1.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-2</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/2.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div></pre></td></tr></table></figure>
+<p>然后，你就可以使用 <code>kubectl logs counter count-log-1</code>查看 1.log 的内容。同理2。</p>
+<p>Node 上的日志客户端会自动采集这两个 sidecar容器的标准输出/标准错误，实际也就是采集了 1.log 和 2.log 两个日志文件。</p>
+<hr>
+<ul>
+<li>Sidecar 容器运行一个日志收集客户端，主动去收集应用日志。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_agent.png" alt="k8s_logging_sidecar_agent"></p>
+<p>这种方式适用于 Node 上没有日志收集客户端的情况。需要注意的是这种方式存在过多资源消耗的问题，而且无法使用 kubectl logs 命令直接查看应用日志。</p>
+<p>这里举例使用 fluentd 作为 sidecar logging agent 收集日志：</p>
+<p>fluentd-sidecar-config.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: fluentd-config</div><div class="line">data:</div><div class="line">  fluentd.conf: |</div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/1.log</div><div class="line">      pos_file /var/log/1.log.pos</div><div class="line">      tag count.format1</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/2.log</div><div class="line">      pos_file /var/log/2.log.pos</div><div class="line">      tag count.format2</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;match **&gt;</div><div class="line">      type google_cloud</div><div class="line">    &lt;/match&gt;</div></pre></td></tr></table></figure>
+<p>two-files-counter-pod-agent-sidecar.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-agent</div><div class="line">    image: k8s.gcr.io/fluentd-gcp:1.30</div><div class="line">    env:</div><div class="line">    - name: FLUENTD_ARGS</div><div class="line">      value: -c /etc/fluentd-config/fluentd.conf</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">    - name: config-volume</div><div class="line">      mountPath: /etc/fluentd-config</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-volume</div><div class="line">    configMap:</div><div class="line">      name: fluentd-config</div></pre></td></tr></table></figure>
+<h3 id="Exposing-logs-directly-from-the-application"><a href="#Exposing-logs-directly-from-the-application" class="headerlink" title="Exposing logs directly from the application"></a>Exposing logs directly from the application</h3><p><img src="/assets/blogImg/k8s_logging_directly.png" alt="k8s_logging_directly"></p>
+<p>这是最简单的方式，不过涉及应用的改造。</p>
 
       
     </div>
     <div class="article-info article-info-index">
       
-      <a href="/2019/03/13/container_network/" class="archive-article-date">
+      <a href="/2019/03/13/k8s_logging/" class="archive-article-date">
   	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
 </a>
       
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
 	</div>
 
       
@@ -404,7 +473,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/11/k8s01/">Kubernetes 基础</a>
+      <a class="article-title" href="/2019/03/13/k8s01/">Kubernetes 基础</a>
     </h1>
   
 
@@ -616,13 +685,98 @@
 <p>CPUUtilizationPercentage 是一个算数平均值，即目标 Pod 所有副本自身的 CPU 利用率的平均值。一个 Pod 自身的 CPU 利用率是该 Pod 当前 CPU 的使用量除以它的 Pod Request 的值，比如我们定义一个 Pod 的 Pod Request 为 0.4，而当前 Pod 的 CPU 使用量为 0.2，则它的 CPU 使用率为50%，如此一来，我们就可以算出一个 RC 控制的所有 Pod 副本的 CPU 利用率的算术平均值了。如果某一时刻 CPUUtilizationPercentage 的值超过 80%，则意味着当前的 Pod 副本数很可能不足以支撑接下来更多的请求，需要进行动态扩容，而当请求高峰时段过去后， Pod 的 CPU 利用率又会降下来，此时对应的 Pod 副本数应该自动减少到一个合理的水平。</p>
 <p>下面是 HPA 定义的一个具体例子：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: autoscaling/v1</div><div class="line">kind: HorizontalPodAutoscaler</div><div class="line">metadata:</div><div class="line">  name: php-apache</div><div class="line">  namespace: default</div><div class="line">spec:</div><div class="line">  maxReplicas: 10</div><div class="line">  minReplicas: 1</div><div class="line">  scaleTargerRes:</div><div class="line">    kind: Deployment</div><div class="line">    name: php-apache</div><div class="line">  targerCPUUtilizationPercentage: 90</div></pre></td></tr></table></figure>
-<h5 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h5>
+<h5 id="StatefulSet"><a href="#StatefulSet" class="headerlink" title="StatefulSet"></a>StatefulSet</h5><p>在 Kubernetes 系统中，Pod 的管理对象 RC、Deployment、DaemonSet 和 Job 都是面向无状态的服务。但现实中有很多服务是有状态的，特别是一些复杂的中间件集群，例如 MySQL 集群、MongoDB 集群、ZooKeeper 集群等，这些应用集群有以下一些共同点：</p>
+<ul>
+<li>每个节点都有固定的身份 ID，通过这个 ID，集群中的成员可以互相发现并且通信。</li>
+<li>集群的规模是比较固定的，集群规模不能随意变动。</li>
+<li>集群里的每个节点都是有状态的，通常会持久化数据到永久存储中。</li>
+<li>如果磁盘损坏，则集群里的某个节点无法正常运行，集群功能受损。</li>
+</ul>
+<p>如果用 RC/Deployment 控制 Pod 副本数的方式来实现上述有状态的集群，我们会发现第 1 点是无法满足的，因为 Pod 的名字是随机产生的，Pod 的 IP 地址也是在运行期才确定且可能有变动的，我们实现无法为每个 Pod 确定唯一不变的 ID。另外，为了能够在其他节点上恢复某个失败的节点，这种集群中的 Pod 需要挂接某种共享存储，为了解决这个问题，Kubernetes 从 v1.4 版本开始引入了 PetSet 这个新的资源对象，并且在 v1.5 版本是更名为 StatefulSet，StatefulSet 从本质上来说，可以看作 Deployment/RC 的一个特殊变种，它有如下一些特性：</p>
+<ul>
+<li>StatefulSet 里的每个 Pod 都有稳定、唯一的网络标识，可以用来发现集群内的其他成员。假设 StatefulSet 的名字叫 kafka，那么第一个 Pod 叫 kafka-0，第二个叫 kafka-1，以此类推。</li>
+<li>StatefulSet 控制的 Pod 副本的启停顺序是受控的，操作第 n 个 Pod 时，前 n-1 个 Pod 已经是运行且准备好的状态。</li>
+<li>StatefulSet 里的 Pod 采用稳定的持久化存储卷，通过 PV/PVC 来实现，删除 Pod 时默认不会删除与 StatefulSet 相关的存储卷（为了保证数据的安全）。</li>
+</ul>
+<p>StatefulSet 除了要与 PV 卷捆绑使用以存储 Pod 的状态数据，还要与 Headless Service 配合使用，即在每个 StatefulSet 的定义中要声明它属于哪个 Headless Service。Headless Service 与普通 Service 的关键区别在于，它没有 Cluster IP，如果解析 Headless Service 的 DNS 域名，则返回的是该 Service 对应的全部 Pod 的 Endpoint 列表。StatefulSet 在 Headless Service 的基础上又为 StatefulSet 控制的每个 Pod 实例创建了一个 DNS 域名，这个域名的格式为：<code>$(podname).$(headless service name)</code>。</p>
+<p>比如一个 3 节点的 Kafka 的 StatefulSet 集群对应的 Headless Service 的名字为 kafka，则 StatefulSet 里面的 3 个 Pod 的 DNS 名称分别为 kafka-0.kafka、kafka-1.kafka、kafka-2.kafka，这些 DNS 名称可以直接在集群的配置文件中固定下来。</p>
+<h5 id="Service"><a href="#Service" class="headerlink" title="Service"></a>Service</h5><p>Service 也是 Kubernetes 里的最核心的资源对象之一，Kubernetes 里的每个 Service 其实就是我们经常提起的微服务架构中的一个“微服务”，之前提到的 Pod、RC 等资源对象都是为它服务的。</p>
+<p><img src="/assets/blogImg/k8s01_service.png" alt="k8s01_service"></p>
+<p>从图中可以看到，Kubernetes 的 Service 定义了一个服务的访问入口地址，前端的应用（Pod）通过这个入口地址访问其背后的一组由 Pod 副本组成的集群实例，Service 与其后端 Pod 副本集群之间则是通过 Label Selector 来实现“无缝对接”的。而 RC 的作用实际上是保证 Service 的服务能力和服务质量始终处于预期的标准。</p>
+<p>通过分析、识别并建模系统中的所有服务为微服务————Kubernetes Service，最终我们的系统由多个提供不同业务能力而又彼此独立的微服务单元所组成，服务之间通过 TCP/IP 进行通信，从而形成了强大而又灵活的弹性网格，拥有了强大的分布式能力、弹性扩展能力、容错能力，与此同时，我们的程序架构也变得简单和直观许多。</p>
+<p><img src="/assets/blogImg/k8s01_microService.png" alt="k8s01_microService"></p>
+<p>Kubernetes集群中，运行在每个 Node 上的 kube-proxy 进程其实就是一个智能的软件负载均衡器，它负责把对 Service 的请求转发到后端的某个 Pod 实例上，并在内部实现服务的负载均衡与会话保持机制。但 Service 不是共用一个负载均衡器的 IP 地址，而是每个 Service 分配了一个全局唯一的虚拟 IP 地址，这个虚拟 IP 被称为 ClusterIP。这样一来，每个服务就变成了具备唯一 IP 地址的“通信节点”，服务调用就变成了最基础的 TCP 网络通信问题。</p>
+<p>我们知道，Pod 的 Endpoint 地址会随着 Pod 的销毁和重新创建而发生改变，因为新 Pod 的 IP 地址与之前旧 Pod 的不同。而 Service 一旦被创建，Kubernetes 就会自动为它分配一个可用的 Cluster IP，而且在 Service 的整个生命周期内，它的 Cluster IP 不会发生改变。于是，服务发现这个棘手的问题在 Kubernetes的架构里也得以轻松解决：只要用 Service 的 Name 与 Service 的 Cluster IP 地址做一个 DNS 域名映射即可完美解决问题。</p>
+<h5 id="Volume"><a href="#Volume" class="headerlink" title="Volume"></a>Volume</h5><p>Volume 是 Pod 中能够被多个容器访问的共享目录。Kubernetes 的 Volume 概念、用途和目的与 Docker 的 Volume 比较类似，但两者不能等价。首先，Kubernetes 中的 Volume 定义在 Pod 上，然后被一个 Pod 里的多个容器挂载到具体的文件目录下；其次，Kubernetes中的 Volume 与 Pod 的生命周期相同，但与容器的生命周期不相关，当容器终止或者重启时，Volume 中的数据也不会丢失。最后，Kubernetes 支持多种类型的 Volume，例如 GlusterFS、Ceph 等先进的分布式文件系统。</p>
+<p>Volume 的使用也比较简单，在大多数情况下，我们先在 Pod 上声明一个 Volume，然后在容器里引用该 Volume 并 Mount 到容器里的某个目录上。比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">......</div><div class="line">template:</div><div class="line">  metadata:</div><div class="line">    labels:</div><div class="line">      app: app-demo</div><div class="line">      tier: frontend</div><div class="line">  spec:</div><div class="line">    volumes:</div><div class="line">      - name: datavol</div><div class="line">        emptyDir: &#123;&#125;</div><div class="line">    containers:</div><div class="line">    - name: tomcat-demo</div><div class="line">      image: tomcat</div><div class="line">      volumeMounts:</div><div class="line">        - mountPath: /mydata-data</div><div class="line">          name: datavol</div><div class="line">      imagePullPolicy: IfNotPresent</div><div class="line">......</div></pre></td></tr></table></figure>
+<p>除了可以让一个 Pod 里的多个容器共享文件、让容器的数据写到宿主机的磁盘上或者写文件到网络存储中，Kubernetes 的 Volume 还扩展出了一种非常有实用价值的功能，即容器配置文件集中化定义与管理，这是通过 ConfigMap 这个资源对象来实现的。</p>
+<p>Kubernetes 提供了非常丰富的<a href="https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes" target="_blank" rel="external">Volume 类型</a>，这里说明两个最基础的：</p>
+<p><strong>emptyDir</strong></p>
+<p>一个 emptyDir Volume 是在 Pod 分配到 Node 时创建的。从它的名字就可以看出，它的初始内容为空，并且无须指定宿主机上对应的目录文件，因为这是 Kubernetes 自动分配的一个目录，当 Pod 从 Node 上移除时，emptyDir 中的数据也会被永久删除。emptyDir 的一些用途如下：</p>
+<ul>
+<li>临时空间，例如用于某些应用程序运行时所需的临时目录，且无须永久保留。</li>
+<li>长时间任务的中间过程 CheckPoint 的临时保存目录。</li>
+<li>一个容器需要从另一个容器中获取数据的目录（多容器共享目录）</li>
+</ul>
+<p><strong>hostPath</strong></p>
+<p>hostPath 为在 Pod 上挂载宿主机上的文件或目录，它通常可以用于以下几方面：</p>
+<ul>
+<li>容器应用程序生成的日志文件需要永久保存时，可以使用宿主机的高速文件系统进行存储。</li>
+<li>需要访问宿主机上 Docker 引擎内部数据结构的容器应用时，可以通过定义 hostPath 为宿主机 /var/lib/docker 目录，使容器内部应用可以直接访问 Docker 的文件系统。</li>
+</ul>
+<p>在使用这种类型的 Volume 时，需要注意以下几点：</p>
+<ul>
+<li>在不同的 Node 上具有相同配置的 Pod 可能会因为宿主机上的目录和文件不同而导致对 Volume 上目录和文件的访问结果不一致。</li>
+<li>如果使用了资源配额管理，则 Kubernetes 无法将 hostPaht 在宿主机上使用的资源纳入管理。</li>
+</ul>
+<h5 id="Persistent-Volume"><a href="#Persistent-Volume" class="headerlink" title="Persistent Volume"></a>Persistent Volume</h5><p>前面说到的 Volume 是定义在 Pod 上的，属于“计算资源”的一部分。而实际上，“网络存储”是相对独立于“计算资源”而存在的一种实体资源。比如在使用虚拟机的情况下，我们通常会先定义一个网络存储，然后从中划出一个“网盘”并挂载到虚拟机上。Persistent Volume（简称 PV）和与之相关联的 Persistent Volume Claim（简称 PVC）也起到了类似的作用。</p>
+<p>PV 可以理解成 Kubernetes 集群中的某个网络存储中对应的一块存储，它与 Volume 很类似，但有以下区别：</p>
+<ul>
+<li>PV 只能是网络存储，不属于任何 Node，但可以在每个 Node 上访问。</li>
+<li>PV 并不是定义在 Pod 上的，而是独立于 Pod 之外定义。</li>
+<li>PV 目前支持的类型包括：NFS、iSCSI、RBD、CephFS、Cinder、GlusterFS 等，还有各家的公有云存储。</li>
+</ul>
+<p>下面给出了 NFS 类型 PV 的一个定义文件，声明了需要 5Gi 的存储空间：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolume</div><div class="line">metadata:</div><div class="line">  name: pv0003</div><div class="line">spec:</div><div class="line">  capacity:</div><div class="line">    storage: 5Gi</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  nfs:</div><div class="line">    path: /somepath</div><div class="line">    server: 172.17.0.2</div></pre></td></tr></table></figure>
+<p>比较重要的是 PV 的 accessModes 属性，目前有以下类型：</p>
+<ul>
+<li>ReadWriteOnce：读写权限、并且只能被单个 Node 挂载。</li>
+<li>ReadOnlyMany：只读权限、允许被多个 Node 挂载。</li>
+<li>ReadWriteMany：读写权限、允许被多个 Node 挂载。</li>
+</ul>
+<p>如果某个 Pod 向申请某种类型的 PV，则首先需要定义一个 PersistentVolumeClaim（PVC）对象：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolumeClain</div><div class="line">metadata:</div><div class="line">  name: myclaim</div><div class="line">spec:</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  resources:</div><div class="line">    requests:</div><div class="line">      storage: 8Gi</div></pre></td></tr></table></figure>
+<p>然后，在 Pod 的 Volume 定义中引用上述 PVC 即可：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">volumes:</div><div class="line">  - name: mypd</div><div class="line">    persistentVolumeClaim:</div><div class="line">      claimName: myclaim</div></pre></td></tr></table></figure>
+<p>最后，我们说说 PV 的状态，PV 是有状态的对象，它有以下几种状态：</p>
+<ul>
+<li>Available： 空闲状态。</li>
+<li>Bound： 已经绑定到某个 PVC 上。</li>
+<li>Released：对应的 PVC 已经删除，但资源还没有被集群收回。</li>
+<li>Failed：PV 自动回收失败。</li>
+</ul>
+<h5 id="Namespace"><a href="#Namespace" class="headerlink" title="Namespace"></a>Namespace</h5><p>Namespace（命名空间）是 Kubernetes 系统中的另一个非常重要的概念，Namespace 在很多情况下用于实现多租户的资源隔离。Namespace 通过将集群内部的资源对象“分配”到不同的 Namespace 中，形成逻辑上分组的不同项目、小组、或用户组，便于不同的分组在共享使用整个集群的资源的同时还能被分别管理。</p>
+<p>Namespace 的定义很简单，如下所示的 yaml 定义了名为 development 的 Namespace：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: development</div></pre></td></tr></table></figure>
+<p>一旦创建了 Namespace，我们在创建资源对象时就可以指定这个资源对象属于哪个 Namespace。比如在下面的例子中，我们定义了一个名为 busybox 的 Pod，放入 development 这个 Namespace里：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: busybox</div><div class="line">  namespace: development</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - image: busybox</div><div class="line">    command:</div><div class="line">      - sleep</div><div class="line">      - &quot;3600&quot;</div><div class="line">    name: busybox</div></pre></td></tr></table></figure>
+<p>当我们给每个租户创建一个 Namespace 来实现多租户的资源隔离时，还能结合 Kubernetes 的资源配额管理，限定不同租户能占用的资源，例如 CPU 使用量、内存使用量等。</p>
+<h5 id="Annotation"><a href="#Annotation" class="headerlink" title="Annotation"></a>Annotation</h5><p>Annotation(注解）与 Label 类似，也使用 key/value 键值对的形式进行定义。不同的是 Label 具有严格的命名规范，它定义的是 Kubernetes 对象的元数据（Metadata），并且用于 Label Selector。而 Annotation 则是用户任意定义的“附加”信息，以便于外部工具进行查找，很多时候，Kubernetes 的模块自身会通过 Annotation 的方式标记资源对象的一些特殊信息。</p>
+<p>通常来说，用 Annotation来记录的信息如下：</p>
+<ul>
+<li>build 信息、release 信息、Docker 镜像信息等，例如时间戳、release id 号、PR 号、镜像 hash 值、docker registry 地址等。</li>
+<li>日志库、监控库、分析库等资源库的地址信息。</li>
+<li>程序吊饰工具信息，例如工具名称、版本号等。</li>
+<li>团队的联系信息，例如电话号码、负责人名称、网址等。</li>
+</ul>
+
       
     </div>
     <div class="article-info article-info-index">
       
-      <a href="/2019/03/11/k8s01/" class="archive-article-date">
-  	<time datetime="2019-03-10T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-11</time>
+      <a href="/2019/03/13/k8s01/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
 </a>
       
 	<div class="article-tag tagcloud">
@@ -1572,107 +1726,6 @@
 
 
   
-    <article id="post-k8s_monitor" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/03/31/k8s_monitor/">Kubernetes 集群性能监控</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>在 Kubernetes 系统中，使用 cAdvisor 对 Node 所在主机资源和在该 Node 上运行的容器进行监控和性能数据采样。由于 cAdvisor 集成在 Kubelet 中，即运行在每个 Node 上，所以一个 cAdvisor 仅能对一台 Node 进行监控。在大规模容器集群中，我们需要对所有 Node 和全部容器进行性能监控，Kubernetes 使用一套工具来实现集群性能数据的采集、存储和展示：Heapster、InfluxDB 和 Grafana。</p>
-<blockquote>
-<p>Heapster：是对集群中各 Node、Pod 的资源使用数据进行采集的系统，通过访问每个 Node 上 Kubelet 的 API，再通过 Kubelet 调用 cAdvisor 的 API 来采集该节点上所有容器的性能数据。之后 Heapster 进行数据聚合，并将结果保存到后端存储系统中。Heapster 支持多种后端存储系统，包括 memory、InfluxDB、BigQuery、谷歌云平台提供的 Google Cloud Monitoring 和 Google Cloud Logging等。</p>
-<p>InfluxDB：是分布式时序数据库（每条记录都带有时间戳属性），主要用于实时数据采集、事件跟踪记录、存储时间图标、原始数据等。InfluxDB 提供 REST API 用于数据的存储和查询。</p>
-<p>Grafana：通过 Dashboard 将 InfluxDB 中的时序数据展现成图标或曲线等形式，便于运维人员查看集群的运行状态。</p>
-</blockquote>
-<h2 id="配置-Kubernetes-集群的-ServiceAccount-和-Secret"><a href="#配置-Kubernetes-集群的-ServiceAccount-和-Secret" class="headerlink" title="配置 Kubernetes 集群的 ServiceAccount 和 Secret"></a>配置 Kubernetes 集群的 ServiceAccount 和 Secret</h2><p>Heapster 当前版本需要使用 HTTPS 的安全方式与 Kubernetes Master 进行连接，所以需要先进行 ServiceAccount 和 Secret 的创建。如果不使用 Secret，则 Heapster 启动时将会报错，然后 Heapster 容器会被 ReplicationController 反复销毁、创建，无法正常工作。</p>
-<p>关于 ServiceAccount 和 Secret 的原理详见<a href="http://blog.dingmingk.com/blog/kube_security.html" target="_blank" rel="external">http://blog.dingmingk.com/blog/kube_security.html</a>。</p>
-<p>在进行一下操作时，我们假设在 Kubernetes 集群中没有创建过 Secret（如果之前创建过，则可以先删除 etcd 中与 Secret 相关的键值）。</p>
-<p>首先，使用 OpenSSL 工具在 Master 服务器上创建一些证书和私钥相关的文件：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"># openssl genrsa -out ca.key 2048</div><div class="line"># openssl req -x509 -new -nodes -key ca.key -subj &quot;/CN=yourcompany.com&quot; -days 5000 -out ca.crt</div><div class="line"># openssl genrsa -out server.key 2048</div><div class="line"># openssl req -new -key server.key -subj &quot;/CN=kubernetes-master&quot; -out server.csr</div><div class="line"># openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 5000</div></pre></td></tr></table></figure>
-<p>注意，在生成 server.csr 时 -subj 参数中 /CN 指定的名字需为 Master 的主机名。另外，在生成 ca.crt 时 -subj 参数中 /CN 的名字最好与主机名不同，设为相同可能导致对普通 Master 的 HTTPS 访问认证失败。</p>
-<p>执行完成后会生成 6 个文件：ca.crt、ca.key、ca.srl、server.crt、server.csr、server.key。将这些文件复制到 /var/run/kubernetes/ 目录中，然后设置kube-apiserver 的启动参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">--client_ca_file=/var/run/kubernetes/ca.crt</div><div class="line">--tls-private-key-file=/var/run/kubernetes/server.key</div><div class="line">--tls-cert-file=/var/run/kubernetes/server.crt</div></pre></td></tr></table></figure>
-<p>之后重启 kube-apiserver 服务。</p>
-<p>接下来，给 kube-controller-manager 服务添加以下启动参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">--service_account_private_key_file=/var/run/kubernetes/server.key</div><div class="line">--root-ca-file=/var/run/kubernetes/ca.crt</div></pre></td></tr></table></figure>
-<p>然后重启 kube-controller-manager 服务。</p>
-<p>在 kube-apiserver 服务成功启动后，系统会自动为每个命名空间创建一个 ServiceAccount 和一个 Secret（包含一个 ca.crt 和一个 token）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ kubectl get serviceaccounts --all-namespaces</div><div class="line">$ kubectl get secrets --all-namespaces</div><div class="line">$ kubectl describe secret xxx</div></pre></td></tr></table></figure>
-<p>之后 ReplicationController 在创建 Pod 时，会生成类型为 Secret 的 Volume 存储卷，并将该 Volume 挂载到 Pod 内的如下目录中：/var/run/secrets/kubernetes.io/serviceaccount。然后，容器内的应用程序就可以使用该 Secret 与 Master 建立 HTTPS 连接了。Pod 的 Volumes 设置和挂载操作由 ReplicationController 和 Kubelet 自动完成，可以通过查看 Pod 的详细信息了解到。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get pods kube-dns-v8-xxxxx --namespace=kube-system -o yaml</div></pre></td></tr></table></figure>
-<p>进入容器，查看/var/run/secrets/kubernetes.io/serviceaccount 目录，可以看到两个文件 ca.crt 和 token，这两个文件就是与 Master 通信时所需的证书和秘钥信息。</p>
-<h2 id="部署-Heapster、InfluxDB、Grafana"><a href="#部署-Heapster、InfluxDB、Grafana" class="headerlink" title="部署 Heapster、InfluxDB、Grafana"></a>部署 Heapster、InfluxDB、Grafana</h2><p>在 ServiceAccount 和 Secrets 创建完成后，我们就可以创建 Heapster、InfluxDB 和 Grafana 等 ReplicationController 和 Service 了。</p>
-<p><strong>heapsster-service.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    kubernetes.io/cluster-service: &quot;true&quot;</div><div class="line">    kubernetes.io/name: Heapster</div><div class="line">  name: heapster</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">    - port: 80</div><div class="line">      targetPort: 8082</div><div class="line">  selector:</div><div class="line">    k8s-app: heapster</div></pre></td></tr></table></figure>
-<p><strong>InfluxDB-service.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels: null</div><div class="line">  name: monitoring-InfluxDB</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">ports:</div><div class="line">  - name: http</div><div class="line">    port: 8083</div><div class="line">    targetPort: 8083</div><div class="line">    nodePort: 30083</div><div class="line">  - name: api</div><div class="line">    port: 8086</div><div class="line">    targetPort: 8086</div><div class="line">    nodePort: 30086</div><div class="line">selector:</div><div class="line">  name: influxGrafana</div></pre></td></tr></table></figure>
-<p><strong>Grafana-service.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    kubernetes.io/name: monitoring-Grafana</div><div class="line">    kubernetes.io/cluster-service: &quot;true&quot;</div><div class="line">  name: monitoring-Grafana</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  type: NodePort</div><div class="line">  ports:</div><div class="line">    - port: 80</div><div class="line">      targetPort: 8080</div><div class="line">      nodePort: 30080</div><div class="line">  selector:</div><div class="line">    name: influxGrafana</div></pre></td></tr></table></figure>
-<p><strong>heapster-controller.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    k8s-app: heapster</div><div class="line">    name: heapster</div><div class="line">    version: v6</div><div class="line">  name: heapster</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: heapster</div><div class="line">    k8s-app: heapster</div><div class="line">    version: v6</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        k8s-app: heapster</div><div class="line">        version: v6</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: heapster</div><div class="line">          image: gcr.io/google_containers/heapster:v0.17.0</div><div class="line">          command:</div><div class="line">            - /heapster</div><div class="line">            - --source=kubernetes:http://192.168.1.128:8080?inClusterConfig=false&amp;kubeletHttps=true&amp;useServiceAccount=true&amp;auth=</div><div class="line">            - --sink=InfluxDB:http://monitoring-InfluxDB:8086</div></pre></td></tr></table></figure>
-<p>Heapster 需要设置的参数如下：</p>
-<ul>
-<li>–source：为配置监控来源。在本例中使用 kubernetes:表示从 Kubernetes Master 获取各 Node 的信息。在 URL 后面的参数部分，修改 kubeletHttps、inClusterConfig、useServiceAccount 的值，并设置 auth 的值为空。URL中可配置的参数如下：<ul>
-<li>IP 地址和端口号：为 Kubernetes Master 的地址。</li>
-<li>kubeletPort：默认为 10255（Kubelet 服务的只读端口号）。</li>
-<li>kubeletHttps：是否通过 HTTPS 方式连接 Kubelet，默认为 false。</li>
-<li>apiVersion： API 版本号，默认为 Kubernetes 系统的版本号，当前为 v1.</li>
-<li>inClusterConfig：是否使用 Heapster 命名空间中的 ServiceAccount，默认为 true。</li>
-<li>insecure：是否信任 Kubernetes 证书，默认为 false。</li>
-<li>auth：客户端认证授权文件，当 ServiceAccount 不可用时对其进行设置。</li>
-<li>useServiceAccount：是否使用 ServiceAccount，默认为 false。</li>
-</ul>
-</li>
-<li>–sink：为配置后端的存储系统，在本例中使用 InfluxDB 系统。</li>
-</ul>
-<p><strong>InfluxDB-Grafana-controller.yaml</strong></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ReplicationController</div><div class="line">metadata:</div><div class="line">  labels:</div><div class="line">    name: influxGrafana</div><div class="line">  name: infludb-Grafana</div><div class="line">  namespace: kube-system</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    name: influxGrafana</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        name: influxGrafana</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">        - name: InfluxDB</div><div class="line">          image: gcr.io/google_containers/heapster_InfluxDB:v0.3</div><div class="line">          ports:</div><div class="line">            - containerPort: 8083</div><div class="line">              hostPort: 8083</div><div class="line">            - containerPort: 8086</div><div class="line">              hostPort: 8086</div><div class="line">        - name: Grafana</div><div class="line">          image: gcr.io/google_containers/heapster_Grafana:v0.7</div><div class="line">          ports:</div><div class="line">            - containerPort: 8080</div><div class="line">              hostPort: 8080</div><div class="line">          env:</div><div class="line">            - name: INFLUXDB_HOST</div><div class="line">              value: monitoring-InfluxDB</div></pre></td></tr></table></figure>
-<p>最后，创建所有 Service 和 RC：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ kubectl create -f heapster-service.yaml</div><div class="line">$ kubectl create -f InfluxDB-server.yaml</div><div class="line">$ kubectl create -f Grafana-service.yaml</div><div class="line">$ kubectl create -f InfluxDB-Grafana-controller.yaml</div><div class="line">$ kubectl create -f heapster-controller.yaml</div></pre></td></tr></table></figure>
-<p>通过 kubectl get pods –namespace=kube-system 确认各 Pod 都成功启动了。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/03/31/k8s_monitor/" class="archive-article-date">
-  	<time datetime="2016-03-30T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-03-31</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -1738,7 +1791,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 10px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 12.5px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/Pipeline/" style="font-size: 10px;">Pipeline</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     
