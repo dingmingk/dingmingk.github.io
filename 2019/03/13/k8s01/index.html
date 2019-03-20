@@ -48,9 +48,11 @@ Persi">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_javaweb04.png">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_pod01.png">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_pod02.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_deployment.png">
+<meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_rs.png">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_service.png">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_microService.png">
-<meta property="og:updated_time" content="2019-03-14T10:02:02.664Z">
+<meta property="og:updated_time" content="2019-03-20T06:49:24.754Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Kubernetes 基础">
 <meta name="twitter:description" content="容器技术系列分享（四）Kubernetes 基础目录
@@ -238,7 +240,7 @@ Persi">
 <h4 id="为什么要用-Kubernetes"><a href="#为什么要用-Kubernetes" class="headerlink" title="为什么要用 Kubernetes"></a>为什么要用 Kubernetes</h4><p>Docker 容器化技术当前已经被很多公司所采用，其从单机走向集群已成为必然，而云计算的蓬勃发展正在加速这一过程。Kubernetes 作为当前唯一被业界广泛认可和看好的 Docker 分布式系统解决方案，可以遇见，在未来会有大量的新系统选择它。</p>
 <p>使用 Kubernetes 可以收获哪些好处？</p>
 <ul>
-<li>首先，最直接的感受就是可以“轻装上阵”地开发复杂系统了。以前动不动就需要十几个人而且团队里需要不少技术达人一起分工协助才能设计实现的和运维的分布式系统，在采用 Kubernetes 解决方案后，只需要一个劲精悍的小团队就能轻松应付。</li>
+<li>首先，最直接的感受就是可以“轻装上阵”地开发复杂系统了。以前动不动就需要十几个人而且团队里需要不少技术达人一起分工协助才能设计实现的和运维的分布式系统，在采用 Kubernetes 解决方案后，只需要一个精悍的小团队就能轻松应付。</li>
 <li>其次，使用 Kubernetes 就是在全面拥抱微服务架构。微服务架构的核心是将一个巨大的单体应用分解为许多小的互相连接的微服务，一个微服务背后可能有多个实例副本在支撑，副本的数量可能会随着系统的负荷变化而进行调整，内嵌的负载均衡器在这里发挥了重要作用。微服务架构使得每个服务都可以由专门的开发团队来开发，开发者可以自由选择开发技术，这对于大规模团队来说很有价值，另外每个微服务独立开发、升级、扩展，因此系统具备很高的稳定性和快速迭代能力。谷歌将微服务架构的基础设施直接打包到 Kubernetes 解决方案中，让我们有机会直接应用微服务架构解决复杂业务系统的架构问题。</li>
 <li>然后，我们的系统可以随时随地整体“搬迁”到别的机房或公有云上。Kubernetes 最初的目标就是运行在谷歌自家的公有云 GCE 中，未来会支持更多的公有云及基于 OpenStack 的私有云。同时，在 Kubernetes 的架构方案中，底层网络的细节完全被屏蔽，基于服务的 ClusterIP 甚至都无需我们改变运行期的配置文件，就能将系统从物理环境中无缝迁移到公有云中，或者在服务高峰期将部分服务对应的 Pod 副本放入公有云中以提升系统的吞吐量。</li>
 <li>最后，Kubernetes 系统架构具备了超强的横向扩容能力。对于互联网公司来说，用户规模就等价于资产，谁拥有更多的用户，谁就能在竞争中胜出，因此超强的横向扩容能力是互联网业务系统的关键指标之一。不用修改代码，一个 Kubernetes 集群即可从只包含几个 Node 的小集群平滑扩展到拥有上百个 Node 的大规模集群，我们利用 Kubernetes 提供的工具，甚至可以在线完成集群扩容。只要我们的微服务设计的好，结合硬件或者公有云资源的线性增加，系统就能够承受大量用户并发访问所带来的巨大压力。</li>
@@ -273,7 +275,6 @@ Persi">
 <p><code>kubectl create -f myweb-svc.yaml</code></p>
 <p><code>kubectl get service</code></p>
 <p><img src="/assets/blogImg/k8s01_javaweb04.png" alt="k8s01_javaweb04"></p>
-<p>$$$ 结果</p>
 <h4 id="Kubernetes-基本概念和术语"><a href="#Kubernetes-基本概念和术语" class="headerlink" title="Kubernetes 基本概念和术语"></a>Kubernetes 基本概念和术语</h4><p>Kubernetes 中的大部分概念如 Node、Pod、Replication Controller、Service 等都可以看作一种 “资源对象”，几乎所有的资源对象都可以通过 Kubernetes 提供的 kubectl 工具（或者 API 编程调用）执行增、删、改、查等操作并将其保存在 Etcd 中持久化存储。从这个角度看，Kubernetes 其实是一个高度自动化的资源控制系统，它通过跟踪对比 Etcd 库里保存的“资源期望状态”与当前环境中的“实际资源状态”的差异来实现自动控制和自动纠错的高级功能。</p>
 <p>在介绍资源对象之前，我们先了解一下 Kubernetes 集群的两种管理角色：Master 和 Node。</p>
 <h5 id="Master"><a href="#Master" class="headerlink" title="Master"></a>Master</h5><p>Kubernetes 里的 Master 指的是集群控制节点，每个 Kubernetes 集群里需要有一个 Master 节点来负责整个集群的管理和控制，基本上 Kubernetes 的所有控制命令都发给它，它来负责具体的执行过程。Master 节点通常会占据一个独立的服务器（高可用部署建议用3台服务器），其主要原因是它太重要了，是整个集群的“首脑”，如果宕机或不可用，那么对集群内容器应用的管理都将失效。</p>
@@ -291,12 +292,10 @@ Persi">
 <li>kube-proxy：实现 Kubernetes Service 的通信与负载均衡机制的重要组件。</li>
 <li>Docker Engine（docker）：Docker 引擎，负责本机的容器创建和管理工作。</li>
 </ul>
-<p>Node 节点可以在运行期间动态增加到 Kubernetes 集群中，前提是这个节点上已经正确安装、配置和启动了上述关键进程，在默认情况下 kubelet 会向 Master 注册自己，这也是 Kubernetes 推荐的 Node 管理方式。一旦 Node 被纳入集群管理范围，kubelet 进程就会定时向 Master 节点汇报自身的情报，例如操作系统、Docker 版本、机器的 CPU 和内存情况，以及当前有哪些 Pod 在运行等，这样 Master 可以获知每个 Node 的资源使用情况，并实现高效均衡的资源调度策略。而某个 Node 炒过指定时间不上报信息时，会被 Master 判定为 “失联”，Node 的状态被标记为不可用（Not Ready），随后 Master 会触发工作负载转移的自动流程。</p>
+<p>Node 节点可以在运行期间动态增加到 Kubernetes 集群中，前提是这个节点上已经正确安装、配置和启动了上述关键进程，在默认情况下 kubelet 会向 Master 注册自己，这也是 Kubernetes 推荐的 Node 管理方式。一旦 Node 被纳入集群管理范围，kubelet 进程就会定时向 Master 节点汇报自身的情报，例如操作系统、Docker 版本、机器的 CPU 和内存情况，以及当前有哪些 Pod 在运行等，这样 Master 可以获知每个 Node 的资源使用情况，并实现高效均衡的资源调度策略。而某个 Node 超过指定时间不上报信息时，会被 Master 判定为 “失联”，Node 的状态被标记为不可用（Not Ready），随后 Master 会触发工作负载转移的自动流程。</p>
 <p><code>kubectl get nodes</code></p>
-<p>$$$ 结果</p>
 <p><code>kubectl describe node k8s-node-1</code></p>
-<p>$$$ 结果</p>
-<p>上述命令展示了 Node 的如下关键信息：</p>
+<p>上述命令会展示 Node 的如下关键信息：</p>
 <ul>
 <li>Node 基本信息：名称、标签、创建时间等。</li>
 <li>Node 当前的运行状态，Node 启动后会做一系列的自检工作，比如磁盘是否满了，如果满了就标注  OutOfDisk=True，否则继续检查内存是否不足（如果内存不足，就标注 MemoryPressure=True），最后一切正常，就设置为 Ready 状态（Ready=True），该状态表示 Node 处于健康状态， Master 将可以在其上调度新的任务了（如启动 Pod）。</li>
@@ -388,23 +387,21 @@ Persi">
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">apiVersion: extensions/v1beta1</div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: frontend</div><div class="line">spec:</div><div class="line">  replicas: 1</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      tier: frontend</div><div class="line">    matchExpressions:</div><div class="line">      - &#123;key: tier, operator: In, values: [frontend]&#125;</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: app-demo</div><div class="line">        tier: frontend</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: tomcat-demo</div><div class="line">        image: tomcat</div><div class="line">        imagePullPolicy: IfNotPresent</div><div class="line">        ports:</div><div class="line">        - containerPort: 8080</div></pre></td></tr></table></figure>
 <p>创建 Deployment：</p>
 <p><code>kubectl create -f tomcat-deployment.yaml</code></p>
-<p>$$$ 结果</p>
 <p>查看 Deployment 信息：</p>
 <p><code>kubectl get deployments</code></p>
-<p>$$$ 结果</p>
+<p><img src="/assets/blogImg/k8s01_deployment.png" alt="k8s01_deployment"></p>
 <p>对上述输出中涉及的数量解释如下：</p>
 <ul>
-<li>DESIRED: Pod 副本数量的期望值，即 Deployment 里定义的 Replica。</li>
-<li>CURRENT: 当前 Replica 的值，实际上是 Deployment 所创建的 Replica Set 里的 Replica 值，这个值不断增加，直到达到 DESIRED 为止，表明整个部署过程完成。</li>
+<li>NAME: Deployment 的名字。</li>
+<li>READY: Replica 状态值，包含已成功运行的 Pod 数量，和要求的值。</li>
 <li>UP-TO-DATE: 最新版本的 Pod 的副本数量，用于指示在滚动升级的过程中，有多少个副本已经成功升级。</li>
 <li>AVAILABLE: 当前集群中可用的 Pod 副本数量，即集群中当前存活的 Pod 数量。</li>
 </ul>
 <p>查看 Replica Set，可以看到它的命名与 Deployment 的名字有关系：</p>
 <p><code>kubectl get rs</code></p>
-<p>$$$ 结果</p>
 <p>查看创建的 Pod，我嗯发现 Pod 的命名以 Deployment 对应的 Replica Set 的名字为前缀，这种命名很清晰地表明了一个 Replica Set 创建了哪些 Pod，对于 Pod 滚动升级这种复杂的过程来说，很容易排查错误：</p>
 <p><code>kubectl get pods</code></p>
-<p>$$$ 结果</p>
+<p><img src="/assets/blogImg/k8s01_rs.png" alt="k8s01_rs"></p>
 <p>Pod 的管理对象，除了 RC 和 Deployment，还包括 ReplicaSet、DaemonSet、StatefulSet、Job 等，分别用于不同的应用场景中。</p>
 <h5 id="Horizontal-Pod-Autoscaler"><a href="#Horizontal-Pod-Autoscaler" class="headerlink" title="Horizontal Pod Autoscaler"></a>Horizontal Pod Autoscaler</h5><p>前面我们提到过，通过手动执行 kubectl scale 命令，可以实现 Pod 扩容或缩容。而 Kubernetes v1.1 版本中发布了一个新特性————Horizontal Pod Autoscaling（Pod 横向自动扩容，简称 HPA）。</p>
 <p>HPA 与之前的 RC、Deployment 一样，也属于一种 Kubernetes 资源对象。通过追踪分析 RC 控制的所有目标 Pod 的负载变化情况，来确定是否需要针对性地调整目标 Pod 的副本数。当前，HPA 可以有以下两种方式作为 Pod 负载的度量指标：</p>
