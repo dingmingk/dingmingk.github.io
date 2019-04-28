@@ -52,7 +52,7 @@ Persi">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_rs.png">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_service.png">
 <meta property="og:image" content="https://dingmingk.github.io/assets/blogImg/k8s01_microService.png">
-<meta property="og:updated_time" content="2019-03-20T06:49:24.754Z">
+<meta property="og:updated_time" content="2019-03-26T08:47:40.417Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Kubernetes 基础">
 <meta name="twitter:description" content="容器技术系列分享（四）Kubernetes 基础目录
@@ -455,7 +455,7 @@ Persi">
 <p>在使用这种类型的 Volume 时，需要注意以下几点：</p>
 <ul>
 <li>在不同的 Node 上具有相同配置的 Pod 可能会因为宿主机上的目录和文件不同而导致对 Volume 上目录和文件的访问结果不一致。</li>
-<li>如果使用了资源配额管理，则 Kubernetes 无法将 hostPaht 在宿主机上使用的资源纳入管理。</li>
+<li>如果使用了资源配额管理，则 Kubernetes 无法将 hostPath 在宿主机上使用的资源纳入管理。</li>
 </ul>
 <h5 id="Persistent-Volume"><a href="#Persistent-Volume" class="headerlink" title="Persistent Volume"></a>Persistent Volume</h5><p>前面说到的 Volume 是定义在 Pod 上的，属于“计算资源”的一部分。而实际上，“网络存储”是相对独立于“计算资源”而存在的一种实体资源。比如在使用虚拟机的情况下，我们通常会先定义一个网络存储，然后从中划出一个“网盘”并挂载到虚拟机上。Persistent Volume（简称 PV）和与之相关联的 Persistent Volume Claim（简称 PVC）也起到了类似的作用。</p>
 <p>PV 可以理解成 Kubernetes 集群中的某个网络存储中对应的一块存储，它与 Volume 很类似，但有以下区别：</p>
@@ -521,18 +521,18 @@ Persi">
   
 <nav id="article-nav">
   
-    <a href="/2019/03/13/k8s_logging/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2019/03/15/container_network/" id="article-nav-newer" class="article-nav-link-wrap">
       <i class="icon-circle-left"></i>
       <div class="article-nav-title">
         
-          Kubernetes Logging Architecture
+          容器网络
         
       </div>
     </a>
   
   
-    <a href="/2019/03/06/docker02/" id="article-nav-older" class="article-nav-link-wrap">
-      <div class="article-nav-title">Docker 进阶</div>
+    <a href="/2019/03/13/k8s_logging/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Kubernetes Logging Architecture</div>
       <i class="icon-circle-right"></i>
     </a>
   
@@ -645,7 +645,7 @@ Persi">
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 12.5px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/Pipeline/" style="font-size: 10px;">Pipeline</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Istio/" style="font-size: 10px;">Istio</a> <a href="/tags/Jenkins/" style="font-size: 12.5px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/Pipeline/" style="font-size: 10px;">Pipeline</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     

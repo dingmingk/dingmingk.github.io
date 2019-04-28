@@ -137,6 +137,148 @@
       <div class="body-wrap">
         
   
+    <article id="post-istio01" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/04/28/istio01/">Istio 是什么？</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Istio-是什么？"><a href="#Istio-是什么？" class="headerlink" title="Istio 是什么？"></a>Istio 是什么？</h1><p>使用云平台可以为组织提供丰富的好处。然而，不可否认的是，采用云可能会给 DevOps 团队带来压力。开发人员必须使用微服务以满足应用的可移植性，同时运营商管理了极其庞大的混合和多云部署。Istio 允许您连接、保护、控制和观测服务。</p>
+<p>在较高的层次上，Istio 有助于降低这些部署的复杂性，并减轻开发团队的压力。它是一个完全开源的服务网格，可以透明地分层到现有的分布式应用程序上。它也是一个平台，包括允许它集成到任何日志记录平台、遥测或策略系统的 API。Istio 的多样化功能集使您能够成功高效地运行分布式微服务架构，并提供保护、连接和监控微服务的统一方法。</p>
+<h2 id="什么是-Service-Mesh？"><a href="#什么是-Service-Mesh？" class="headerlink" title="什么是 Service Mesh？"></a>什么是 Service Mesh？</h2><blockquote>
+<p>2016 年初，原 Twitter 基础设施工程师 William Morgan 和 Oliver Gould 在 Github 上发布了 Linkerd 项目，并组建了 Buoyant 公司。同年，起源于 Buoyant 的新名字 Service Mesh 面世并迅速获得认可。</p>
+</blockquote>
+<p>在从单体应用程序向分布式微服务架构的转型过程中，开发人员和运维人员面临诸多挑战，使用 Istio 可以解决这些问题。</p>
+<p>服务网格（Service Mesh）这个术语通常用于描述构成这些应用程序的微服务网络以及应用之间的交互。随着规模和复杂性的增长，服务网格越来越难以理解和管理。它的需求包括服务发现、负载均衡、故障恢复、指标收集和监控以及通常更加复杂的运维需求，例如 A/B 测试、金丝雀发布、限流、访问控制和端到端认证等。</p>
+<blockquote>
+<p>Linkerd 在面世之后，迅速获得用户的关注，并在多个用户的生产环境上成功部署、运行。2017 年，Linkerd 加入 CNCF，随后宣布完成对千亿次生产环境请求的处理，紧接着发布了 1.0 版本，并且具备一定数量的商业用户，一时间风光无限，一直持续到 Istio 横空出世。</p>
+</blockquote>
+<h2 id="为什么要使用-Istio"><a href="#为什么要使用-Istio" class="headerlink" title="为什么要使用 Istio?"></a>为什么要使用 Istio?</h2><blockquote>
+<p>2016 年，Lyft 开始了对现代网络代理软件 Envoy 的内部研发，并在同年 9 月将 Envoy 开源。由 C++ 语言开发而成的 Envoy 在开源之后，迅速获得了大量关注。它除了具备强大的性能，还提供了众多现代服务网格所需的功能特性，并开放了大量精雕细琢的编程接口，为后面的广泛应用埋下了伏笔。</p>
+<p>2017 年 5 月，Google、IBM 和 Lyft 宣布了 Istio 的诞生。Istio 以 Envoy 为数据平面，通过 Sidecar 的方式让 Envoy 同业务容器一起运行，并劫持其通信，接受控制平面的统一管理，在此基础上为服务之间的通信提供丰富的连接、控制、观察、安全等特性。</p>
+<p>Istio 一经发布，便立刻获得 Red Hat、F5 等大牌厂商的响应，虽然立足不稳，但各个合作方都展示了对社区、行业的强大影响力。于是，Istio 很快就超越了 Linkerd，成为 Service Mesh 的代表产品。</p>
+</blockquote>
+<p>Istio 提供一种简单的方式来为已部署的服务建立网络，该网络具有负载均衡、服务间认证、监控等功能，只需要对服务的代码进行一点或不需要做任何改动。想要让服务支持 Istio，只需要在您的环境中部署一个特殊的 sidecar 代理，使用 Istio 控制平面功能配置和管理代理，拦截微服务之间的所有网络通信：</p>
+<ul>
+<li>HTTP、gRPC、WebSocket 和 TCP 流量的自动负载均衡。</li>
+<li>通过丰富的路由规则、重试、故障转移和故障注入，可以对流量行为进行细粒度控制。</li>
+<li>可插入的策略层和配置 API，支持访问控制、速率限制和配额。</li>
+<li>对出入集群入口和出口中所有流量的自动度量指标、日志记录和追踪。</li>
+<li>通过强大的基于身份的验证和授权，在集群中实现安全的服务间通信。</li>
+</ul>
+<p>Istio 旨在实现可扩展性，满足各种部署需求。</p>
+<h2 id="核心功能"><a href="#核心功能" class="headerlink" title="核心功能"></a>核心功能</h2><p>Istio 在服务网络中统一提供了许多关键功能：</p>
+<h3 id="流量管理"><a href="#流量管理" class="headerlink" title="流量管理"></a>流量管理</h3><p>通过简单的规则配置和流量路由，您可以控制服务之间的流量和 API 调用。Istio 简化了断路器、超时和重试等服务级别属性的配置，并且可以轻松设置 A/B测试、金丝雀部署和基于百分比的流量分割的分阶段部署等重要任务。</p>
+<p>通过更好地了解您的流量和开箱即用的故障恢复功能，您可以在问题出现之前先发现问题，使调用更可靠，并且使您的网络更加强大——无论您面临什么条件。</p>
+<h3 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h3><p>Istio 的安全功能使开发人员可以专注于应用程序级别的安全性。Istio 提供底层安全通信信道，并大规模管理服务通信的认证、授权和加密。使用Istio，服务通信在默认情况下是安全的，它允许您跨多种协议和运行时一致地实施策略——所有这些都很少或根本不需要应用程序更改。</p>
+<p>虽然 Istio 与平台无关，但将其与 Kubernetes（或基础架构）网络策略结合使用，其优势会更大，包括在网络和应用层保护 pod 间或服务间通信的能力。</p>
+<h3 id="可观察性"><a href="#可观察性" class="headerlink" title="可观察性"></a>可观察性</h3><p>Istio 强大的追踪、监控和日志记录可让您深入了解服务网格部署。通过 Istio 的监控功能，可以真正了解服务性能如何影响上游和下游的功能，而其自定义仪表板可以提供对所有服务性能的可视性，并让您了解该性能如何影响您的其他进程。</p>
+<p>Istio 的 Mixer 组件负责策略控制和遥测收集。它提供后端抽象和中介，将 Istio 的其余部分与各个基础架构后端的实现细节隔离开来，并为运维提供对网格和基础架构后端之间所有交互的细粒度控制。</p>
+<p>所有这些功能可以让您可以更有效地设置、监控和实施服务上的 SLO。当然，最重要的是，您可以快速有效地检测和修复问题。</p>
+<h3 id="平台支持"><a href="#平台支持" class="headerlink" title="平台支持"></a>平台支持</h3><p>Istio 是独立于平台的，旨在运行在各种环境中，包括跨云、内部部署、Kubernetes、Mesos 等。您可以在 Kubernetes 上部署 Istio 或具有 Consul 的 Nomad 上部署。Istio 目前支持：</p>
+<ul>
+<li>在 Kubernetes 上部署的服务</li>
+<li>使用 Consul 注册的服务</li>
+<li>在虚拟机上部署的服务</li>
+</ul>
+<h3 id="集成和定制"><a href="#集成和定制" class="headerlink" title="集成和定制"></a>集成和定制</h3><p>策略执行组件可以扩展和定制，以便与现有的 ACL、日志、监控、配额、审计等方案集成。</p>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><p>Istio 服务网格逻辑上分为数据平面和控制平面。</p>
+<ul>
+<li>数据平面由一组以 sidecar 方式部署的智能代理（Envoy）组成。这些代理可以调节和控制微服务及 Mixer 之间所有的网络通信。</li>
+<li>控制平面负责管理和配置代理来路由流量。此外控制平面配置 Mixer 以实施策略和收集遥测数据。</li>
+</ul>
+<p>下图显示了构成每个面板的不同组件。</p>
+<p><img src="/assets/blogImg/istio_arch.svg" alt="istio_arch"></p>
+<h3 id="Envoy"><a href="#Envoy" class="headerlink" title="Envoy"></a>Envoy</h3><p>Istio 使用 Envoy 代理的扩展版本，Envoy 是以 C++ 开发的高性能代理，用于调解服务网格中所有服务的所有入站和出站流量。Envoy 的许多内置功能被 Istio 发扬光大，例如：</p>
+<ul>
+<li>动态服务发现</li>
+<li>负载均衡</li>
+<li>TLS 终止</li>
+<li>HTTP/2 &amp; gRPC 代理</li>
+<li>熔断器</li>
+<li>健康检查、基于百分比流量拆分的灰度发布</li>
+<li>故障注入</li>
+<li>丰富的度量指标</li>
+</ul>
+<p>Envoy 被部署为 sidecar，和对应服务在同一个 Kubernetes pod 中。这允许 Istio 将大量关于流量行为的信号作为属性提取出来，而这些属性又可以在 Mixer 中用于执行策略决策，并发送给监控系统，以提供整个网格行为的信息。</p>
+<p>在 Istio 的默认实现中，Istio 利用 istio-init 初始化容器中的 iptables 指令，对所在 Pod 的流量进行劫持，从而接管 Pod 中应用的通信过程，如此一来，就获得了通信的控制权，控制面的控制目的得以实现。</p>
+<p>Sidecar 代理模型还可以将 Istio 的功能添加到现有部署中，而无需重新构建或重写代码。</p>
+<p>注入 Sidecar 前后的通信模式变化如图所示。</p>
+<p><img src="/assets/blogImg/istio_envoy.jpeg" alt="istio_envoy"></p>
+<p>熟悉 Kubernetes 的人都知道，在同一个 Pod 内的多个容器之间，网络栈是共享的，而这正是 Sidecar 模式的实现基础。Sidecar 在加入之后，原有的源容器-&gt;目标容器的直接通信方式，变成了源容器-&gt;Sidecar-&gt;Sidecar-&gt;目的容器的模式。而 Sidecar 是用来接受控制面组件的操作的，这样一来，就让通信过程中的控制和观察成为可能。</p>
+<blockquote>
+<p>理论上，只要支持 Envoy 的 xDS 协议，其它类似的反向代理软件都可以代替 Envoy。</p>
+</blockquote>
+<h3 id="Mixer"><a href="#Mixer" class="headerlink" title="Mixer"></a>Mixer</h3><p>Mixer 是一个独立于平台的组件，负责在服务网格上执行访问控制和使用策略，并从 Envoy 代理和其他服务收集遥测数据。代理提取请求级属性，发送到 Mixer 进行评估。</p>
+<p>Mixer 中包括一个灵活的插件模型，使其能够接入到各种主机环境和基础设施后端，从这些细节中抽象出 Envoy 代理和 Istio 管理的服务。</p>
+<p>如图所示，Mixer 的简单工作流程如下：</p>
+<ol>
+<li>用户将 Mixer 配置发送到 Kubernetes 中。</li>
+<li>Mixer 通过对 Kubernetes 资源的监听，获知配置的变化。</li>
+<li>网格中的服务在每次调用之前，都向 Mixer 发出预检请求，查看调用是否允许执行。在每次调用之后，都发出报告信息，向 Mixer 汇报 在调用过程中产生的监控跟踪数据。</li>
+</ol>
+<p><img src="/assets/blogImg/istio_mixer.jpeg" alt="istio_mixer"></p>
+<h3 id="Pilot"><a href="#Pilot" class="headerlink" title="Pilot"></a>Pilot</h3><p>Pilot 为 Envoy sidecar 提供服务发现功能，为智能路由（例如 A/B 测试、金丝雀部署等）和弹性（超时、重试、熔断器等）提供流量管理功能。它将控制流量行为的高级路由规则转换为特定于 Envoy 的配置，并在运行时将它们传播到 sidecar。</p>
+<p>Pilot 将平台特定的服务发现机制抽象化并将其合成为符合 Envoy 数据平面 API 的任何 sidecar 都可以使用的标准格式。这种松散耦合使得 Istio 能够在多种环境下运行（例如，Kubernetes、Consul、Nomad），同时保持用于流量管理的相同操作界面。</p>
+<p>如图所示，Pilot 的工程流程如下：</p>
+<ol>
+<li>用户通过 kubectl 或 istioctl（或 API）在 Kubernetes 上创建 CRD 资源，对 Istio 控制平面发出指令。</li>
+<li>Pilot 监听 CRD 中的 config、rbac、networking 及 authentication 资源，在检测到资源对象的变更之后，针对其中涉及的服务，发出指令给对应服务的 Sidecar。</li>
+<li>Sidecar 根据这些指令更新自身配置，根据配置修正通信行为。</li>
+</ol>
+<p><img src="/assets/blogImg/istio_pilot.jpeg" alt="istio_pilot"></p>
+<h3 id="Citadel"><a href="#Citadel" class="headerlink" title="Citadel"></a>Citadel</h3><p>Citadel 通过内置身份和凭证管理赋能强大的服务间和最终用户身份验证。可用于升级服务网格中未加密的流量，并为运维人员提供基于服务标识而不是网络控制的强制执行策略的能力。从 0.5 版本开始，Istio 支持基于角色的访问控制，以控制谁可以访问您的服务，而不是基于不稳定的三层或四层网络标识。</p>
+<h3 id="Galley"><a href="#Galley" class="headerlink" title="Galley"></a>Galley</h3><p>Galley 代表其他的 Istio 控制平面组件，用来验证用户编写的 Istio API 配置。随着时间的推移，Galley 将接管 Istio 获取配置、 处理和分配组件的顶级责任。它将负责将其他的 Istio 组件与从底层平台（例如 Kubernetes）获取用户配置的细节中隔离开来。</p>
+<h2 id="设计目标"><a href="#设计目标" class="headerlink" title="设计目标"></a>设计目标</h2><p>Istio 的架构设计中有几个关键目标，这些目标对于使系统能够应对大规模流量和高性能地服务处理至关重要。</p>
+<ul>
+<li><strong>最大化透明度</strong>：若想 Istio 被采纳，应该让运维和开发人员只需付出很少的代价就可以从中受益。为此，Istio 将自身自动注入到服务间所有的网络路径中。Istio 使用 sidecar 代理来捕获流量，并且在尽可能的地方自动编程网络层，以路由流量通过这些代理，而无需对已部署的应用程序代码进行任何改动。在 Kubernetes中，代理被注入到 pod 中，通过编写 iptables 规则来捕获流量。注入 sidecar 代理到 pod 中并且修改路由规则后，Istio 就能够调解所有流量。这个原则也适用于性能。当将 Istio 应用于部署时，运维人员会发现，为提供这些功能而增加的资源开销是很小的。</li>
+<li><strong>可扩展性</strong>：随着运维人员和开发人员越来越依赖 Istio 提供的功能，系统必然和他们的需求一起成长。虽然我们期望继续自己添加新功能，但是我们预计最大的需求是扩展策略系统，集成其他策略和控制来源，并将网格行为信号传播到其他系统进行分析。策略运行时支持标准扩展机制以便插入到其他服务中。此外，它允许扩展词汇表，以允许基于网格生成的新信号来执行策略。</li>
+<li><strong>可移植性</strong>：使用 Istio 的生态系统将在很多维度上有差异。Istio 必须能够以最少的代价运行在任何云或预置环境中。将基于 Istio 的服务移植到新环境应该是轻而易举的，而使用 Istio 将一个服务同时部署到多个环境中也是可行的（例如，在多个云上进行冗余部署）。</li>
+<li><strong>策略一致性</strong>：在服务间的 API 调用中，策略的应用使得可以对网格间行为进行全面的控制，但对于无需在 API 级别表达的资源来说，对资源应用策略也同样重要。例如，将配额应用到 ML 训练任务消耗的 CPU 数量上，比将配额应用到启动这个工作的调用上更为有用。因此，策略系统作为独特的服务来维护，具有自己的 API，而不是将其放到代理/sidecar 中，这容许服务根据需要直接与其集成。</li>
+</ul>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/04/28/istio01/" class="archive-article-date">
+  	<time datetime="2019-04-27T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-04-28</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Istio/">Istio</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
     <article id="post-k8s_pipeline" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -298,152 +440,6 @@
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags"></i>
 		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/">Docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_cronjob" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/13/k8s_cronjob/">Kubernetes CronJob</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Kubernetes-CronJob"><a href="#Kubernetes-CronJob" class="headerlink" title="Kubernetes CronJob"></a>Kubernetes CronJob</h2><h3 id="范例"><a href="#范例" class="headerlink" title="范例"></a>范例</h3><p>cronjob.yaml</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">apiVersion: batch/v1beta1</div><div class="line">kind: CronJob</div><div class="line">metadata:</div><div class="line">  name: hello</div><div class="line">spec:</div><div class="line">  schedule: &quot;*/1 * * * *&quot;</div><div class="line">  jobTemplate:</div><div class="line">    spec:</div><div class="line">      template:</div><div class="line">        spec:</div><div class="line">          containers:</div><div class="line">          - name: hello</div><div class="line">            image: busybox</div><div class="line">            args:</div><div class="line">            - /bin/sh</div><div class="line">            - -c</div><div class="line">            - date; echo Hello from the Kubernetes cluster</div><div class="line">          restartPolicy: OnFailure</div></pre></td></tr></table></figure>
-<p>创建 CronJob</p>
-<p><code>kubectl create -f cronjob.yaml</code></p>
-<p>查看 CronJob</p>
-<p><code>kubectl get cronjob hello</code></p>
-<p><img src="/assets/blogImg/k8s_cronjob01.png" alt="k8s_cronjob01"></p>
-<p>关注 Job 状态</p>
-<p><code>kubectl get jobs --watch</code></p>
-<p><img src="/assets/blogImg/k8s_cronjob02.png" alt="k8s_cronjob02"></p>
-<p>删除 CronJob</p>
-<p><code>kubectl delete cronjob hello</code></p>
-<p><a href="https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/" target="_blank" rel="external">更多详细操作</a></p>
-<h3 id="集成"><a href="#集成" class="headerlink" title="集成"></a>集成</h3><p>针对php项目容器化改造过程中，原有crontab任务较多的问题，在迁移到 k8s 集群时可无缝替换成 CronJob 方式管理。</p>
-<p>后续可基于 CronJob 开发客户端工具，实现简单高效的分布式任务系统。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2019/03/13/k8s_cronjob/" class="archive-article-date">
-  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-k8s_logging" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2019/03/13/k8s_logging/">Kubernetes Logging Architecture</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Kubernetes-Cluster-level-logging-architectures"><a href="#Kubernetes-Cluster-level-logging-architectures" class="headerlink" title="Kubernetes Cluster-level logging architectures"></a>Kubernetes Cluster-level logging architectures</h2><p>Kubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：</p>
-<ul>
-<li>在每个 Node 上运行一个日志客户端。</li>
-<li>在应用的 Pod 里以 sidecar 形式运行一个日志容器。</li>
-<li>应用直接把日志推送到后端日志存储里。</li>
-</ul>
-<h3 id="Using-a-node-logging-agent"><a href="#Using-a-node-logging-agent" class="headerlink" title="Using a node logging agent"></a>Using a node logging agent</h3><p><img src="/assets/blogImg/k8s_logging_nodeAgent.png" alt="k8s_logging_nodeAgent"></p>
-<p>一台 Node 上所有容器的 <em>stdout/stderr</em> 日志会被统一保存到宿主机的目录，只需要以 DaemonSet 的形式在每个 Node 上运行一个日志收集客户端即可将这台 Node 上所有容器的 <em>标准输出/标准错误</em> 日志收集起来存到后端存储里。</p>
-<p>这里的日志收集客户端建议 <a href="https://www.fluentd.org/" target="_blank" rel="external">fluentd</a>。</p>
-<h3 id="Using-a-sidecar-container-with-the-logging-agent"><a href="#Using-a-sidecar-container-with-the-logging-agent" class="headerlink" title="Using a sidecar container with the logging agent"></a>Using a sidecar container with the logging agent</h3><p>使用 Sidecar 方式有两种方案：</p>
-<ul>
-<li>Sidecar 容器将应用日志导流到标准输出或标准错误。</li>
-</ul>
-<p><img src="/assets/blogImg/k8s_logging_sidecar_stream.png" alt="k8s_logging_sidecar_stream"></p>
-<p>这种方式有利于适配 kubelet，或每台 Node 已经运行日志收集客户端的情况。Sidecar 容器可以从文件、socket 或 journald 收集日志，为应用里的每个日志模块运行一个特定的 sidecar 容器，整个 Pod 共享一个共享目录，最终把每个日志模块的日志对应的输出到各自的 sidecar 容器的标准输出或标准错误。</p>
-<p>这是一个在容器内部写两个日志文件的应用范例,然后是同一个 Pod 里运行两个 sidecar 容器分别对两个日志文件进行收集：</p>
-<p>two-files-counter-pod-streaming-sidecar.yaml </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-1</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/1.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-2</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/2.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div></pre></td></tr></table></figure>
-<p>然后，你就可以使用 <code>kubectl logs counter count-log-1</code>查看 1.log 的内容。同理2。</p>
-<p>Node 上的日志客户端会自动采集这两个 sidecar容器的标准输出/标准错误，实际也就是采集了 1.log 和 2.log 两个日志文件。</p>
-<hr>
-<ul>
-<li>Sidecar 容器运行一个日志收集客户端，主动去收集应用日志。</li>
-</ul>
-<p><img src="/assets/blogImg/k8s_logging_sidecar_agent.png" alt="k8s_logging_sidecar_agent"></p>
-<p>这种方式适用于 Node 上没有日志收集客户端的情况。需要注意的是这种方式存在过多资源消耗的问题，而且无法使用 kubectl logs 命令直接查看应用日志。</p>
-<p>这里举例使用 fluentd 作为 sidecar logging agent 收集日志：</p>
-<p>fluentd-sidecar-config.yaml </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: fluentd-config</div><div class="line">data:</div><div class="line">  fluentd.conf: |</div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/1.log</div><div class="line">      pos_file /var/log/1.log.pos</div><div class="line">      tag count.format1</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/2.log</div><div class="line">      pos_file /var/log/2.log.pos</div><div class="line">      tag count.format2</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;match **&gt;</div><div class="line">      type google_cloud</div><div class="line">    &lt;/match&gt;</div></pre></td></tr></table></figure>
-<p>two-files-counter-pod-agent-sidecar.yaml</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-agent</div><div class="line">    image: k8s.gcr.io/fluentd-gcp:1.30</div><div class="line">    env:</div><div class="line">    - name: FLUENTD_ARGS</div><div class="line">      value: -c /etc/fluentd-config/fluentd.conf</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">    - name: config-volume</div><div class="line">      mountPath: /etc/fluentd-config</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-volume</div><div class="line">    configMap:</div><div class="line">      name: fluentd-config</div></pre></td></tr></table></figure>
-<h3 id="Exposing-logs-directly-from-the-application"><a href="#Exposing-logs-directly-from-the-application" class="headerlink" title="Exposing logs directly from the application"></a>Exposing logs directly from the application</h3><p><img src="/assets/blogImg/k8s_logging_directly.png" alt="k8s_logging_directly"></p>
-<p>这是最简单的方式，不过涉及应用的改造。</p>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2019/03/13/k8s_logging/" class="archive-article-date">
-  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
 	</div>
 
       
@@ -723,7 +719,7 @@
 <p>在使用这种类型的 Volume 时，需要注意以下几点：</p>
 <ul>
 <li>在不同的 Node 上具有相同配置的 Pod 可能会因为宿主机上的目录和文件不同而导致对 Volume 上目录和文件的访问结果不一致。</li>
-<li>如果使用了资源配额管理，则 Kubernetes 无法将 hostPaht 在宿主机上使用的资源纳入管理。</li>
+<li>如果使用了资源配额管理，则 Kubernetes 无法将 hostPath 在宿主机上使用的资源纳入管理。</li>
 </ul>
 <h5 id="Persistent-Volume"><a href="#Persistent-Volume" class="headerlink" title="Persistent Volume"></a>Persistent Volume</h5><p>前面说到的 Volume 是定义在 Pod 上的，属于“计算资源”的一部分。而实际上，“网络存储”是相对独立于“计算资源”而存在的一种实体资源。比如在使用虚拟机的情况下，我们通常会先定义一个网络存储，然后从中划出一个“网盘”并挂载到虚拟机上。Persistent Volume（简称 PV）和与之相关联的 Persistent Volume Claim（简称 PVC）也起到了类似的作用。</p>
 <p>PV 可以理解成 Kubernetes 集群中的某个网络存储中对应的一块存储，它与 Volume 很类似，但有以下区别：</p>
@@ -771,6 +767,152 @@
     <div class="article-info article-info-index">
       
       <a href="/2019/03/13/k8s01/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_logging" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/13/k8s_logging/">Kubernetes Logging Architecture</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Kubernetes-Cluster-level-logging-architectures"><a href="#Kubernetes-Cluster-level-logging-architectures" class="headerlink" title="Kubernetes Cluster-level logging architectures"></a>Kubernetes Cluster-level logging architectures</h2><p>Kubernetes 官方不提供原生的集群日志方案，但是提供了一些解决思路：</p>
+<ul>
+<li>在每个 Node 上运行一个日志客户端。</li>
+<li>在应用的 Pod 里以 sidecar 形式运行一个日志容器。</li>
+<li>应用直接把日志推送到后端日志存储里。</li>
+</ul>
+<h3 id="Using-a-node-logging-agent"><a href="#Using-a-node-logging-agent" class="headerlink" title="Using a node logging agent"></a>Using a node logging agent</h3><p><img src="/assets/blogImg/k8s_logging_nodeAgent.png" alt="k8s_logging_nodeAgent"></p>
+<p>一台 Node 上所有容器的 <em>stdout/stderr</em> 日志会被统一保存到宿主机的目录，只需要以 DaemonSet 的形式在每个 Node 上运行一个日志收集客户端即可将这台 Node 上所有容器的 <em>标准输出/标准错误</em> 日志收集起来存到后端存储里。</p>
+<p>这里的日志收集客户端建议 <a href="https://www.fluentd.org/" target="_blank" rel="external">fluentd</a>。</p>
+<h3 id="Using-a-sidecar-container-with-the-logging-agent"><a href="#Using-a-sidecar-container-with-the-logging-agent" class="headerlink" title="Using a sidecar container with the logging agent"></a>Using a sidecar container with the logging agent</h3><p>使用 Sidecar 方式有两种方案：</p>
+<ul>
+<li>Sidecar 容器将应用日志导流到标准输出或标准错误。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_stream.png" alt="k8s_logging_sidecar_stream"></p>
+<p>这种方式有利于适配 kubelet，或每台 Node 已经运行日志收集客户端的情况。Sidecar 容器可以从文件、socket 或 journald 收集日志，为应用里的每个日志模块运行一个特定的 sidecar 容器，整个 Pod 共享一个共享目录，最终把每个日志模块的日志对应的输出到各自的 sidecar 容器的标准输出或标准错误。</p>
+<p>这是一个在容器内部写两个日志文件的应用范例,然后是同一个 Pod 里运行两个 sidecar 容器分别对两个日志文件进行收集：</p>
+<p>two-files-counter-pod-streaming-sidecar.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-1</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/1.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-log-2</div><div class="line">    image: busybox</div><div class="line">    args: [/bin/sh, -c, &apos;tail -n+1 -f /var/log/2.log&apos;]</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div></pre></td></tr></table></figure>
+<p>然后，你就可以使用 <code>kubectl logs counter count-log-1</code>查看 1.log 的内容。同理2。</p>
+<p>Node 上的日志客户端会自动采集这两个 sidecar容器的标准输出/标准错误，实际也就是采集了 1.log 和 2.log 两个日志文件。</p>
+<hr>
+<ul>
+<li>Sidecar 容器运行一个日志收集客户端，主动去收集应用日志。</li>
+</ul>
+<p><img src="/assets/blogImg/k8s_logging_sidecar_agent.png" alt="k8s_logging_sidecar_agent"></p>
+<p>这种方式适用于 Node 上没有日志收集客户端的情况。需要注意的是这种方式存在过多资源消耗的问题，而且无法使用 kubectl logs 命令直接查看应用日志。</p>
+<p>这里举例使用 fluentd 作为 sidecar logging agent 收集日志：</p>
+<p>fluentd-sidecar-config.yaml </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: fluentd-config</div><div class="line">data:</div><div class="line">  fluentd.conf: |</div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/1.log</div><div class="line">      pos_file /var/log/1.log.pos</div><div class="line">      tag count.format1</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;source&gt;</div><div class="line">      type tail</div><div class="line">      format none</div><div class="line">      path /var/log/2.log</div><div class="line">      pos_file /var/log/2.log.pos</div><div class="line">      tag count.format2</div><div class="line">    &lt;/source&gt;</div><div class="line"></div><div class="line">    &lt;match **&gt;</div><div class="line">      type google_cloud</div><div class="line">    &lt;/match&gt;</div></pre></td></tr></table></figure>
+<p>two-files-counter-pod-agent-sidecar.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Pod</div><div class="line">metadata:</div><div class="line">  name: counter</div><div class="line">spec:</div><div class="line">  containers:</div><div class="line">  - name: count</div><div class="line">    image: busybox</div><div class="line">    args:</div><div class="line">    - /bin/sh</div><div class="line">    - -c</div><div class="line">    - &gt;</div><div class="line">      i=0;</div><div class="line">      while true;</div><div class="line">      do</div><div class="line">        echo &quot;$i: $(date)&quot; &gt;&gt; /var/log/1.log;</div><div class="line">        echo &quot;$(date) INFO $i&quot; &gt;&gt; /var/log/2.log;</div><div class="line">        i=$((i+1));</div><div class="line">        sleep 1;</div><div class="line">      done</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">  - name: count-agent</div><div class="line">    image: k8s.gcr.io/fluentd-gcp:1.30</div><div class="line">    env:</div><div class="line">    - name: FLUENTD_ARGS</div><div class="line">      value: -c /etc/fluentd-config/fluentd.conf</div><div class="line">    volumeMounts:</div><div class="line">    - name: varlog</div><div class="line">      mountPath: /var/log</div><div class="line">    - name: config-volume</div><div class="line">      mountPath: /etc/fluentd-config</div><div class="line">  volumes:</div><div class="line">  - name: varlog</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-volume</div><div class="line">    configMap:</div><div class="line">      name: fluentd-config</div></pre></td></tr></table></figure>
+<h3 id="Exposing-logs-directly-from-the-application"><a href="#Exposing-logs-directly-from-the-application" class="headerlink" title="Exposing logs directly from the application"></a>Exposing logs directly from the application</h3><p><img src="/assets/blogImg/k8s_logging_directly.png" alt="k8s_logging_directly"></p>
+<p>这是最简单的方式，不过涉及应用的改造。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/k8s_logging/" class="archive-article-date">
+  	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+
+
+
+
+
+
+
+
+
+  
+    <article id="post-k8s_cronjob" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2019/03/13/k8s_cronjob/">Kubernetes CronJob</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Kubernetes-CronJob"><a href="#Kubernetes-CronJob" class="headerlink" title="Kubernetes CronJob"></a>Kubernetes CronJob</h2><h3 id="范例"><a href="#范例" class="headerlink" title="范例"></a>范例</h3><p>cronjob.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">apiVersion: batch/v1beta1</div><div class="line">kind: CronJob</div><div class="line">metadata:</div><div class="line">  name: hello</div><div class="line">spec:</div><div class="line">  schedule: &quot;*/1 * * * *&quot;</div><div class="line">  jobTemplate:</div><div class="line">    spec:</div><div class="line">      template:</div><div class="line">        spec:</div><div class="line">          containers:</div><div class="line">          - name: hello</div><div class="line">            image: busybox</div><div class="line">            args:</div><div class="line">            - /bin/sh</div><div class="line">            - -c</div><div class="line">            - date; echo Hello from the Kubernetes cluster</div><div class="line">          restartPolicy: OnFailure</div></pre></td></tr></table></figure>
+<p>创建 CronJob</p>
+<p><code>kubectl create -f cronjob.yaml</code></p>
+<p>查看 CronJob</p>
+<p><code>kubectl get cronjob hello</code></p>
+<p><img src="/assets/blogImg/k8s_cronjob01.png" alt="k8s_cronjob01"></p>
+<p>关注 Job 状态</p>
+<p><code>kubectl get jobs --watch</code></p>
+<p><img src="/assets/blogImg/k8s_cronjob02.png" alt="k8s_cronjob02"></p>
+<p>删除 CronJob</p>
+<p><code>kubectl delete cronjob hello</code></p>
+<p><a href="https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/" target="_blank" rel="external">更多详细操作</a></p>
+<h3 id="集成"><a href="#集成" class="headerlink" title="集成"></a>集成</h3><p>针对php项目容器化改造过程中，原有crontab任务较多的问题，在迁移到 k8s 集群时可无缝替换成 CronJob 方式管理。</p>
+<p>后续可基于 CronJob 开发客户端工具，实现简单高效的分布式任务系统。</p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2019/03/13/k8s_cronjob/" class="archive-article-date">
   	<time datetime="2019-03-12T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2019-03-13</time>
 </a>
       
@@ -1615,109 +1757,6 @@
 
 
   
-    <article id="post-k8s_security_demo" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/04/01/k8s_security_demo/">Kubernetes 集群安全配置案例</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Kubernetes 系统提供了三种认证方式：CA 认证、Token 认证 和 Base 认证。安全功能是一把双刃剑，它保护系统不被攻击，但是也带来额外的性能损耗。集群内的各组件访问 API Server 时，由于它们与 API Server 同时处于同一局域网内，所以建议用非安全的方式访问 API Server 效率更高。</p>
-<p>接下来对集群的双向认证配置和简单认证配置过程进行详细说明。</p>
-<h2 id="双向认证配置"><a href="#双向认证配置" class="headerlink" title="双向认证配置"></a>双向认证配置</h2><p>双向认证方式是最为严格和安全的集群安全配置方式，主要配置流程如下：</p>
-<ol>
-<li>生成根证书、API Server 服务端证书、服务端私钥、各个组件所用的客户端证书和客户端私钥。</li>
-<li>修改 Kubernetes 各个服务进程的启动参数，启用双向认证模式。</li>
-</ol>
-<p>详细的配置操作流程如下：</p>
-<h4 id="生成根证书"><a href="#生成根证书" class="headerlink" title="生成根证书"></a>生成根证书</h4><p>用 openssl 工具生成 CA 证书，请注意将其中 subject 等参数改为用户所需的数据，CN 的值通常是域名、主机名或 IP 地址。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ cd /var/run/kubernetes</div><div class="line">$ openssl genrsa -out dd_ca.key 2048</div><div class="line">$ openssl req -x509 -new -nodes -key dd_ca.key -subj &quot;/CN=YOUDOMAIN.COM&quot; -days 5000 -out dd_ca.crt</div></pre></td></tr></table></figure>
-<h4 id="生成-API-Server-服务端证书和私钥"><a href="#生成-API-Server-服务端证书和私钥" class="headerlink" title="生成 API Server 服务端证书和私钥"></a>生成 API Server 服务端证书和私钥</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ openssl genrsa -out dd_server.key 2048</div><div class="line">$ HN=`hostname`</div><div class="line">$ openssl req -new -key dd_server.key -subj &quot;/CN=$HN&quot; -out dd_server.csr</div><div class="line">$ openssl x509 -req -in dd_server.csr -CA dd_ca.crt -CAkey dd_ca.key -CAcreateserial-out dd_server.crt -days 5000</div></pre></td></tr></table></figure>
-<h4 id="生成-Controller-Manager-与-Scheduler-进程共用的证书和私钥"><a href="#生成-Controller-Manager-与-Scheduler-进程共用的证书和私钥" class="headerlink" title="生成 Controller Manager 与 Scheduler 进程共用的证书和私钥"></a>生成 Controller Manager 与 Scheduler 进程共用的证书和私钥</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ openssl genrsa -out dd_cs_client.key 2048</div><div class="line">$ openssl req -new -key dd_cs_client.key -subj &quot;/CN=$HN&quot; -out dd_cs_client.csr</div><div class="line">$ openssl x509 -req -in dd_cs_client.csr －CA dd_ca.crt -CAkey dd_ca.key -CAcreateserial -out dd_cs_client.crt -days 5000</div></pre></td></tr></table></figure>
-<h4 id="生成-Kubelet-所用的客户端证书和私钥"><a href="#生成-Kubelet-所用的客户端证书和私钥" class="headerlink" title="生成 Kubelet 所用的客户端证书和私钥"></a>生成 Kubelet 所用的客户端证书和私钥</h4><p>注意，这里假设 Kubelet 所在机器的 IP 地址为 192.168.1.129。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$ openssl genrsa -out dd_kubelet_client.key 2048</div><div class="line">$ openssl req -new -key dd_kubelet_client.key -subj &quot;/CN=192.168.1.129&quot; -out dd_kubelet_client.csr</div><div class="line">$ openssl x509 -req -in dd_kubelet_client.csr -CA dd_ca.crt -CAkey dd_ca.key -CAcreateserial -out dd_kubelet_client.crt -days 5000</div></pre></td></tr></table></figure>
-<h4 id="修改-API-Server-的启动参数"><a href="#修改-API-Server-的启动参数" class="headerlink" title="修改 API Server 的启动参数"></a>修改 API Server 的启动参数</h4><p>增加 CA 根证书、Server 自身证书等参数并设置安全端口为 443.</p>
-<p>修改/etc/kubernetes/apiserver 配置文件的 KUBE_API_ARGS 参数：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">KUBE_API_ARGS=&quot;--log-dir=/var/log/kubernetes --secure-port=443 --client_ca_file=/var/run/kubernetes/dd_ca.crt --tls-private-key-file=/var/run/kubernetes/dd_server.key --tls-cert-file=/var/run/kubernetes/dd_server.crt&quot;</div></pre></td></tr></table></figure>
-<p>重启 kube-apiserver 服务：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart kube-apiserver</div></pre></td></tr></table></figure>
-<h4 id="验证-API-Server-的-HTTPS-服务。"><a href="#验证-API-Server-的-HTTPS-服务。" class="headerlink" title="验证 API Server 的 HTTPS 服务。"></a>验证 API Server 的 HTTPS 服务。</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ curl https://kubernetes-master:443/api/v1/nodes --cert /var/run/kubernetes/dd_cs_client.crt --key /var/run/kubernetes/dd_cs_client.key --cacert /var/run/kubernetes/dd_ca.crt</div></pre></td></tr></table></figure>
-<h4 id="修改-Controller-Manager-的启动参数"><a href="#修改-Controller-Manager-的启动参数" class="headerlink" title="修改 Controller Manager 的启动参数"></a>修改 Controller Manager 的启动参数</h4><p>修改/etc/kubernetes/controller-manager 配置文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">KUBE_CONTROLLER_MANAGER_ARGS=&quot;--log-dir=/var/log/kubernetes --service_account_private_key_file=/var/run/kubernetes/server.key --root-ca-file=/var/run/kubernetes/ca.crt --master=https://kubernetes-master:443 --kubeconfig=/etc/kubernetes/cmkubeconfig&quot;</div></pre></td></tr></table></figure>
-<p>创建/etc/kubernetes/cmkubeconfig 文件，配置证书等相关参数，具体内容如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">users</div><div class="line">- name: controllermanager</div><div class="line">  user:</div><div class="line">    client-certificate: /var/run/kubernetes/dd_cs_client.crt</div><div class="line">    client-key: /var/run/kubernetes/dd_cs_client.key</div><div class="line">clusters:</div><div class="line">- name: local</div><div class="line">  cluster:</div><div class="line">    certificate-authority: /var/run/kubernetes/dd_ca.crt</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: local</div><div class="line">    user: controllermanager</div><div class="line">  name: my-context</div><div class="line">current-context: my-context</div></pre></td></tr></table></figure>
-<p>重启 kube-controller-manager 服务：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart kube-controller-manager</div></pre></td></tr></table></figure>
-<h4 id="配置各个节点上的-Kubelet-进程"><a href="#配置各个节点上的-Kubelet-进程" class="headerlink" title="配置各个节点上的 Kubelet 进程"></a>配置各个节点上的 Kubelet 进程</h4><p>复制 Kubelet 的证书、私钥 与 CA 根证书到所有 Node 上。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ scp /var/run/kubernetes/dd_kubelet* root@kubernetes-minion1:/home</div><div class="line">$ scp /var/run/kubernetes/dd_ca.* root@kubernetes-minion:/home</div></pre></td></tr></table></figure>
-<p>在每个 Node 上创建/var/lib/kubelet/kubeconfig 文件，内容如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">users:</div><div class="line">- name: kubelet</div><div class="line">  user:</div><div class="line">    client-certificats: /home/dd_kubelet_client.crt</div><div class="line">    client-key: /home/dd_kubelet_client.key</div><div class="line">clusters:</div><div class="line">- name: local</div><div class="line">  cluster:</div><div class="line">    certificate-authority: /home/dd_ca.crt</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: local</div><div class="line">    user: kubelet</div><div class="line">  name: my-context</div><div class="line">current-context: my-context</div></pre></td></tr></table></figure>
-<p>修改 Kubelet 的启动参数，以修改/etc/kubernetes/kubelet 配置文件为例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">KUBELET_API_SERVER=&quot;--api_servers=https://kubernetes-master:443&quot;</div><div class="line">KUBELET_ARGS=&quot;--pod_infro_container_image=192.168.1.128:1180/google_containers/pause:latest --cluster_dns=10.2.0.100 --cluster_domain=cluster.local --kubeconfig=/var/lib/kubelet/kubeconfig&quot;</div></pre></td></tr></table></figure>
-<p>重启 kubelet 服务：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart kubelet</div></pre></td></tr></table></figure>
-<h4 id="配置-kube-proxy"><a href="#配置-kube-proxy" class="headerlink" title="配置 kube-proxy"></a>配置 kube-proxy</h4><p>首先，创建/var/lib/kubeproxy/proxykubeconfig 文件，内容如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Config</div><div class="line">users:</div><div class="line">- name: kubeproxy</div><div class="line">  user:</div><div class="line">    client-certificate: /home/dd_kubelet_client.crt</div><div class="line">    client-key: /home/dd_kubelet_client.key</div><div class="line">clusters:</div><div class="line">- name: local</div><div class="line">  cluster:</div><div class="line">    certificate-authority: /home/dd_ca.crt</div><div class="line">contexts:</div><div class="line">- context:</div><div class="line">    cluster: local</div><div class="line">    user: kubeproxy</div><div class="line">  name: my-context</div><div class="line">current-context: my-context</div></pre></td></tr></table></figure>
-<p>然后，修改 kube-proxy 的启动参数，引用上述文件并指明 API Server 在安全模式下的访问地址，以修改配置文件/etc/kubenetes/proxy 为例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">KUBE_PROXY_ARGS=&quot;--kubeconfig=/var/lib/kubeproxy/proxykubeconfig --master=https://kubenetes-master:443&quot;</div></pre></td></tr></table></figure>
-<p>重启 kube-proxy 服务：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart kube-proxy</div></pre></td></tr></table></figure>
-<p>至此，一个双向认证的 Kubernetes 集群环境就搭建完成了。</p>
-<h2 id="简单认证配置"><a href="#简单认证配置" class="headerlink" title="简单认证配置"></a>简单认证配置</h2><p>除了双向认证方式，Kubernets 也提供了基于 Token 和 HTTP Base 的简单认证方式。通信方式仍然采用 HTTPS，但不使用数字证书。</p>
-<p>采用基于 Token 和 HTTP Base 的简单认证方式时，API Server 对外暴露 HTTPS 端口，客户端提供 Token 或用户名、密码来完成认证过程。这里需要说明的一点是 Kubelet 比较特殊，它同时支持双向认证与简单认证两种模式，其他组件智能配置为双向认证或非安全模式。</p>
-<p><strong>API Server 基于 Token 认证的配置过程如下</strong></p>
-<h4 id="建立包括用户名、密码和-UID-的文件-token-auth-file："><a href="#建立包括用户名、密码和-UID-的文件-token-auth-file：" class="headerlink" title="建立包括用户名、密码和 UID 的文件 token_auth_file："></a>建立包括用户名、密码和 UID 的文件 token_auth_file：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ cat /root/token_auth_file</div><div class="line">dingmingk,dingmingk,1</div><div class="line">admin,admin,2</div><div class="line">system,system,3</div></pre></td></tr></table></figure>
-<h4 id="修改-API-Server-的配置，采用上述文件进行安全认证"><a href="#修改-API-Server-的配置，采用上述文件进行安全认证" class="headerlink" title="修改 API Server 的配置，采用上述文件进行安全认证"></a>修改 API Server 的配置，采用上述文件进行安全认证</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ vi /etc/kubernetes/apiserver</div><div class="line">KUBE_API_ARGS=&quot;--secure-port=443 --token_auth_file=/root/token_auth_file&quot;</div></pre></td></tr></table></figure>
-<h4 id="重启-API-Server-服务"><a href="#重启-API-Server-服务" class="headerlink" title="重启 API Server 服务"></a>重启 API Server 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart kube-apiserver</div></pre></td></tr></table></figure>
-<h4 id="用-curl-验证连接-API-Server"><a href="#用-curl-验证连接-API-Server" class="headerlink" title="用 curl 验证连接 API Server"></a>用 curl 验证连接 API Server</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">$ curl https://kubenetes-master:443/version --header &quot;Authorization: Bearer dingmingk&quot; -k</div><div class="line">&#123;</div><div class="line">  &quot;major&quot;: &quot;1&quot;,</div><div class="line">  &quot;minor&quot;: &quot;0&quot;,</div><div class="line">  &quot;gitVersion&quot;: &quot;v1.0.0&quot;,</div><div class="line">  &quot;gitCommit&quot;: &quot;xxxHASHCODE&quot;,</div><div class="line">  &quot;gitTreeState&quot;: &quot;clean&quot;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p><strong>API Server 基于 HTTP Base 认证的配置过程如下</strong></p>
-<h4 id="创建包括用户名、密码和-UID-的文件-basic-auth-file："><a href="#创建包括用户名、密码和-UID-的文件-basic-auth-file：" class="headerlink" title="创建包括用户名、密码和 UID 的文件 basic_auth_file："></a>创建包括用户名、密码和 UID 的文件 basic_auth_file：</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ cat /root/basic_auth_file</div><div class="line">dingmingk,dingmingk,1</div><div class="line">admin,admin,2</div><div class="line">system,system,3</div></pre></td></tr></table></figure>
-<h4 id="修改-API-Server-的配置，采用上述文件进行安全认证-1"><a href="#修改-API-Server-的配置，采用上述文件进行安全认证-1" class="headerlink" title="修改 API Server 的配置，采用上述文件进行安全认证"></a>修改 API Server 的配置，采用上述文件进行安全认证</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ vi /etc/kubernetes/apiserver</div><div class="line">KUBE_API_ARGS=&quot;--secure-port=443 --basic_auth_file=/root/basic_auth_file&quot;</div></pre></td></tr></table></figure>
-<h4 id="重启-API-Server-服务-1"><a href="#重启-API-Server-服务-1" class="headerlink" title="重启 API Server 服务"></a>重启 API Server 服务</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># systemctl restart kube-apiserver</div></pre></td></tr></table></figure>
-<h4 id="用-curl-验证连接-API-Server-1"><a href="#用-curl-验证连接-API-Server-1" class="headerlink" title="用 curl 验证连接 API Server"></a>用 curl 验证连接 API Server</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">$ curl https://kubernetes-master:443/version --basic -u dingmingk:dingmingk -k</div><div class="line">&#123;</div><div class="line">  &quot;major&quot;: &quot;1&quot;,</div><div class="line">  &quot;minor&quot;: &quot;0&quot;,</div><div class="line">  &quot;gitVersion&quot;: &quot;v1.0.0&quot;,</div><div class="line">  &quot;gitCommit&quot;: &quot;xxxHASHCODE&quot;,</div><div class="line">  &quot;gitTreeState&quot;: &quot;clean&quot;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h4 id="使用-Kubelet-时则需要指定用户名和密码来访问-API-Server"><a href="#使用-Kubelet-时则需要指定用户名和密码来访问-API-Server" class="headerlink" title="使用 Kubelet 时则需要指定用户名和密码来访问 API Server"></a>使用 Kubelet 时则需要指定用户名和密码来访问 API Server</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ kubectl get nodes --server=&quot;https://kubernetes-master:443&quot; --api-version=&quot;v1&quot; --username=&quot;dingmingk&quot; --password=&quot;dingmingk&quot; --insecure-skip-tls-verify=true</div></pre></td></tr></table></figure>
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      <a href="/2016/04/01/k8s_security_demo/" class="archive-article-date">
-  	<time datetime="2016-03-31T16:00:00.000Z" itemprop="datePublished"><i class="icon-clock"></i>2016-04-01</time>
-</a>
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags"></i>
-		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/">Kubernetes</a></li></ul>
-	</div>
-
-      
-
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-
-
-
-
-
-
-
-
-
-  
   
     <nav id="page-nav">
       <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
@@ -1783,7 +1822,7 @@
     
     	<section class="tools-section tools-section-tag">
     			<div class="widget tagcloud" id="js-tagcloud">
-    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Jenkins/" style="font-size: 12.5px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/Pipeline/" style="font-size: 10px;">Pipeline</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
+    				<a href="/tags/Cgroup/" style="font-size: 12.5px;">Cgroup</a> <a href="/tags/Continuous/" style="font-size: 10px;">Continuous</a> <a href="/tags/Docker/" style="font-size: 15px;">Docker</a> <a href="/tags/Fleet/" style="font-size: 12.5px;">Fleet</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/Istio/" style="font-size: 10px;">Istio</a> <a href="/tags/Jenkins/" style="font-size: 12.5px;">Jenkins</a> <a href="/tags/Kubernetes/" style="font-size: 20px;">Kubernetes</a> <a href="/tags/Life/" style="font-size: 12.5px;">Life</a> <a href="/tags/Linux/" style="font-size: 12.5px;">Linux</a> <a href="/tags/Mac/" style="font-size: 10px;">Mac</a> <a href="/tags/Nginx/" style="font-size: 17.5px;">Nginx</a> <a href="/tags/Pipeline/" style="font-size: 10px;">Pipeline</a> <a href="/tags/RabbitMQ/" style="font-size: 10px;">RabbitMQ</a> <a href="/tags/SaltStack/" style="font-size: 10px;">SaltStack</a> <a href="/tags/Systemd/" style="font-size: 15px;">Systemd</a>
     			</div>
     	</section>
     
